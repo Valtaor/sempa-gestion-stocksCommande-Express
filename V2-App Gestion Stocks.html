@@ -17,39 +17,90 @@
             --warning: #F59E0B;
             --radius: 8px;
             --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
+            --body-bg: #F1F5F9;
+            --surface: #FFFFFF;
+            --surface-alt: #F8FAFC;
+            --text: #1F2937;
+            --text-muted: #64748B;
+            --border-color: #E2E8F0;
+            --input-bg: #FFFFFF;
+            --table-hover: rgba(15, 23, 42, 0.04);
+            --alert-bg: #FEF2F2;
+            --alert-border: #EF4444;
         }
-        
+
+        body {
+            background: var(--body-bg);
+            color: var(--text);
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        body.dark-theme {
+            --body-bg: #0B1120;
+            --surface: #111827;
+            --surface-alt: #1E293B;
+            --text: #E2E8F0;
+            --text-muted: #94A3B8;
+            --border-color: rgba(148, 163, 184, 0.3);
+            --input-bg: #0F172A;
+            --table-hover: rgba(148, 163, 184, 0.12);
+            --alert-bg: rgba(239, 68, 68, 0.12);
+            --alert-border: rgba(239, 68, 68, 0.75);
+            --shadow-sm: 0 10px 30px rgba(15, 23, 42, 0.5);
+            --primary-light: rgba(255, 163, 0, 0.15);
+            --light: #1E293B;
+            --gray-light: rgba(148, 163, 184, 0.15);
+            color-scheme: dark;
+        }
+
         .sempa-stock-app {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
-            color: #333;
+            color: var(--text);
+            transition: color 0.3s ease;
         }
-        
+
         .sempa-header {
-            background: white;
+            background: var(--surface);
             border-radius: var(--radius);
             box-shadow: var(--shadow-sm);
             padding: 20px;
             margin-bottom: 20px;
             text-align: center;
+            border: 1px solid var(--border-color);
+            transition: background 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
         }
-        
+
+        .sempa-header-controls {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 10px;
+        }
+
         .sempa-header h1 {
             color: var(--primary);
             margin-bottom: 10px;
         }
-        
+
+        .sempa-header p {
+            color: var(--text-muted);
+            margin: 0;
+            margin-top: 5px;
+        }
+
         .sempa-tabs {
             display: flex;
-            background: white;
+            background: var(--surface);
             border-radius: var(--radius);
             box-shadow: var(--shadow-sm);
             margin-bottom: 20px;
             overflow: hidden;
+            border: 1px solid var(--border-color);
+            transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
         }
-        
+
         .sempa-tab {
             padding: 15px 20px;
             cursor: pointer;
@@ -57,22 +108,31 @@
             transition: all 0.3s;
             flex: 1;
             text-align: center;
+            color: var(--text);
+            background: transparent;
         }
-        
+
         .sempa-tab.active {
             background: var(--primary);
             color: white;
         }
-        
+
+        .sempa-tab:not(.active):hover {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
         .sempa-content {
             display: none;
-            background: white;
+            background: var(--surface);
             border-radius: var(--radius);
             box-shadow: var(--shadow-sm);
             padding: 20px;
             margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+            transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
         }
-        
+
         .sempa-content.active {
             display: block;
         }
@@ -83,20 +143,22 @@
             gap: 15px;
             margin-bottom: 20px;
         }
-        
+
         .sempa-stat {
-            background: var(--light);
+            background: var(--surface-alt);
             border-radius: var(--radius);
             padding: 15px;
             text-align: center;
+            border: 1px solid var(--border-color);
+            transition: background 0.3s ease, border-color 0.3s ease;
         }
-        
+
         .sempa-stat h3 {
             font-size: 14px;
-            color: var(--gray);
+            color: var(--text-muted);
             margin-bottom: 8px;
         }
-        
+
         .sempa-stat .value {
             font-size: 24px;
             font-weight: 700;
@@ -104,20 +166,22 @@
         }
         
         .sempa-alert {
-            background: #FEF2F2;
-            border-left: 4px solid var(--error);
+            background: var(--alert-bg);
+            border-left: 4px solid var(--alert-border);
             padding: 15px;
             margin-bottom: 15px;
             border-radius: var(--radius);
+            border: 1px solid var(--border-color);
+            transition: background 0.3s ease, border-color 0.3s ease;
         }
-        
+
         .sempa-alert-item {
             display: flex;
             justify-content: space-between;
             padding: 12px 0;
-            border-bottom: 1px solid var(--gray-light);
+            border-bottom: 1px solid var(--border-color);
         }
-        
+
         .sempa-alert-item:last-child {
             border-bottom: none;
         }
@@ -139,18 +203,25 @@
             border-radius: var(--radius);
             font-weight: 500;
             cursor: pointer;
-            transition: background 0.3s;
+            transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
         }
-        
+
         .sempa-btn:hover {
             background: #e59400;
         }
-        
+
         .sempa-btn-secondary {
-            background: var(--gray-light);
-            color: var(--dark);
+            background: var(--surface-alt);
+            color: var(--text);
+            border: 1px solid var(--border-color);
         }
-        
+
+        .sempa-btn-secondary:hover {
+            background: var(--primary-light);
+            color: var(--primary);
+            border-color: var(--primary);
+        }
+
         .sempa-table {
             width: 100%;
             border-collapse: collapse;
@@ -160,15 +231,24 @@
         .sempa-table th, .sempa-table td {
             padding: 12px 15px;
             text-align: left;
-            border-bottom: 1px solid var(--gray-light);
+            border-bottom: 1px solid var(--border-color);
         }
-        
+
         .sempa-table th {
             font-weight: 600;
-            color: var(--gray);
-            background: var(--light);
+            color: var(--text-muted);
+            background: var(--surface-alt);
         }
-        
+
+        .sempa-table tbody tr {
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .sempa-table tbody tr:hover {
+            background-color: var(--table-hover);
+            transform: translateY(-2px);
+        }
+
         .sempa-indicator {
             display: inline-block;
             width: 12px;
@@ -198,23 +278,26 @@
             font-size: 14px;
             font-weight: 500;
             margin-bottom: 8px;
-            color: #374151;
+            color: var(--text-muted);
         }
-        
+
         .sempa-input, .sempa-select {
             width: 100%;
             padding: 10px 12px;
-            border: 1px solid #D1D5DB;
+            border: 1px solid var(--border-color);
             border-radius: var(--radius);
             font-size: 14px;
+            background: var(--input-bg);
+            color: var(--text);
+            transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease;
         }
-        
+
         .sempa-search {
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
         }
-        
+
         .sempa-modal {
             display: none;
             position: fixed;
@@ -227,29 +310,49 @@
             align-items: center;
             z-index: 1000;
         }
-        
+
         .sempa-modal-content {
-            background: white;
+            background: var(--surface);
             border-radius: var(--radius);
             padding: 20px;
             width: 90%;
             max-width: 500px;
             max-height: 90vh;
             overflow-y: auto;
+            border: 1px solid var(--border-color);
+            transition: background 0.3s ease, border-color 0.3s ease;
         }
-        
+
         .sempa-modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
         }
-        
+
         .sempa-close {
             background: none;
             border: none;
             font-size: 24px;
             cursor: pointer;
+            color: var(--text);
+        }
+
+        .sempa-theme-toggle {
+            padding: 8px 14px;
+            background: var(--surface-alt);
+            color: var(--text);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .sempa-theme-toggle:hover {
+            background: var(--primary-light);
+            color: var(--primary);
+            border-color: var(--primary);
         }
         
         @media (max-width: 768px) {
@@ -271,6 +374,9 @@
 <body>
     <div class="sempa-stock-app">
         <div class="sempa-header">
+            <div class="sempa-header-controls">
+                <button id="theme-toggle" class="sempa-theme-toggle" type="button" aria-label="Activer le mode sombre" aria-pressed="false">Mode sombre</button>
+            </div>
             <h1>Gestion de Stock SEMPA</h1>
             <p>Application de suivi des stocks</p>
         </div>
@@ -459,14 +565,43 @@
         let products = JSON.parse(localStorage.getItem('sempa_products')) || [];
         let movements = JSON.parse(localStorage.getItem('sempa_movements')) || [];
         let currentProductId = null;
-        
+
+        const THEME_STORAGE_KEY = 'sempa_theme';
+
+        function applyTheme(theme) {
+            const isDark = theme === 'dark';
+            document.body.classList.toggle('dark-theme', isDark);
+
+            const toggleButton = document.getElementById('theme-toggle');
+            if (toggleButton) {
+                toggleButton.textContent = isDark ? 'Mode clair' : 'Mode sombre';
+                toggleButton.setAttribute('aria-pressed', isDark);
+                toggleButton.setAttribute('aria-label', isDark ? 'Activer le mode clair' : 'Activer le mode sombre');
+            }
+
+            localStorage.setItem(THEME_STORAGE_KEY, theme);
+        }
+
+        const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+        applyTheme(savedTheme === 'dark' ? 'dark' : 'light');
+
         // Initialisation
         document.addEventListener('DOMContentLoaded', function() {
             initApp();
             loadProducts();
             loadMovements();
             updateDashboard();
-            
+
+            const themeToggleButton = document.getElementById('theme-toggle');
+            if (themeToggleButton) {
+                themeToggleButton.addEventListener('click', function() {
+                    const newTheme = document.body.classList.contains('dark-theme') ? 'light' : 'dark';
+                    applyTheme(newTheme);
+                });
+
+                applyTheme(document.body.classList.contains('dark-theme') ? 'dark' : 'light');
+            }
+
             // Gestion des onglets
             document.querySelectorAll('.sempa-tab').forEach(tab => {
                 tab.addEventListener('click', function() {
