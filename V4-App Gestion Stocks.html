@@ -15,6 +15,7 @@
             --success: #10B981;
             --error: #EF4444;
             --warning: #F59E0B;
+            --info: #3B82F6;
             --radius: 8px;
             --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
             --body-bg: #F1F5F9;
@@ -185,14 +186,98 @@
         .sempa-alert-item:last-child {
             border-bottom: none;
         }
-        
+
         .sempa-product-name {
             font-weight: 500;
         }
-        
+
         .sempa-stock-level {
             color: var(--error);
             font-weight: 600;
+        }
+
+        .sempa-dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .sempa-panel {
+            background: var(--surface-alt);
+            border-radius: var(--radius);
+            border: 1px solid var(--border-color);
+            padding: 16px;
+        }
+
+        .sempa-panel h3 {
+            margin-top: 0;
+            margin-bottom: 12px;
+        }
+
+        .sempa-panel ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .sempa-panel li {
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .sempa-panel li:last-child {
+            border-bottom: none;
+        }
+
+        .sempa-panel li span {
+            font-weight: 600;
+        }
+
+        .sempa-panel li.sempa-empty-state {
+            padding: 6px 0;
+            border: none;
+            font-weight: 400;
+            display: block;
+        }
+
+        .sempa-text-muted {
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .sempa-mini-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .sempa-mini-table td {
+            padding: 6px 0;
+            font-size: 14px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sempa-mini-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .sempa-mini-table td:last-child {
+            text-align: right;
+            font-weight: 600;
+        }
+
+        .sempa-empty-state {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        textarea.sempa-input {
+            resize: vertical;
+            min-height: 80px;
         }
         
         .sempa-btn {
@@ -204,6 +289,9 @@
             font-weight: 500;
             cursor: pointer;
             transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .sempa-btn:hover {
@@ -220,6 +308,31 @@
             background: var(--primary-light);
             color: var(--primary);
             border-color: var(--primary);
+        }
+
+        .sempa-btn-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .sempa-btn-danger:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        .sempa-btn-ghost {
+            background: transparent;
+            color: var(--primary);
+            border: 1px solid rgba(255, 163, 0, 0.3);
+        }
+
+        .sempa-btn-ghost:hover {
+            background: rgba(255, 163, 0, 0.12);
+        }
+
+        .sempa-btn-small {
+            padding: 6px 10px;
+            font-size: 13px;
         }
 
         .sempa-table {
@@ -296,6 +409,58 @@
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .sempa-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+
+        .sempa-filters .sempa-select {
+            min-width: 180px;
+        }
+
+        .sempa-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .sempa-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            background: var(--surface-alt);
+            color: var(--text-muted);
+        }
+
+        .sempa-badge .sempa-indicator {
+            margin-right: 0;
+        }
+
+        .sempa-badge.low {
+            background: rgba(239, 68, 68, 0.12);
+            color: var(--error);
+        }
+
+        .sempa-badge.medium {
+            background: rgba(245, 158, 11, 0.12);
+            color: var(--warning);
+        }
+
+        .sempa-badge.good {
+            background: rgba(16, 185, 129, 0.12);
+            color: var(--success);
         }
 
         .sempa-modal {
@@ -359,14 +524,19 @@
             .sempa-tabs {
                 flex-direction: column;
             }
-            
+
             .sempa-stats {
                 grid-template-columns: 1fr;
             }
-            
+
             .sempa-table {
                 display: block;
                 overflow-x: auto;
+            }
+
+            .sempa-actions {
+                flex-direction: column;
+                align-items: stretch;
             }
         }
     </style>
@@ -404,15 +574,39 @@
                     <div class="value" id="total-cartons">473</div>
                 </div>
                 <div class="sempa-stat">
+                    <h3>Valeur totale du stock</h3>
+                    <div class="value" id="total-value">€0</div>
+                </div>
+                <div class="sempa-stat">
                     <h3>Alertes</h3>
                     <div class="value" id="alerts-count">0</div>
                 </div>
             </div>
-            
+
             <div id="alerts-container">
                 <!-- Les alertes seront ajoutées ici dynamiquement -->
             </div>
-            
+
+            <div class="sempa-dashboard-grid">
+                <div class="sempa-panel">
+                    <h3>Répartition par catégorie</h3>
+                    <div id="category-summary" class="sempa-empty-state">Aucune donnée à afficher.</div>
+                </div>
+                <div class="sempa-panel">
+                    <h3>Actions recommandées</h3>
+                    <ul id="recommended-actions">
+                        <li class="sempa-empty-state">Analyse en cours...</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="sempa-panel" style="margin-top: 20px;">
+                <h3>Dernières mises à jour</h3>
+                <ul id="recent-updates">
+                    <li class="sempa-empty-state">Aucune mise à jour pour le moment.</li>
+                </ul>
+            </div>
+
             <h3>État des Stocks</h3>
             <table class="sempa-table">
                 <thead>
@@ -459,7 +653,21 @@
                 <input type="text" id="product-search" class="sempa-input" placeholder="Rechercher un produit..." onkeyup="filterProducts()">
                 <button class="sempa-btn" onclick="openModal('new')">Nouveau Produit</button>
             </div>
-            
+
+            <div class="sempa-filters">
+                <select id="filter-category" class="sempa-select" onchange="filterProducts()">
+                    <option value="">Toutes les catégories</option>
+                </select>
+                <select id="filter-status" class="sempa-select" onchange="filterProducts()">
+                    <option value="">Tous les statuts</option>
+                    <option value="good">Stock confortable</option>
+                    <option value="medium">À surveiller</option>
+                    <option value="low">Critique</option>
+                </select>
+                <button class="sempa-btn sempa-btn-ghost sempa-btn-small" type="button" onclick="resetFilters()">Réinitialiser</button>
+                <button class="sempa-btn sempa-btn-secondary sempa-btn-small" type="button" onclick="exportInventory()">Exporter (CSV)</button>
+            </div>
+
             <table class="sempa-table">
                 <thead>
                     <tr>
@@ -468,51 +676,11 @@
                         <th>Cartons en stock</th>
                         <th>Seuil d'alerte</th>
                         <th>Statut</th>
+                        <th>Dernière mise à jour</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
-                <tbody id="products-table">
-                    <tr>
-                        <td>Bouteille PET 1/4 de litre</td>
-                        <td>PET-025L</td>
-                        <td>99</td>
-                        <td>20</td>
-                        <td><span class="sempa-indicator sempa-good"></span> Bon</td>
-                        <td>
-                            <button class="sempa-btn sempa-btn-secondary" onclick="openModal('edit', '1')">Modifier</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Bouteille PET 1/2 litre</td>
-                        <td>PET-050L</td>
-                        <td>83</td>
-                        <td>20</td>
-                        <td><span class="sempa-indicator sempa-good"></span> Bon</td>
-                        <td>
-                            <button class="sempa-btn sempa-btn-secondary" onclick="openModal('edit', '2')">Modifier</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Bouteille PET 1/3 litre</td>
-                        <td>PET-033L</td>
-                        <td>131</td>
-                        <td>20</td>
-                        <td><span class="sempa-indicator sempa-good"></span> Bon</td>
-                        <td>
-                            <button class="sempa-btn sempa-btn-secondary" onclick="openModal('edit', '3')">Modifier</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>Bouteille PET 1 litre</td>
-                        <td>PET-100L</td>
-                        <td>160</td>
-                        <td>20</td>
-                        <td><span class="sempa-indicator sempa-good"></span> Bon</td>
-                        <td>
-                            <button class="sempa-btn sempa-btn-secondary" onclick="openModal('edit', '4')">Modifier</button>
-                        </td>
-                    </tr>
-                </tbody>
+                <tbody id="products-table"></tbody>
             </table>
         </div>
         
@@ -622,6 +790,7 @@
         </div>
     </div>
 
+
     <script>
         // Données de l'application (stockées dans le localStorage)
         let products = JSON.parse(localStorage.getItem('sempa_products')) || [];
@@ -629,6 +798,18 @@
         let currentProductId = null;
 
         const THEME_STORAGE_KEY = 'sempa_theme';
+        const CATEGORY_LABELS = {
+            bouteille: 'Bouteille PET',
+            gobelet: 'Gobelet',
+            nettoyant: 'Nettoyant',
+            piece: 'Pièce détachée',
+            autre: 'Autre'
+        };
+        const STATUS_LABELS = {
+            good: 'Stock confortable',
+            medium: 'À surveiller',
+            low: 'Critique'
+        };
 
         function applyTheme(theme) {
             const isDark = theme === 'dark';
@@ -647,7 +828,6 @@
         const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
         applyTheme(savedTheme === 'dark' ? 'dark' : 'light');
 
-        // Initialisation
         document.addEventListener('DOMContentLoaded', function() {
             initApp();
             loadProducts();
@@ -664,113 +844,138 @@
                 applyTheme(document.body.classList.contains('dark-theme') ? 'dark' : 'light');
             }
 
-            // Gestion des onglets
+            const searchInput = document.getElementById('product-search');
+            if (searchInput) {
+                searchInput.addEventListener('input', filterProducts);
+                searchInput.addEventListener('search', filterProducts);
+            }
+
+            const categoryFilter = document.getElementById('filter-category');
+            if (categoryFilter) {
+                categoryFilter.addEventListener('change', filterProducts);
+            }
+
+            const statusFilter = document.getElementById('filter-status');
+            if (statusFilter) {
+                statusFilter.addEventListener('change', filterProducts);
+            }
+
             document.querySelectorAll('.sempa-tab').forEach(tab => {
                 tab.addEventListener('click', function() {
-                    document.querySelectorAll('.sempa-tab').forEach(t => t.classList.remove('active'));
-                    document.querySelectorAll('.sempa-content').forEach(c => c.classList.remove('active'));
-                    
-                    this.classList.add('active');
-                    document.getElementById(this.dataset.tab).classList.add('active');
+                    switchToTab(this.dataset.tab);
                 });
             });
         });
-        
-        // Initialiser l'application avec les données réelles
+
         function initApp() {
             if (products.length === 0) {
+                const now = new Date();
                 products = [
-                    { 
-                        id: '1', 
-                        name: 'Bouteille PET 1/4 de litre', 
-                        reference: 'PET-025L', 
-                        stock: 99, 
-                        minStock: 20, 
-                        price: 0, 
+                    {
+                        id: '1',
+                        name: 'Bouteille PET 1/4 de litre',
+                        reference: 'PET-025L',
+                        stock: 99,
+                        minStock: 20,
+                        price: 0.08,
                         category: 'bouteille',
                         description: 'Bouteille PET 0.25L',
-                        lastUpdated: new Date().toISOString()
+                        lastUpdated: now.toISOString()
                     },
-                    { 
-                        id: '2', 
-                        name: 'Bouteille PET 1/2 litre', 
-                        reference: 'PET-050L', 
-                        stock: 83, 
-                        minStock: 20, 
-                        price: 0, 
+                    {
+                        id: '2',
+                        name: 'Bouteille PET 1/2 litre',
+                        reference: 'PET-050L',
+                        stock: 83,
+                        minStock: 20,
+                        price: 0.09,
                         category: 'bouteille',
                         description: 'Bouteille PET 0.5L',
-                        lastUpdated: new Date().toISOString()
+                        lastUpdated: now.toISOString()
                     },
-                    { 
-                        id: '3', 
-                        name: 'Bouteille PET 1/3 litre', 
-                        reference: 'PET-033L', 
-                        stock: 131, 
-                        minStock: 20, 
-                        price: 0, 
+                    {
+                        id: '3',
+                        name: 'Bouteille PET 1/3 litre',
+                        reference: 'PET-033L',
+                        stock: 131,
+                        minStock: 20,
+                        price: 0.1,
                         category: 'bouteille',
                         description: 'Bouteille PET 0.33L',
-                        lastUpdated: new Date().toISOString()
+                        lastUpdated: now.toISOString()
                     },
-                    { 
-                        id: '4', 
-                        name: 'Bouteille PET 1 litre', 
-                        reference: 'PET-100L', 
-                        stock: 160, 
-                        minStock: 20, 
-                        price: 0, 
+                    {
+                        id: '4',
+                        name: 'Bouteille PET 1 litre',
+                        reference: 'PET-100L',
+                        stock: 160,
+                        minStock: 20,
+                        price: 0.12,
                         category: 'bouteille',
                         description: 'Bouteille PET 1L',
-                        lastUpdated: new Date().toISOString()
+                        lastUpdated: now.toISOString()
                     }
                 ];
                 saveProducts();
             }
         }
-        
-        // Sauvegarder les produits dans le localStorage
+
         function saveProducts() {
             localStorage.setItem('sempa_products', JSON.stringify(products));
         }
-        
-        // Sauvegarder les mouvements dans le localStorage
+
         function saveMovements() {
             localStorage.setItem('sempa_movements', JSON.stringify(movements));
         }
-        
-        // Charger les produits dans le tableau
+
         function loadProducts() {
             const table = document.getElementById('products-table');
             if (!table) return;
-            
+
             table.innerHTML = '';
-            
+
             const movementSelect = document.getElementById('movement-product');
+            const previousMovementSelection = movementSelect ? movementSelect.value : '';
             if (movementSelect) {
                 movementSelect.innerHTML = '<option value="">Sélectionner un produit</option>';
             }
-            
-            products.forEach(product => {
-                // Ajouter au tableau des produits
+
+            const sortedProducts = [...products].sort((a, b) => {
+                const nameA = (a.name || '').toString();
+                const nameB = (b.name || '').toString();
+                return nameA.localeCompare(nameB, 'fr', { sensitivity: 'base' });
+            });
+
+            sortedProducts.forEach(product => {
                 const status = getStockStatus(product.stock, product.minStock);
-                const statusClass = status === 'low' ? 'sempa-low' : status === 'medium' ? 'sempa-medium' : 'sempa-good';
-                const statusText = status === 'low' ? 'Faible' : status === 'medium' ? 'Moyen' : 'Bon';
-                
+                const statusIndicatorClass = status === 'low' ? 'sempa-low' : status === 'medium' ? 'sempa-medium' : 'sempa-good';
+                const statusText = STATUS_LABELS[status] || status;
+                const formattedUpdated = formatDate(product.lastUpdated);
+
                 const row = document.createElement('tr');
+                row.dataset.category = product.category || 'autre';
+                row.dataset.status = status;
+                row.dataset.name = (product.name || '').toLowerCase();
+                row.dataset.reference = (product.reference || '').toLowerCase();
+
                 row.innerHTML = `
                     <td>${product.name}</td>
                     <td>${product.reference}</td>
-                    <td>${product.stock}</td>
-                    <td>${product.minStock}</td>
-                    <td><span class="sempa-indicator ${statusClass}"></span> ${statusText}</td>
+                    <td>${formatNumber(product.stock)}</td>
+                    <td>${formatNumber(product.minStock)}</td>
+                    <td><span class="sempa-badge ${status}"><span class="sempa-indicator ${statusIndicatorClass}"></span>${statusText}</span></td>
+                    <td>${formattedUpdated}</td>
                     <td>
-                        <button class="sempa-btn sempa-btn-secondary" onclick="openModal('edit', '${product.id}')">Modifier</button>
+                        <div class="sempa-actions">
+                            <button class="sempa-btn sempa-btn-secondary sempa-btn-small" type="button" onclick="openModal('edit', '${product.id}')">Modifier</button>
+                            <button class="sempa-btn sempa-btn-small" type="button" onclick="openQuickMovement('${product.id}', 'in')">Entrée</button>
+                            <button class="sempa-btn sempa-btn-ghost sempa-btn-small" type="button" onclick="openQuickMovement('${product.id}', 'out')">Sortie</button>
+                            <button class="sempa-btn sempa-btn-danger sempa-btn-small" type="button" onclick="deleteProduct('${product.id}')">Supprimer</button>
+                        </div>
                     </td>
                 `;
                 table.appendChild(row);
-                
-                // Ajouter à la liste déroulante des mouvements
+
                 if (movementSelect) {
                     const option = document.createElement('option');
                     option.value = product.id;
@@ -778,21 +983,62 @@
                     movementSelect.appendChild(option);
                 }
             });
+
+            if (movementSelect && previousMovementSelection) {
+                movementSelect.value = previousMovementSelection;
+            }
+
+            populateCategoryFilter();
+            filterProducts();
         }
-        
-        // Charger les mouvements dans le tableau
+
+        function populateCategoryFilter() {
+            const categorySelect = document.getElementById('filter-category');
+            if (!categorySelect) return;
+
+            const currentValue = categorySelect.value;
+            const summary = products.reduce((acc, product) => {
+                const key = product.category || 'autre';
+                if (!acc[key]) {
+                    acc[key] = { count: 0 };
+                }
+                acc[key].count += 1;
+                return acc;
+            }, {});
+
+            const categories = Object.keys(summary).sort((a, b) => {
+                return getCategoryLabel(a).localeCompare(getCategoryLabel(b), 'fr', { sensitivity: 'base' });
+            });
+
+            categorySelect.innerHTML = '<option value="">Toutes les catégories</option>';
+
+            categories.forEach(key => {
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = `${getCategoryLabel(key)} (${summary[key].count})`;
+                categorySelect.appendChild(option);
+            });
+
+            if (currentValue && summary[currentValue]) {
+                categorySelect.value = currentValue;
+            }
+        }
+
+        function getCategoryLabel(key) {
+            return CATEGORY_LABELS[key] || (key ? key.charAt(0).toUpperCase() + key.slice(1) : 'Non classé');
+        }
+
         function loadMovements() {
             const table = document.getElementById('movements-table');
             if (!table) return;
-            
+
             table.innerHTML = '';
-            
-            // Trier les mouvements par date (du plus récent au plus ancien)
+
             const sortedMovements = [...movements].sort((a, b) => new Date(b.date) - new Date(a.date));
-            
+
             sortedMovements.forEach(movement => {
                 const product = products.find(p => p.id === movement.productId);
-                if (!product) return;
+                const productName = product ? product.name : (movement.productName || 'Produit archivé');
 
                 const movementDate = new Date(movement.date);
                 const formattedDate = Number.isNaN(movementDate.getTime()) ? '' : movementDate.toLocaleDateString('fr-FR');
@@ -806,38 +1052,42 @@
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${formattedDate}</td>
-                    <td>${product.name}</td>
+                    <td>${productName}</td>
                     <td>${typeLabel}</td>
                     <td>${quantityDisplay}</td>
-                    <td>${movement.reason}</td>
+                    <td>${movement.reason || '-'}</td>
                 `;
                 table.appendChild(row);
             });
         }
-        
-        // Mettre à jour le tableau de bord
+
         function updateDashboard() {
-            // Calculer les statistiques
             const totalProducts = products.length;
             const lowStockProducts = products.filter(p => getStockStatus(p.stock, p.minStock) === 'low');
-            const lowStockCount = lowStockProducts.length;
+            const mediumStockProducts = products.filter(p => getStockStatus(p.stock, p.minStock) === 'medium');
             const totalCartons = products.reduce((sum, p) => {
                 const stockValue = Number(p.stock);
                 return Number.isFinite(stockValue) ? sum + stockValue : sum;
             }, 0);
-            
-            // Mettre à jour les valeurs
+            const totalValue = products.reduce((sum, p) => {
+                const stockValue = Number(p.stock);
+                const priceValue = Number(p.price);
+                const productValue = (Number.isFinite(stockValue) ? stockValue : 0) * (Number.isFinite(priceValue) ? priceValue : 0);
+                return sum + productValue;
+            }, 0);
+
             const totalProductsEl = document.getElementById('total-products');
             const lowStockCountEl = document.getElementById('low-stock-count');
             const totalCartonsEl = document.getElementById('total-cartons');
             const alertsCountEl = document.getElementById('alerts-count');
-            
+            const totalValueEl = document.getElementById('total-value');
+
             if (totalProductsEl) totalProductsEl.textContent = totalProducts;
-            if (lowStockCountEl) lowStockCountEl.textContent = lowStockCount;
-            if (totalCartonsEl) totalCartonsEl.textContent = totalCartons;
-            if (alertsCountEl) alertsCountEl.textContent = lowStockCount;
-            
-            // Mettre à jour les alertes
+            if (lowStockCountEl) lowStockCountEl.textContent = lowStockProducts.length;
+            if (totalCartonsEl) totalCartonsEl.textContent = formatNumber(totalCartons);
+            if (alertsCountEl) alertsCountEl.textContent = lowStockProducts.length;
+            if (totalValueEl) totalValueEl.textContent = formatCurrency(totalValue);
+
             const alertsContainer = document.getElementById('alerts-container');
             if (alertsContainer) {
                 alertsContainer.innerHTML = '';
@@ -846,23 +1096,146 @@
                     const alertDiv = document.createElement('div');
                     alertDiv.className = 'sempa-alert';
                     alertDiv.innerHTML = '<h3>Stocks Faibles - Attention</h3>';
-                    
-                    lowStockProducts.forEach(product => {
-                        const alertItem = document.createElement('div');
-                        alertItem.className = 'sempa-alert-item';
-                        alertItem.innerHTML = `
-                            <div class="sempa-product-name">${product.name}</div>
-                            <div class="sempa-stock-level">${product.stock} cartons (seuil: ${product.minStock})</div>
-                        `;
-                        alertDiv.appendChild(alertItem);
-                    });
-                    
+
+                    lowStockProducts
+                        .sort((a, b) => a.stock - b.stock)
+                        .forEach(product => {
+                            const alertItem = document.createElement('div');
+                            alertItem.className = 'sempa-alert-item';
+                            alertItem.innerHTML = `
+                                <div class="sempa-product-name">${product.name}</div>
+                                <div class="sempa-stock-level">${formatNumber(product.stock)} cartons (seuil: ${formatNumber(product.minStock)})</div>
+                            `;
+                            alertDiv.appendChild(alertItem);
+                        });
+
                     alertsContainer.appendChild(alertDiv);
+                } else {
+                    const okDiv = document.createElement('div');
+                    okDiv.className = 'sempa-empty-state';
+                    okDiv.textContent = 'Aucune alerte de stock pour le moment.';
+                    alertsContainer.appendChild(okDiv);
                 }
             }
+
+            renderCategorySummary();
+            renderRecommendations(lowStockProducts, mediumStockProducts);
+            renderRecentUpdates();
         }
-        
-        // Obtenir le statut du stock
+
+        function renderCategorySummary() {
+            const container = document.getElementById('category-summary');
+            if (!container) return;
+
+            if (products.length === 0) {
+                container.classList.add('sempa-empty-state');
+                container.textContent = 'Aucun produit enregistré.';
+                return;
+            }
+
+            container.classList.remove('sempa-empty-state');
+            const summary = products.reduce((acc, product) => {
+                const key = product.category || 'autre';
+                if (!acc[key]) {
+                    acc[key] = { products: 0, cartons: 0 };
+                }
+                acc[key].products += 1;
+                acc[key].cartons += Number(product.stock) || 0;
+                return acc;
+            }, {});
+
+            const categories = Object.keys(summary).sort((a, b) => {
+                return getCategoryLabel(a).localeCompare(getCategoryLabel(b), 'fr', { sensitivity: 'base' });
+            });
+
+            const table = document.createElement('table');
+            table.className = 'sempa-mini-table';
+
+            categories.forEach(key => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${getCategoryLabel(key)} (${summary[key].products})</td>
+                    <td>${formatNumber(summary[key].cartons)} cartons</td>
+                `;
+                table.appendChild(row);
+            });
+
+            container.innerHTML = '';
+            container.appendChild(table);
+        }
+
+        function renderRecommendations(lowStockProducts, mediumStockProducts) {
+            const list = document.getElementById('recommended-actions');
+            if (!list) return;
+
+            list.innerHTML = '';
+
+            if (lowStockProducts.length === 0 && mediumStockProducts.length === 0) {
+                const li = document.createElement('li');
+                li.className = 'sempa-empty-state';
+                li.textContent = 'Stock sous contrôle. Planifiez une vérification hebdomadaire.';
+                list.appendChild(li);
+                return;
+            }
+
+            lowStockProducts
+                .sort((a, b) => (a.stock / Math.max(a.minStock || 1, 1)) - (b.stock / Math.max(b.minStock || 1, 1)))
+                .slice(0, 4)
+                .forEach(product => {
+                    const stockValue = Number(product.stock) || 0;
+                    const minStockValue = Number(product.minStock) || 0;
+                    const deficit = Math.max(minStockValue - stockValue, 0);
+                    const target = Math.max(minStockValue * 1.5, minStockValue + 10);
+                    const reorderQty = Math.max(Math.ceil(target - stockValue), deficit + 1);
+
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <span>${product.name}</span>
+                        <span class="sempa-text-muted">Commander ${formatNumber(reorderQty)} cartons</span>
+                    `;
+                    list.appendChild(li);
+                });
+
+            if (mediumStockProducts.length > 0) {
+                const product = [...mediumStockProducts].sort((a, b) => a.stock - b.stock)[0];
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <span>${product.name}</span>
+                    <span class="sempa-text-muted">Surveiller (${formatNumber(product.stock)} / seuil ${formatNumber(product.minStock)})</span>
+                `;
+                list.appendChild(li);
+            }
+        }
+
+        function renderRecentUpdates() {
+            const list = document.getElementById('recent-updates');
+            if (!list) return;
+
+            list.innerHTML = '';
+
+            const updatedProducts = products
+                .filter(product => product.lastUpdated)
+                .sort((a, b) => new Date(b.lastUpdated) - new Date(a.lastUpdated))
+                .slice(0, 5);
+
+            if (updatedProducts.length === 0) {
+                const li = document.createElement('li');
+                li.className = 'sempa-empty-state';
+                li.textContent = 'Aucune mise à jour pour le moment.';
+                list.appendChild(li);
+                return;
+            }
+
+            updatedProducts.forEach(product => {
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <span>${product.name}</span>
+                    <span class="sempa-text-muted">${formatRelativeDate(product.lastUpdated)}</span>
+                `;
+                list.appendChild(li);
+            });
+        }
+
         function getStockStatus(stock, minStock) {
             const parsedStock = Number(stock);
             const parsedMinStock = Number(minStock);
@@ -877,39 +1250,57 @@
             if (stockValue <= minStockValue) return 'medium';
             return 'good';
         }
-        
-        // Filtrer les produits
+
         function filterProducts() {
-            const searchText = document.getElementById('product-search').value.toLowerCase();
+            const searchInput = document.getElementById('product-search');
+            const categorySelect = document.getElementById('filter-category');
+            const statusSelect = document.getElementById('filter-status');
+
+            const searchText = searchInput ? searchInput.value.trim().toLowerCase() : '';
+            const selectedCategory = categorySelect ? categorySelect.value : '';
+            const selectedStatus = statusSelect ? statusSelect.value : '';
+
             const table = document.getElementById('products-table');
             if (!table) return;
-            
+
             const rows = table.getElementsByTagName('tr');
-            
+
             for (let i = 0; i < rows.length; i++) {
-                const name = rows[i].getElementsByTagName('td')[0];
-                if (name) {
-                    const txtValue = name.textContent || name.innerText;
-                    if (txtValue.toLowerCase().indexOf(searchText) > -1) {
-                        rows[i].style.display = '';
-                    } else {
-                        rows[i].style.display = 'none';
-                    }
-                }
+                const row = rows[i];
+                const rowCategory = row.dataset.category || '';
+                const rowStatus = row.dataset.status || '';
+                const rowName = row.dataset.name || '';
+                const rowReference = row.dataset.reference || '';
+
+                const matchesSearch = !searchText || rowName.includes(searchText) || rowReference.includes(searchText);
+                const matchesCategory = !selectedCategory || rowCategory === selectedCategory;
+                const matchesStatus = !selectedStatus || rowStatus === selectedStatus;
+
+                row.style.display = matchesSearch && matchesCategory && matchesStatus ? '' : 'none';
             }
         }
-        
-        // Ouvrir le modal pour créer/modifier un produit
+
+        function resetFilters() {
+            const searchInput = document.getElementById('product-search');
+            const categorySelect = document.getElementById('filter-category');
+            const statusSelect = document.getElementById('filter-status');
+
+            if (searchInput) searchInput.value = '';
+            if (categorySelect) categorySelect.value = '';
+            if (statusSelect) statusSelect.value = '';
+
+            filterProducts();
+        }
+
         function openModal(action, productId = null) {
             currentProductId = productId;
             const modal = document.getElementById('product-modal');
             const title = document.getElementById('modal-title');
-            
+
             if (!modal || !title) return;
-            
+
             if (action === 'new') {
                 title.textContent = 'Nouveau Produit';
-                // Réinitialiser le formulaire
                 document.getElementById('product-name').value = '';
                 document.getElementById('product-ref').value = '';
                 document.getElementById('product-stock').value = '0';
@@ -926,30 +1317,34 @@
                     document.getElementById('product-stock').value = product.stock;
                     document.getElementById('product-minstock').value = product.minStock;
                     document.getElementById('product-price').value = product.price;
-                    document.getElementById('product-category').value = product.category;
+                    document.getElementById('product-category').value = product.category || 'autre';
                     document.getElementById('product-desc').value = product.description || '';
                 }
             }
-            
+
             modal.style.display = 'flex';
+
+            const nameInput = document.getElementById('product-name');
+            if (nameInput) {
+                setTimeout(() => nameInput.focus(), 100);
+            }
         }
-        
-        // Fermer le modal
+
         function closeModal() {
             const modal = document.getElementById('product-modal');
             if (modal) {
                 modal.style.display = 'none';
             }
+            currentProductId = null;
         }
-        
-        // Sauvegarder un produit
+
         function saveProduct() {
             const name = document.getElementById('product-name').value.trim();
             const reference = document.getElementById('product-ref').value.trim();
             const stockInput = Number.parseInt(document.getElementById('product-stock').value, 10);
             const minStockInput = Number.parseInt(document.getElementById('product-minstock').value, 10);
             let priceInput = Number.parseFloat(document.getElementById('product-price').value);
-            const category = document.getElementById('product-category').value;
+            const category = document.getElementById('product-category').value || 'autre';
             const description = document.getElementById('product-desc').value.trim();
 
             if (!name || !reference) {
@@ -977,9 +1372,8 @@
             const stock = stockInput;
             const minStock = minStockInput;
             const price = Math.round(priceInput * 100) / 100;
-            
+
             if (currentProductId) {
-                // Modification d'un produit existant
                 const index = products.findIndex(p => p.id === currentProductId);
                 if (index !== -1) {
                     products[index] = {
@@ -993,9 +1387,10 @@
                         description,
                         lastUpdated: new Date().toISOString()
                     };
+
+                    movements = movements.map(movement => movement.productId === currentProductId ? { ...movement, productName: name } : movement);
                 }
             } else {
-                // Création d'un nouveau produit
                 const newId = Date.now().toString();
                 products.push({
                     id: newId,
@@ -1009,16 +1404,16 @@
                     lastUpdated: new Date().toISOString()
                 });
             }
-            
+
             saveProducts();
+            saveMovements();
             loadProducts();
             updateDashboard();
             closeModal();
-            
+
             alert('Produit enregistré avec succès');
         }
-        
-        // Ajouter un mouvement de stock
+
         function addStockMovement() {
             const productId = document.getElementById('movement-product').value;
             const type = document.getElementById('movement-type').value;
@@ -1034,7 +1429,7 @@
                 (type === 'adjust' ? quantityInput < 0 : quantityInput <= 0);
 
             if (quantityIsInvalid) {
-                alert("Veuillez saisir une quantité valide.");
+                alert('Veuillez saisir une quantité valide.');
                 return;
             }
 
@@ -1044,14 +1439,13 @@
             }
 
             const quantity = quantityInput;
-            
+
             const productIndex = products.findIndex(p => p.id === productId);
             if (productIndex === -1) {
                 alert('Produit non trouvé');
                 return;
             }
-            
-            // Calculer le nouveau stock
+
             let newStock = products[productIndex].stock;
             if (type === 'in') {
                 newStock += quantity;
@@ -1064,35 +1458,196 @@
             } else if (type === 'adjust') {
                 newStock = quantity;
             }
-            
-            // Mettre à jour le produit
-            products[productIndex].stock = newStock;
-            products[productIndex].lastUpdated = new Date().toISOString();
-            
-            // Enregistrer le mouvement
+
+            products[productIndex] = {
+                ...products[productIndex],
+                stock: newStock,
+                lastUpdated: new Date().toISOString()
+            };
+
             movements.push({
                 id: Date.now().toString(),
                 productId,
+                productName: products[productIndex].name,
                 type,
                 quantity,
                 reason,
                 date: new Date().toISOString()
             });
-            
+
             saveProducts();
             saveMovements();
             loadProducts();
             loadMovements();
             updateDashboard();
-            
-            // Réinitialiser le formulaire
+
             document.getElementById('movement-quantity').value = '1';
             document.getElementById('movement-reason').value = '';
-            
+
             alert('Mouvement de stock enregistré avec succès');
         }
-        
-        // Fermer le modal en cliquant à l'extérieur
+
+        function openQuickMovement(productId, type = 'in') {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+
+            switchToTab('movements');
+
+            const productSelect = document.getElementById('movement-product');
+            if (productSelect) {
+                productSelect.value = productId;
+            }
+
+            const typeSelect = document.getElementById('movement-type');
+            if (typeSelect) {
+                typeSelect.value = type;
+            }
+
+            const quantityInput = document.getElementById('movement-quantity');
+            if (quantityInput) {
+                quantityInput.value = '1';
+                quantityInput.focus();
+            }
+
+            const reasonInput = document.getElementById('movement-reason');
+            if (reasonInput && !reasonInput.value) {
+                const base = product.reference ? ` ${product.reference}` : '';
+                if (type === 'in') {
+                    reasonInput.value = `Réception${base}`.trim();
+                } else if (type === 'out') {
+                    reasonInput.value = `Sortie${base}`.trim();
+                } else {
+                    reasonInput.value = `Ajustement${base}`.trim();
+                }
+            }
+        }
+
+        function switchToTab(tabId) {
+            document.querySelectorAll('.sempa-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.tab === tabId);
+            });
+
+            document.querySelectorAll('.sempa-content').forEach(content => {
+                content.classList.toggle('active', content.id === tabId);
+            });
+        }
+
+        function deleteProduct(productId) {
+            const product = products.find(p => p.id === productId);
+            if (!product) return;
+
+            const confirmation = confirm(`Voulez-vous vraiment supprimer "${product.name}" du catalogue ?`);
+            if (!confirmation) {
+                return;
+            }
+
+            products = products.filter(p => p.id !== productId);
+            movements = movements.map(movement => movement.productId === productId ? { ...movement, productName: movement.productName || product.name } : movement);
+
+            saveProducts();
+            saveMovements();
+            loadProducts();
+            loadMovements();
+            updateDashboard();
+
+            alert('Produit supprimé avec succès');
+        }
+
+        function exportInventory() {
+            if (!products.length) {
+                alert('Aucun produit à exporter.');
+                return;
+            }
+
+            const headers = [
+                'Nom',
+                'Référence',
+                'Catégorie',
+                'Stock (cartons)',
+                'Seuil',
+                'Prix unitaire (€)',
+                'Valeur stock (€)',
+                'Dernière mise à jour'
+            ];
+
+            const rows = products.map(product => {
+                const stockValue = Number(product.stock) || 0;
+                const priceValue = Number(product.price) || 0;
+                const stockWorth = stockValue * priceValue;
+
+                return [
+                    wrapCsvValue(product.name),
+                    wrapCsvValue(product.reference),
+                    wrapCsvValue(getCategoryLabel(product.category || 'autre')),
+                    wrapCsvValue(formatNumber(stockValue)),
+                    wrapCsvValue(formatNumber(product.minStock)),
+                    wrapCsvValue(priceValue.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })),
+                    wrapCsvValue(stockWorth.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })),
+                    wrapCsvValue(formatDate(product.lastUpdated))
+                ].join(';');
+            });
+
+            const csvContent = [headers.join(';'), ...rows].join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `inventaire-sempa-${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function wrapCsvValue(value) {
+            if (value === null || value === undefined) {
+                return '""';
+            }
+            const stringValue = String(value).replace(/"/g, '""');
+            return `"${stringValue}"`;
+        }
+
+        function formatNumber(value) {
+            const number = Number(value);
+            if (!Number.isFinite(number)) return '0';
+            return number.toLocaleString('fr-FR');
+        }
+
+        function formatCurrency(value) {
+            const number = Number(value);
+            if (!Number.isFinite(number)) return '€0';
+            return number.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'Non renseigné';
+            const date = new Date(dateString);
+            if (Number.isNaN(date.getTime())) return 'Non renseigné';
+            return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+        }
+
+        function formatRelativeDate(dateString) {
+            if (!dateString) return 'Date inconnue';
+            const date = new Date(dateString);
+            if (Number.isNaN(date.getTime())) return 'Date inconnue';
+
+            const now = new Date();
+            const diffMs = now.getTime() - date.getTime();
+            const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+            if (diffDays <= 0) {
+                return `Aujourd'hui (${date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })})`;
+            }
+            if (diffDays === 1) {
+                return 'Il y a 1 jour';
+            }
+            if (diffDays < 7) {
+                return `Il y a ${diffDays} jours`;
+            }
+            return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+        }
+
         window.onclick = function(event) {
             const modal = document.getElementById('product-modal');
             if (event.target === modal) {
@@ -1100,5 +1655,6 @@
             }
         };
     </script>
+
 </body>
 </html>
