@@ -98,6 +98,9 @@
 
         .form-grid { display: grid; gap: 1.25rem; }
         .form-group { display: flex; flex-direction: column; }
+        .input-with-action { display: flex; gap: 0.5rem; align-items: stretch; }
+        .input-with-action input { flex: 1; }
+        .input-with-action button { white-space: nowrap; padding-inline: 1rem; }
         
         label {
             font-weight: 600;
@@ -171,6 +174,12 @@
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            pointer-events: none;
         }
 
         button.primary {
@@ -292,7 +301,10 @@
                     </div>
                     <div class="form-group">
                         <label for="titre">Titre de l'objet</label>
-                        <input type="text" id="titre" placeholder="Généré via la photo..." required>
+                        <div class="input-with-action">
+                            <input type="text" id="titre" placeholder="Généré via la photo..." required>
+                            <button type="button" class="secondary" id="generateTitleBtn" disabled title="Générer automatiquement depuis la photo">Générer</button>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="casier">Casier / Emplacement</label>
@@ -336,10 +348,6 @@
                     <div class="stat-card">
                         <h3><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /></svg> C.A.</h3>
                         <div class="value" id="statCA">0 €</div>
-                    </div>
-                    <div class="stat-card">
-                        <h3><svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> Marge</h3>
-                        <div class="value" id="statMarge">0 €</div>
                     </div>
                 </div>
             </div>
@@ -425,6 +433,7 @@
             previewContainer: document.getElementById('photoPreviewContainer'),
             previewImage: document.getElementById('photoPreview'),
             titre: document.getElementById('titre'),
+            generateTitleBtn: document.getElementById('generateTitleBtn'),
             casier: document.getElementById('casier'),
             prixAchat: document.getElementById('prixAchat'),
             dateAchat: document.getElementById('dateAchat'),
@@ -445,21 +454,28 @@
             statEnStock: document.getElementById('statEnStock'),
             statVendus: document.getElementById('statVendus'),
             statCA: document.getElementById('statCA'),
-            statMarge: document.getElementById('statMarge'),
         };
 
         const state = {
             items: [],
             filters: { casier: 'all', status: 'all', search: '' },
             isEditMode: false,
+            isGeneratingTitle: false,
         };
+
+        function updateGenerateButtonState() {
+            const hasImage = Boolean(el.previewImage.dataset?.imageData);
+            el.generateTitleBtn.disabled = !hasImage || !mobilenetModel || state.isGeneratingTitle;
+        }
 
         async function loadMobilenet() {
             try {
                 mobilenetModel = await mobilenet.load();
                 console.log('MobileNet model loaded.');
+                updateGenerateButtonState();
             } catch (error) {
                 console.warn('Could not load Mobilenet model:', error);
+                updateGenerateButtonState();
             }
         }
 
@@ -479,11 +495,20 @@
             el.previewImage.src = '';
             delete el.previewImage.dataset.imageData;
             exitEditMode();
+            state.isGeneratingTitle = false;
+            updateGenerateButtonState();
         }
 
         async function handlePhotoChange(event) {
             const file = event.target.files?.[0];
-            if (!file) return;
+            if (!file) {
+                el.previewContainer.style.display = 'none';
+                el.previewImage.src = '';
+                delete el.previewImage.dataset.imageData;
+                state.isGeneratingTitle = false;
+                updateGenerateButtonState();
+                return;
+            }
 
             const reader = new FileReader();
             reader.onload = e => {
@@ -491,20 +516,29 @@
                 el.previewImage.src = dataUrl;
                 el.previewContainer.style.display = 'block';
                 el.previewImage.dataset.imageData = dataUrl;
+                updateGenerateButtonState();
                 generateTitle(el.previewImage);
             };
             reader.readAsDataURL(file);
         }
 
         async function generateTitle(imageEl) {
-            if (!mobilenetModel) {
-                el.titre.placeholder = "Modèle IA non chargé...";
+            if (!imageEl?.dataset?.imageData) {
+                updateGenerateButtonState();
                 return;
             }
-            
+
+            if (!mobilenetModel) {
+                el.titre.placeholder = "Modèle IA non chargé...";
+                updateGenerateButtonState();
+                return;
+            }
+
             el.titre.value = "";
             el.titre.placeholder = "Analyse de l'image...";
             el.titre.disabled = true;
+            state.isGeneratingTitle = true;
+            updateGenerateButtonState();
 
             try {
                 const results = await mobilenetModel.classify(imageEl);
@@ -520,6 +554,8 @@
                 el.titre.placeholder = "Erreur d'analyse";
             } finally {
                 el.titre.disabled = false;
+                state.isGeneratingTitle = false;
+                updateGenerateButtonState();
                 if (!el.titre.value) el.titre.placeholder = "Généré via la photo...";
             }
         }
@@ -542,7 +578,10 @@
                 el.previewContainer.style.display = 'block';
             } else {
                 el.previewContainer.style.display = 'none';
+                delete el.previewImage.dataset.imageData;
             }
+
+            updateGenerateButtonState();
 
             el.formTitle.lastChild.textContent = " Modifier l'objet";
             el.submitBtn.textContent = 'Sauvegarder';
@@ -557,6 +596,7 @@
             el.formTitle.lastChild.textContent = " Ajouter un objet";
             el.submitBtn.textContent = 'Ajouter à l\'inventaire';
             el.cancelEditBtn.hidden = true;
+            updateGenerateButtonState();
         }
 
         function render() {
@@ -617,12 +657,10 @@
             const soldItems = state.items.filter(item => item.vendu);
             const stockCount = state.items.length - soldItems.length;
             const revenue = soldItems.reduce((sum, item) => sum + (Number(item.prixVente) || 0), 0);
-            const profit = revenue - soldItems.reduce((sum, item) => sum + (Number(item.prixAchat) || 0), 0);
-            
+
             el.statEnStock.textContent = stockCount;
             el.statVendus.textContent = soldItems.length;
             el.statCA.textContent = `${revenue.toFixed(2)} €`;
-            el.statMarge.textContent = `${profit.toFixed(2)} €`;
         }
 
         // --- Event Listeners & Initialization ---
@@ -653,6 +691,7 @@
 
             el.cancelEditBtn.addEventListener('click', resetForm);
             el.photoInput.addEventListener('change', handlePhotoChange);
+            el.generateTitleBtn.addEventListener('click', () => generateTitle(el.previewImage));
             ['searchInput', 'filterCasier', 'filterStatus'].forEach(id => {
                 document.getElementById(id).addEventListener(id === 'searchInput' ? 'input' : 'change', e => {
                     const filterKey = id.replace('filter', '').toLowerCase().replace('searchinput', 'search');
@@ -687,6 +726,8 @@
                 render();
                 el.saleModal.classList.remove('visible');
             });
+
+            updateGenerateButtonState();
         }
         
         function openSaleModal(item) {
