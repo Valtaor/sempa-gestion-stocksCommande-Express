@@ -8,14 +8,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --fond: #f3ede4;
-            --accent: #b76e79;
-            --accent-fonce: #8c4a52;
-            --vert: #6d9773;
-            --bleu: #3b6978;
-            --texte: #2f3437;
-            --clair: #fff9f2;
-            --ombre: rgba(75, 55, 39, 0.15);
+            --fond: #f5efe6;
+            --accent: #8a6a47;
+            --accent-fonce: #5c4430;
+            --accent-doux: #c7b08a;
+            --vert: #5f7a61;
+            --bleu: #3d5467;
+            --texte: #2e2a27;
+            --clair: #fbf8f3;
+            --bord: #d8c8b2;
+            --ombre: rgba(49, 39, 30, 0.1);
         }
 
         * {
@@ -24,37 +26,39 @@
 
         body {
             margin: 0;
-            background: radial-gradient(circle at top, #f9f4ec 0%, #f1e5d3 100%);
+            background: var(--fond);
             color: var(--texte);
             font-family: 'Work Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             min-height: 100vh;
+            line-height: 1.6;
         }
 
         header {
-            background: linear-gradient(135deg, rgba(183, 110, 121, 0.95), rgba(59, 105, 120, 0.95));
-            padding: 40px 20px 50px;
-            color: #fff;
+            background: var(--accent);
+            padding: 40px 20px 48px;
+            color: #fff7eb;
             text-align: center;
-            box-shadow: 0 10px 35px rgba(59, 105, 120, 0.25);
+            border-bottom: 6px solid var(--accent-fonce);
         }
 
         header h1 {
             margin: 0;
             font-family: 'Playfair Display', serif;
-            font-size: clamp(2.1rem, 2vw + 2rem, 3.6rem);
-            letter-spacing: 2px;
+            font-size: clamp(2.2rem, 2vw + 2rem, 3.4rem);
+            letter-spacing: 1.5px;
         }
 
         header p {
             max-width: 720px;
             margin: 12px auto 0;
             font-size: 1rem;
-            opacity: 0.9;
+            color: rgba(255, 247, 235, 0.85);
         }
 
         .container {
             width: min(1200px, 92vw);
             margin: -40px auto 60px;
+            position: relative;
         }
 
         .card {
@@ -62,14 +66,14 @@
             border-radius: 16px;
             padding: clamp(20px, 2vw + 16px, 36px);
             margin-bottom: 28px;
-            box-shadow: 0 18px 40px var(--ombre);
-            border: 1px solid rgba(183, 110, 121, 0.18);
+            box-shadow: 0 12px 30px var(--ombre);
+            border: 1px solid var(--bord);
         }
 
         h2 {
             font-family: 'Playfair Display', serif;
             font-size: clamp(1.6rem, 1vw + 1.4rem, 2rem);
-            color: var(--bleu);
+            color: var(--accent-fonce);
             margin: 0 0 20px;
             display: flex;
             align-items: center;
@@ -81,10 +85,10 @@
             width: 36px;
             height: 36px;
             border-radius: 10px;
-            background: rgba(183, 110, 121, 0.18);
+            background: rgba(90, 68, 48, 0.1);
             align-items: center;
             justify-content: center;
-            color: var(--accent);
+            color: var(--accent-fonce);
             font-size: 0.95rem;
         }
 
@@ -99,6 +103,7 @@
             font-weight: 600;
             margin-bottom: 8px;
             font-size: 0.92rem;
+            color: var(--bleu);
         }
 
         input[type="text"],
@@ -108,7 +113,7 @@
         textarea {
             width: 100%;
             padding: 12px 14px;
-            border: 1px solid rgba(47, 52, 55, 0.18);
+            border: 1px solid rgba(46, 42, 39, 0.18);
             border-radius: 12px;
             background: #fff;
             font-size: 0.98rem;
@@ -120,13 +125,13 @@
         select:focus,
         textarea:focus {
             outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(183, 110, 121, 0.2);
+            border-color: var(--accent-fonce);
+            box-shadow: 0 0 0 3px rgba(138, 106, 71, 0.15);
         }
 
         input[type="file"] {
-            border: 2px dashed rgba(183, 110, 121, 0.4);
-            background: rgba(255, 249, 242, 0.7);
+            border: 2px dashed rgba(92, 68, 48, 0.25);
+            background: rgba(251, 248, 243, 0.7);
             padding: 18px;
             border-radius: 16px;
             cursor: pointer;
@@ -136,7 +141,7 @@
             margin-top: 16px;
             border-radius: 14px;
             overflow: hidden;
-            box-shadow: 0 12px 22px rgba(47, 52, 55, 0.18);
+            box-shadow: 0 10px 20px rgba(46, 42, 39, 0.12);
             max-width: 200px;
             display: none;
             position: relative;
@@ -150,8 +155,8 @@
 
         .title-suggestion {
             font-size: 0.9rem;
-            color: var(--bleu);
-            background: rgba(109, 151, 115, 0.12);
+            color: var(--accent-fonce);
+            background: rgba(199, 176, 138, 0.22);
             padding: 10px 14px;
             border-radius: 12px;
             margin-top: 12px;
@@ -172,28 +177,30 @@
             font-size: 0.98rem;
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
         }
 
         button.primary {
             background: linear-gradient(135deg, var(--accent), var(--accent-fonce));
-            color: #fff;
-            box-shadow: 0 12px 22px rgba(183, 110, 121, 0.3);
+            color: #fff7eb;
+            box-shadow: 0 10px 20px rgba(92, 68, 48, 0.22);
         }
 
         button.secondary {
-            background: rgba(109, 151, 115, 0.18);
+            background: rgba(95, 122, 97, 0.12);
             color: var(--vert);
+            border: 1px solid rgba(95, 122, 97, 0.35);
         }
 
         button.danger {
-            background: rgba(231, 111, 81, 0.18);
-            color: #e76f51;
+            background: rgba(179, 70, 55, 0.14);
+            color: #b34637;
+            border: 1px solid rgba(179, 70, 55, 0.3);
         }
 
         button:hover {
             transform: translateY(-1px);
-            box-shadow: 0 16px 26px rgba(47, 52, 55, 0.18);
+            box-shadow: 0 16px 30px rgba(46, 42, 39, 0.18);
         }
 
         .filters {
@@ -215,10 +222,11 @@
             border-radius: 16px;
             overflow: hidden;
             font-size: 0.95rem;
+            border: 1px solid var(--bord);
         }
 
         thead {
-            background: rgba(59, 105, 120, 0.12);
+            background: rgba(61, 84, 103, 0.15);
             color: var(--bleu);
         }
 
@@ -226,12 +234,12 @@
         td {
             padding: 14px 16px;
             text-align: left;
-            border-bottom: 1px solid rgba(47, 52, 55, 0.08);
+            border-bottom: 1px solid rgba(46, 42, 39, 0.08);
             vertical-align: middle;
         }
 
         tbody tr:hover {
-            background: rgba(183, 110, 121, 0.05);
+            background: rgba(199, 176, 138, 0.15);
         }
 
         .thumbnail {
@@ -239,7 +247,7 @@
             height: 58px;
             border-radius: 10px;
             object-fit: cover;
-            border: 1px solid rgba(47, 52, 55, 0.08);
+            border: 1px solid rgba(46, 42, 39, 0.1);
         }
 
         .status {
@@ -253,19 +261,19 @@
         }
 
         .status.on-sale {
-            background: rgba(109, 151, 115, 0.16);
+            background: rgba(95, 122, 97, 0.15);
             color: var(--vert);
         }
 
         .status.sold {
-            background: rgba(183, 110, 121, 0.18);
+            background: rgba(138, 106, 71, 0.18);
             color: var(--accent-fonce);
         }
 
         .empty-state {
             text-align: center;
             padding: 40px 20px;
-            color: rgba(47, 52, 55, 0.6);
+            color: rgba(46, 42, 39, 0.6);
         }
 
         .stats-grid {
@@ -275,75 +283,58 @@
         }
 
         .stat-card {
-            background: linear-gradient(135deg, rgba(59, 105, 120, 0.12), rgba(183, 110, 121, 0.15));
+            background: linear-gradient(135deg, rgba(199, 176, 138, 0.22), rgba(61, 84, 103, 0.12));
             border-radius: 18px;
             padding: 22px;
-            border: 1px solid rgba(47, 52, 55, 0.12);
+            border: 1px solid rgba(46, 42, 39, 0.12);
         }
 
         .stat-card h3 {
             margin: 0 0 10px;
             font-family: 'Playfair Display', serif;
-            color: var(--bleu);
+            color: var(--accent-fonce);
         }
 
         .stat-value {
             font-size: 1.9rem;
             font-weight: 600;
-            color: var(--accent-fonce);
+            color: var(--bleu);
         }
 
         .stat-note {
             font-size: 0.85rem;
-            color: rgba(47, 52, 55, 0.6);
+            color: rgba(46, 42, 39, 0.6);
             margin-top: 6px;
-        }
-
-        .modal {
-            position: fixed;
-            inset: 0;
-            background: rgba(15, 19, 23, 0.35);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            z-index: 10;
-        }
-
-        .modal-content {
-            background: var(--clair);
-            border-radius: 16px;
-            padding: 24px;
-            width: min(420px, 92vw);
-            box-shadow: 0 24px 38px rgba(47, 52, 55, 0.25);
-            position: relative;
-            border: 1px solid rgba(183, 110, 121, 0.18);
-        }
-
-        .modal h3 {
-            margin-top: 0;
-            font-family: 'Playfair Display', serif;
-            color: var(--bleu);
-        }
-
-        .close-modal {
-            position: absolute;
-            top: 16px;
-            right: 16px;
-            background: none;
-            border: none;
-            font-size: 1.2rem;
-            cursor: pointer;
         }
 
         .tag {
             display: inline-block;
             padding: 4px 10px;
             border-radius: 999px;
-            background: rgba(59, 105, 120, 0.12);
+            background: rgba(199, 176, 138, 0.22);
             color: var(--bleu);
             font-size: 0.8rem;
             margin-right: 6px;
+        }
+
+        .sale-form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .sale-form-grid .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .sale-form-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 22px;
         }
 
         @media (max-width: 768px) {
@@ -455,8 +446,44 @@
             </div>
         </section>
 
+        <section class="card" id="salePanel" aria-labelledby="sale-panel-title" hidden>
+            <h2 id="sale-panel-title"><span>③</span>Gestion des ventes</h2>
+            <p>Renseignez les informations de vente sans fenêtre contextuelle. Sélectionnez un objet pour préremplir ce formulaire.</p>
+            <form id="saleForm">
+                <input type="hidden" id="saleItemId">
+                <div class="sale-form-grid">
+                    <div class="form-group">
+                        <label for="saleTitle">Objet sélectionné</label>
+                        <input type="text" id="saleTitle" readonly placeholder="Sélectionnez une fiche dans le tableau">
+                    </div>
+                    <div class="form-group">
+                        <label for="salePrice">Prix de vente (€)</label>
+                        <input type="number" id="salePrice" min="0" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="saleDate">Date de vente</label>
+                        <input type="date" id="saleDate">
+                    </div>
+                    <div class="form-group">
+                        <label for="salePlatform">Plateforme</label>
+                        <select id="salePlatform">
+                            <option value="eBay">eBay</option>
+                            <option value="Vinted">Vinted</option>
+                            <option value="Leboncoin">Leboncoin</option>
+                            <option value="Autre" selected>Autre</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="sale-form-actions">
+                    <button type="button" class="secondary" id="markAvailable">Repasser en disponible</button>
+                    <button type="button" class="secondary" id="cancelSale">Annuler</button>
+                    <button type="submit" class="primary">Enregistrer la vente</button>
+                </div>
+            </form>
+        </section>
+
         <section class="card" aria-labelledby="stats-globales">
-            <h2 id="stats-globales"><span>③</span>Statistiques &amp; synthèse</h2>
+            <h2 id="stats-globales"><span>④</span>Statistiques &amp; synthèse</h2>
             <div class="stats-grid">
                 <div class="stat-card">
                     <h3>Objets en stock</h3>
@@ -501,37 +528,6 @@
         <span class="tag"></span>
     </template>
 
-    <div class="modal" id="saleModal" hidden role="dialog" aria-modal="true" aria-labelledby="saleModalTitle">
-        <div class="modal-content">
-            <button class="close-modal" id="closeModal" aria-label="Fermer">✕</button>
-            <h3 id="saleModalTitle">Renseigner la vente</h3>
-            <form id="saleForm">
-                <input type="hidden" id="saleItemId">
-                <div class="form-group">
-                    <label for="salePrice">Prix de vente (€)</label>
-                    <input type="number" id="salePrice" min="0" step="0.01">
-                </div>
-                <div class="form-group">
-                    <label for="saleDate">Date de vente</label>
-                    <input type="date" id="saleDate">
-                </div>
-                <div class="form-group">
-                    <label for="salePlatform">Plateforme</label>
-                    <select id="salePlatform">
-                        <option value="eBay">eBay</option>
-                        <option value="Vinted">Vinted</option>
-                        <option value="Leboncoin">Leboncoin</option>
-                        <option value="Autre">Autre</option>
-                    </select>
-                </div>
-                <div class="actions">
-                    <button type="button" class="secondary" id="markAvailable">Remettre en stock</button>
-                    <button type="submit" class="primary">Valider</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.16.0/dist/tf.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.0" defer></script>
     <script>
@@ -559,14 +555,15 @@
             filterStatus: document.getElementById('filterStatus'),
             searchInput: document.getElementById('searchInput'),
             exportCsv: document.getElementById('exportCsv'),
-            saleModal: document.getElementById('saleModal'),
-            closeModal: document.getElementById('closeModal'),
+            salePanel: document.getElementById('salePanel'),
             saleForm: document.getElementById('saleForm'),
             saleItemId: document.getElementById('saleItemId'),
+            saleTitle: document.getElementById('saleTitle'),
             salePrice: document.getElementById('salePrice'),
             saleDate: document.getElementById('saleDate'),
             salePlatform: document.getElementById('salePlatform'),
             markAvailable: document.getElementById('markAvailable'),
+            cancelSale: document.getElementById('cancelSale'),
             statEnStock: document.getElementById('statEnStock'),
             statVendus: document.getElementById('statVendus'),
             statCA: document.getElementById('statCA'),
@@ -756,7 +753,7 @@
                 saleBtn.className = 'secondary';
                 saleBtn.type = 'button';
                 saleBtn.textContent = item.vendu ? 'Modifier la vente' : 'Marquer comme vendu';
-                saleBtn.addEventListener('click', () => openSaleModal(item));
+                saleBtn.addEventListener('click', () => openSalePanel(item));
 
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'danger';
@@ -794,6 +791,7 @@
             renderFilters();
             renderTable();
             renderStats();
+            syncSalePanel();
         }
 
         function formatDate(dateString) {
@@ -802,18 +800,56 @@
             return date.toLocaleDateString('fr-FR');
         }
 
-        function openSaleModal(item) {
-            elements.saleModal.hidden = false;
+        function ensurePlatformOption(value) {
+            if (!value) return;
+            const options = Array.from(elements.salePlatform.options).map(opt => opt.value);
+            if (!options.includes(value)) {
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = value;
+                elements.salePlatform.appendChild(option);
+            }
+        }
+
+        function openSalePanel(item) {
+            ensurePlatformOption(item.plateforme);
+            elements.salePanel.hidden = false;
             elements.saleItemId.value = item.id;
+            elements.saleTitle.value = item.titre;
             elements.salePrice.value = item.prixVente ?? '';
             elements.saleDate.value = item.dateVente || '';
             elements.salePlatform.value = item.plateforme || DEFAULT_PLATFORM;
             elements.markAvailable.style.display = item.vendu ? 'inline-flex' : 'none';
         }
 
-        function closeSaleModal() {
-            elements.saleModal.hidden = true;
+        function closeSalePanel() {
             elements.saleForm.reset();
+            elements.saleTitle.value = '';
+            elements.salePlatform.value = DEFAULT_PLATFORM;
+            elements.markAvailable.style.display = 'none';
+            elements.salePanel.hidden = true;
+        }
+
+        function syncSalePanel() {
+            if (elements.salePanel.hidden) {
+                return;
+            }
+            const id = elements.saleItemId.value;
+            if (!id) {
+                closeSalePanel();
+                return;
+            }
+            const item = state.items.find(entry => entry.id === id);
+            if (!item) {
+                closeSalePanel();
+                return;
+            }
+            ensurePlatformOption(item.plateforme);
+            elements.saleTitle.value = item.titre;
+            elements.salePrice.value = item.prixVente ?? '';
+            elements.saleDate.value = item.dateVente || '';
+            elements.salePlatform.value = item.plateforme || DEFAULT_PLATFORM;
+            elements.markAvailable.style.display = item.vendu ? 'inline-flex' : 'none';
         }
 
         function exportAsCsv() {
@@ -882,16 +918,12 @@
         });
         elements.exportCsv.addEventListener('click', exportAsCsv);
 
-        elements.closeModal.addEventListener('click', closeSaleModal);
-        elements.saleModal.addEventListener('click', (event) => {
-            if (event.target === elements.saleModal) {
-                closeSaleModal();
-            }
-        });
-
         elements.saleForm.addEventListener('submit', (event) => {
             event.preventDefault();
             const id = elements.saleItemId.value;
+            if (!id) {
+                return;
+            }
             const updates = {
                 vendu: true,
                 prixVente: elements.salePrice.value ? Number(elements.salePrice.value) : null,
@@ -899,19 +931,24 @@
                 plateforme: elements.salePlatform.value || DEFAULT_PLATFORM
             };
             updateItem(id, updates);
-            closeSaleModal();
+            closeSalePanel();
         });
 
         elements.markAvailable.addEventListener('click', () => {
             const id = elements.saleItemId.value;
+            if (!id) {
+                return;
+            }
             updateItem(id, {
                 vendu: false,
                 prixVente: null,
                 dateVente: '',
                 plateforme: ''
             });
-            closeSaleModal();
+            closeSalePanel();
         });
+
+        elements.cancelSale.addEventListener('click', closeSalePanel);
 
         document.addEventListener('DOMContentLoaded', async () => {
             loadItems();
