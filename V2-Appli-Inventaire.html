@@ -929,24 +929,4 @@
         });
     </script>
 </body>
-</html>;
-
-        elements.markAvailable.addEventListener('click', () => {
-            const id = elements.saleItemId.value;
-            updateItem(id, {
-                vendu: false,
-                prixVente: null,
-                dateVente: '',
-                plateforme: ''
-            });
-            closeSaleModal();
-        });
-
-        document.addEventListener('DOMContentLoaded', async () => {
-            loadItems();
-            render();
-            await loadMobilenet();
-        });
-    </script>
-</body>
 </html>
