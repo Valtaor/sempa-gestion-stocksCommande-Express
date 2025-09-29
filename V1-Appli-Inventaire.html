@@ -8,14 +8,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --fond: #f3ede4;
-            --accent: #b76e79;
-            --accent-fonce: #8c4a52;
-            --vert: #6d9773;
-            --bleu: #3b6978;
-            --texte: #2f3437;
-            --clair: #fff9f2;
-            --ombre: rgba(75, 55, 39, 0.15);
+            --fond: #f4ede3;
+            --accent: #9c6b4f;
+            --accent-fonce: #7c5234;
+            --vert: #6f8b74;
+            --bleu: #4f6a6a;
+            --texte: #2f2a26;
+            --clair: #fdf9f3;
+            --ombre: rgba(55, 40, 24, 0.12);
         }
 
         * {
@@ -24,52 +24,56 @@
 
         body {
             margin: 0;
-            background: radial-gradient(circle at top, #f9f4ec 0%, #f1e5d3 100%);
+            background: var(--fond);
+            background-image: radial-gradient(circle at 20% 20%, rgba(124, 82, 52, 0.08), transparent 55%),
+                radial-gradient(circle at 80% 0%, rgba(79, 106, 106, 0.08), transparent 60%);
             color: var(--texte);
             font-family: 'Work Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             min-height: 100vh;
+            line-height: 1.6;
         }
 
         header {
-            background: linear-gradient(135deg, rgba(183, 110, 121, 0.95), rgba(59, 105, 120, 0.95));
-            padding: 40px 20px 50px;
-            color: #fff;
+            background: linear-gradient(130deg, rgba(73, 55, 40, 0.94), rgba(158, 120, 88, 0.9));
+            padding: 36px 20px 44px;
+            color: #fdf6ec;
             text-align: center;
-            box-shadow: 0 10px 35px rgba(59, 105, 120, 0.25);
+            box-shadow: 0 12px 28px rgba(55, 40, 24, 0.18);
+            border-bottom: 1px solid rgba(253, 249, 243, 0.25);
         }
 
         header h1 {
             margin: 0;
             font-family: 'Playfair Display', serif;
-            font-size: clamp(2.1rem, 2vw + 2rem, 3.6rem);
-            letter-spacing: 2px;
+            font-size: clamp(2.1rem, 2vw + 2rem, 3.4rem);
+            letter-spacing: 1.5px;
         }
 
         header p {
-            max-width: 720px;
-            margin: 12px auto 0;
+            max-width: 680px;
+            margin: 14px auto 0;
             font-size: 1rem;
-            opacity: 0.9;
+            opacity: 0.85;
         }
 
         .container {
-            width: min(1200px, 92vw);
-            margin: -40px auto 60px;
+            width: min(1120px, 92vw);
+            margin: -32px auto 64px;
         }
 
         .card {
             background: var(--clair);
-            border-radius: 16px;
-            padding: clamp(20px, 2vw + 16px, 36px);
-            margin-bottom: 28px;
-            box-shadow: 0 18px 40px var(--ombre);
-            border: 1px solid rgba(183, 110, 121, 0.18);
+            border-radius: 18px;
+            padding: clamp(22px, 2vw + 18px, 34px);
+            margin-bottom: 30px;
+            box-shadow: 0 12px 30px var(--ombre);
+            border: 1px solid rgba(79, 106, 106, 0.12);
         }
 
         h2 {
             font-family: 'Playfair Display', serif;
             font-size: clamp(1.6rem, 1vw + 1.4rem, 2rem);
-            color: var(--bleu);
+            color: var(--accent-fonce);
             margin: 0 0 20px;
             display: flex;
             align-items: center;
@@ -80,8 +84,8 @@
             display: inline-flex;
             width: 36px;
             height: 36px;
-            border-radius: 10px;
-            background: rgba(183, 110, 121, 0.18);
+            border-radius: 12px;
+            background: rgba(156, 107, 79, 0.16);
             align-items: center;
             justify-content: center;
             color: var(--accent);
@@ -99,6 +103,7 @@
             font-weight: 600;
             margin-bottom: 8px;
             font-size: 0.92rem;
+            letter-spacing: 0.02em;
         }
 
         input[type="text"],
@@ -108,11 +113,11 @@
         textarea {
             width: 100%;
             padding: 12px 14px;
-            border: 1px solid rgba(47, 52, 55, 0.18);
+            border: 1px solid rgba(79, 106, 106, 0.18);
             border-radius: 12px;
             background: #fff;
             font-size: 0.98rem;
-            transition: border 0.2s ease, box-shadow 0.2s ease;
+            transition: border 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
             font-family: inherit;
         }
 
@@ -121,12 +126,13 @@
         textarea:focus {
             outline: none;
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(183, 110, 121, 0.2);
+            background: rgba(253, 249, 243, 0.9);
+            box-shadow: 0 0 0 3px rgba(156, 107, 79, 0.18);
         }
 
         input[type="file"] {
-            border: 2px dashed rgba(183, 110, 121, 0.4);
-            background: rgba(255, 249, 242, 0.7);
+            border: 2px dashed rgba(124, 82, 52, 0.35);
+            background: rgba(253, 249, 243, 0.75);
             padding: 18px;
             border-radius: 16px;
             cursor: pointer;
@@ -136,7 +142,7 @@
             margin-top: 16px;
             border-radius: 14px;
             overflow: hidden;
-            box-shadow: 0 12px 22px rgba(47, 52, 55, 0.18);
+            box-shadow: 0 10px 20px rgba(55, 40, 24, 0.16);
             max-width: 200px;
             display: none;
             position: relative;
@@ -151,7 +157,7 @@
         .title-suggestion {
             font-size: 0.9rem;
             color: var(--bleu);
-            background: rgba(109, 151, 115, 0.12);
+            background: rgba(79, 106, 106, 0.12);
             padding: 10px 14px;
             border-radius: 12px;
             margin-top: 12px;
@@ -167,33 +173,34 @@
 
         button {
             border: none;
-            border-radius: 30px;
-            padding: 12px 26px;
-            font-size: 0.98rem;
+            border-radius: 999px;
+            padding: 11px 26px;
+            font-size: 0.96rem;
             font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+            font-family: inherit;
         }
 
         button.primary {
             background: linear-gradient(135deg, var(--accent), var(--accent-fonce));
-            color: #fff;
-            box-shadow: 0 12px 22px rgba(183, 110, 121, 0.3);
+            color: #fdf9f3;
+            box-shadow: 0 8px 20px rgba(124, 82, 52, 0.25);
         }
 
         button.secondary {
-            background: rgba(109, 151, 115, 0.18);
-            color: var(--vert);
+            background: rgba(79, 106, 106, 0.12);
+            color: var(--bleu);
         }
 
         button.danger {
-            background: rgba(231, 111, 81, 0.18);
-            color: #e76f51;
+            background: rgba(185, 91, 71, 0.14);
+            color: #b55c45;
         }
 
         button:hover {
             transform: translateY(-1px);
-            box-shadow: 0 16px 26px rgba(47, 52, 55, 0.18);
+            box-shadow: 0 12px 24px rgba(55, 40, 24, 0.18);
         }
 
         .filters {
@@ -211,14 +218,15 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            background: #fff;
+            background: var(--clair);
             border-radius: 16px;
             overflow: hidden;
             font-size: 0.95rem;
+            border: 1px solid rgba(79, 106, 106, 0.12);
         }
 
         thead {
-            background: rgba(59, 105, 120, 0.12);
+            background: rgba(79, 106, 106, 0.14);
             color: var(--bleu);
         }
 
@@ -231,7 +239,7 @@
         }
 
         tbody tr:hover {
-            background: rgba(183, 110, 121, 0.05);
+            background: rgba(156, 107, 79, 0.05);
         }
 
         .thumbnail {
@@ -253,19 +261,19 @@
         }
 
         .status.on-sale {
-            background: rgba(109, 151, 115, 0.16);
+            background: rgba(111, 139, 116, 0.18);
             color: var(--vert);
         }
 
         .status.sold {
-            background: rgba(183, 110, 121, 0.18);
+            background: rgba(156, 107, 79, 0.18);
             color: var(--accent-fonce);
         }
 
         .empty-state {
             text-align: center;
             padding: 40px 20px;
-            color: rgba(47, 52, 55, 0.6);
+            color: rgba(47, 42, 38, 0.6);
         }
 
         .stats-grid {
@@ -275,34 +283,34 @@
         }
 
         .stat-card {
-            background: linear-gradient(135deg, rgba(59, 105, 120, 0.12), rgba(183, 110, 121, 0.15));
+            background: linear-gradient(145deg, rgba(79, 106, 106, 0.1), rgba(253, 249, 243, 0.65));
             border-radius: 18px;
             padding: 22px;
-            border: 1px solid rgba(47, 52, 55, 0.12);
+            border: 1px solid rgba(79, 106, 106, 0.14);
         }
 
         .stat-card h3 {
             margin: 0 0 10px;
             font-family: 'Playfair Display', serif;
-            color: var(--bleu);
+            color: var(--accent-fonce);
         }
 
         .stat-value {
             font-size: 1.9rem;
             font-weight: 600;
-            color: var(--accent-fonce);
+            color: var(--bleu);
         }
 
         .stat-note {
             font-size: 0.85rem;
-            color: rgba(47, 52, 55, 0.6);
+            color: rgba(47, 42, 38, 0.6);
             margin-top: 6px;
         }
 
         .modal {
             position: fixed;
             inset: 0;
-            background: rgba(15, 19, 23, 0.35);
+            background: rgba(24, 20, 16, 0.4);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -312,18 +320,18 @@
 
         .modal-content {
             background: var(--clair);
-            border-radius: 16px;
-            padding: 24px;
+            border-radius: 18px;
+            padding: 26px;
             width: min(420px, 92vw);
-            box-shadow: 0 24px 38px rgba(47, 52, 55, 0.25);
+            box-shadow: 0 20px 34px rgba(55, 40, 24, 0.22);
             position: relative;
-            border: 1px solid rgba(183, 110, 121, 0.18);
+            border: 1px solid rgba(79, 106, 106, 0.14);
         }
 
         .modal h3 {
             margin-top: 0;
             font-family: 'Playfair Display', serif;
-            color: var(--bleu);
+            color: var(--accent-fonce);
         }
 
         .close-modal {
@@ -332,6 +340,7 @@
             right: 16px;
             background: none;
             border: none;
+            color: var(--bleu);
             font-size: 1.2rem;
             cursor: pointer;
         }
@@ -340,7 +349,7 @@
             display: inline-block;
             padding: 4px 10px;
             border-radius: 999px;
-            background: rgba(59, 105, 120, 0.12);
+            background: rgba(79, 106, 106, 0.12);
             color: var(--bleu);
             font-size: 0.8rem;
             margin-right: 6px;
