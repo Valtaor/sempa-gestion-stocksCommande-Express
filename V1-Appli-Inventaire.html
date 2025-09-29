@@ -3,897 +3,937 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestion d'Inventaire - Objets Chinés</title>
+    <title>Gestion d'Inventaire Vintage</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #3498db;
-            --secondary: #2ecc71;
-            --danger: #e74c3c;
-            --warning: #f39c12;
-            --light: #f8f9fa;
-            --dark: #343a40;
-            --gray: #6c757d;
+            --fond: #f3ede4;
+            --accent: #b76e79;
+            --accent-fonce: #8c4a52;
+            --vert: #6d9773;
+            --bleu: #3b6978;
+            --texte: #2f3437;
+            --clair: #fff9f2;
+            --ombre: rgba(75, 55, 39, 0.15);
         }
-        
+
         * {
-            margin: 0;
-            padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        
+
+        [hidden] {
+            display: none !important;
+        }
+
         body {
-            background-color: #f5f7fa;
-            color: #333;
-            line-height: 1.6;
+            margin: 0;
+            background: radial-gradient(circle at top, #f9f4ec 0%, #f1e5d3 100%);
+            color: var(--texte);
+            font-family: 'Work Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            min-height: 100vh;
         }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        
+
         header {
-            background-color: var(--primary);
-            color: white;
-            padding: 20px 0;
-            margin-bottom: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-        
-        header h1 {
+            background: linear-gradient(135deg, rgba(183, 110, 121, 0.95), rgba(59, 105, 120, 0.95));
+            padding: 40px 20px 50px;
+            color: #fff;
             text-align: center;
-            font-size: 2.2rem;
+            box-shadow: 0 10px 35px rgba(59, 105, 120, 0.25);
         }
-        
-        .app-nav {
-            display: flex;
-            justify-content: center;
-            margin-top: 15px;
-            flex-wrap: wrap;
+
+        header h1 {
+            margin: 0;
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(2.1rem, 2vw + 2rem, 3.6rem);
+            letter-spacing: 2px;
         }
-        
-        .nav-btn {
-            background-color: rgba(255,255,255,0.2);
-            border: none;
-            color: white;
-            padding: 10px 20px;
-            margin: 0 5px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: background-color 0.3s;
+
+        header p {
+            max-width: 720px;
+            margin: 12px auto 0;
+            font-size: 1rem;
+            opacity: 0.9;
         }
-        
-        .nav-btn:hover, .nav-btn.active {
-            background-color: rgba(255,255,255,0.3);
+
+        .container {
+            width: min(1200px, 92vw);
+            margin: -40px auto 60px;
         }
-        
-        .section {
-            display: none;
-            background-color: white;
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            margin-bottom: 30px;
+
+        .card {
+            background: var(--clair);
+            border-radius: 16px;
+            padding: clamp(20px, 2vw + 16px, 36px);
+            margin-bottom: 28px;
+            box-shadow: 0 18px 40px var(--ombre);
+            border: 1px solid rgba(183, 110, 121, 0.18);
         }
-        
-        .section.active {
-            display: block;
-        }
-        
+
         h2 {
-            color: var(--primary);
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #eee;
+            font-family: 'Playfair Display', serif;
+            font-size: clamp(1.6rem, 1vw + 1.4rem, 2rem);
+            color: var(--bleu);
+            margin: 0 0 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
-        
-        .form-group {
-            margin-bottom: 20px;
+
+        h2 span {
+            display: inline-flex;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: rgba(183, 110, 121, 0.18);
+            align-items: center;
+            justify-content: center;
+            color: var(--accent);
+            font-size: 0.95rem;
         }
-        
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+        }
+
         label {
             display: block;
+            font-weight: 600;
             margin-bottom: 8px;
-            font-weight: 600;
+            font-size: 0.92rem;
         }
-        
-        input, select, textarea {
+
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        select,
+        textarea {
             width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 1rem;
+            padding: 12px 14px;
+            border: 1px solid rgba(47, 52, 55, 0.18);
+            border-radius: 12px;
+            background: #fff;
+            font-size: 0.98rem;
+            transition: border 0.2s ease, box-shadow 0.2s ease;
+            font-family: inherit;
         }
-        
-        button {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: background-color 0.3s;
+
+        select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M2 2l4 4 4-4' fill='none' stroke='%238c4a52' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+            background-size: 12px 8px;
+            padding-right: 44px;
         }
-        
-        button:hover {
-            background-color: #2980b9;
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(183, 110, 121, 0.2);
         }
-        
-        button.secondary {
-            background-color: var(--secondary);
-        }
-        
-        button.secondary:hover {
-            background-color: #27ae60;
-        }
-        
-        button.danger {
-            background-color: var(--danger);
-        }
-        
-        button.danger:hover {
-            background-color: #c0392b;
-        }
-        
-        .photo-upload {
-            border: 2px dashed #ddd;
-            padding: 20px;
-            text-align: center;
-            border-radius: 4px;
-            margin-bottom: 15px;
+
+        input[type="file"] {
+            border: 2px dashed rgba(183, 110, 121, 0.4);
+            background: rgba(255, 249, 242, 0.7);
+            padding: 18px;
+            border-radius: 16px;
             cursor: pointer;
         }
-        
-        .photo-upload:hover {
-            border-color: var(--primary);
-        }
-        
+
         .photo-preview {
+            margin-top: 16px;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 12px 22px rgba(47, 52, 55, 0.18);
             max-width: 200px;
-            max-height: 200px;
-            margin-top: 15px;
             display: none;
+            position: relative;
         }
-        
-        .inventory-table {
+
+        .photo-preview img {
+            display: block;
             width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
+            height: auto;
         }
-        
-        .inventory-table th, .inventory-table td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
+
+        .title-suggestion {
+            font-size: 0.9rem;
+            color: var(--bleu);
+            background: rgba(109, 151, 115, 0.12);
+            padding: 10px 14px;
+            border-radius: 12px;
+            margin-top: 12px;
         }
-        
-        .inventory-table th {
-            background-color: #f8f9fa;
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            justify-content: flex-end;
+            margin-top: 26px;
+        }
+
+        button {
+            border: none;
+            border-radius: 30px;
+            padding: 12px 26px;
+            font-size: 0.98rem;
             font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
-        
-        .inventory-table tr:hover {
-            background-color: #f1f8ff;
+
+        button.primary {
+            background: linear-gradient(135deg, var(--accent), var(--accent-fonce));
+            color: #fff;
+            box-shadow: 0 12px 22px rgba(183, 110, 121, 0.3);
         }
-        
-        .thumbnail {
-            width: 50px;
-            height: 50px;
-            object-fit: cover;
-            border-radius: 4px;
+
+        button.secondary {
+            background: rgba(109, 151, 115, 0.18);
+            color: var(--vert);
         }
-        
-        .status-badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            font-weight: 600;
+
+        button.danger {
+            background: rgba(231, 111, 81, 0.18);
+            color: #e76f51;
         }
-        
-        .status-available {
-            background-color: #e8f5e9;
-            color: #2e7d32;
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 16px 26px rgba(47, 52, 55, 0.18);
         }
-        
-        .status-sold {
-            background-color: #ffebee;
-            color: #c62828;
-        }
-        
+
         .filters {
             display: flex;
             flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 20px;
+            gap: 12px;
+            margin-bottom: 18px;
         }
-        
-        .filters input, .filters select {
-            flex: 1;
-            min-width: 150px;
+
+        .filters input,
+        .filters select {
+            flex: 1 1 180px;
         }
-        
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+            border-radius: 16px;
+            overflow: hidden;
+            font-size: 0.95rem;
+        }
+
+        thead {
+            background: rgba(59, 105, 120, 0.12);
+            color: var(--bleu);
+        }
+
+        th,
+        td {
+            padding: 14px 16px;
+            text-align: left;
+            border-bottom: 1px solid rgba(47, 52, 55, 0.08);
+            vertical-align: middle;
+        }
+
+        tbody tr:hover {
+            background: rgba(183, 110, 121, 0.05);
+        }
+
+        .thumbnail {
+            width: 58px;
+            height: 58px;
+            border-radius: 10px;
+            object-fit: cover;
+            border: 1px solid rgba(47, 52, 55, 0.08);
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+
+        .status.on-sale {
+            background: rgba(109, 151, 115, 0.16);
+            color: var(--vert);
+        }
+
+        .status.sold {
+            background: rgba(183, 110, 121, 0.18);
+            color: var(--accent-fonce);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: rgba(47, 52, 55, 0.6);
+        }
+
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 18px;
         }
-        
+
         .stat-card {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            text-align: center;
+            background: linear-gradient(135deg, rgba(59, 105, 120, 0.12), rgba(183, 110, 121, 0.15));
+            border-radius: 18px;
+            padding: 22px;
+            border: 1px solid rgba(47, 52, 55, 0.12);
         }
-        
+
+        .stat-card h3 {
+            margin: 0 0 10px;
+            font-family: 'Playfair Display', serif;
+            color: var(--bleu);
+        }
+
         .stat-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--primary);
-            margin: 10px 0;
+            font-size: 1.9rem;
+            font-weight: 600;
+            color: var(--accent-fonce);
         }
-        
-        .stat-label {
-            color: var(--gray);
-            font-size: 0.9rem;
+
+        .stat-note {
+            font-size: 0.85rem;
+            color: rgba(47, 52, 55, 0.6);
+            margin-top: 6px;
         }
-        
-        .alert {
-            padding: 15px;
-            border-radius: 4px;
-            margin-bottom: 20px;
-            display: none;
+
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 19, 23, 0.35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            z-index: 10;
         }
-        
-        .alert-success {
-            background-color: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+
+        .modal-content {
+            background: var(--clair);
+            border-radius: 16px;
+            padding: 24px;
+            width: min(420px, 92vw);
+            box-shadow: 0 24px 38px rgba(47, 52, 55, 0.25);
+            position: relative;
+            border: 1px solid rgba(183, 110, 121, 0.18);
         }
-        
-        .alert-error {
-            background-color: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+
+        .modal h3 {
+            margin-top: 0;
+            font-family: 'Playfair Display', serif;
+            color: var(--bleu);
         }
-        
+
+        .close-modal {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(59, 105, 120, 0.12);
+            color: var(--bleu);
+            font-size: 0.8rem;
+            margin-right: 6px;
+        }
+
         @media (max-width: 768px) {
-            .container {
-                padding: 10px;
-            }
-            
-            .inventory-table {
-                display: block;
-                overflow-x: auto;
-            }
-            
             .filters {
                 flex-direction: column;
             }
-            
-            .stats-grid {
-                grid-template-columns: 1fr;
+
+            table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+
+            th, td {
+                min-width: 120px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Gestion d'Inventaire - Objets Chinés</h1>
-            <div class="app-nav">
-                <button class="nav-btn active" data-target="add-item">Ajouter un objet</button>
-                <button class="nav-btn" data-target="inventory">Inventaire</button>
-                <button class="nav-btn" data-target="dashboard">Tableau de bord</button>
-            </div>
-        </header>
-        
-        <div id="alerts-container"></div>
-        
-        <!-- Section Ajout d'objet -->
-        <section id="add-item" class="section active">
-            <h2>Ajouter un nouvel objet</h2>
-            <form id="item-form">
-                <div class="form-group">
-                    <label for="item-photo">Photo de l'objet</label>
-                    <div class="photo-upload" id="photo-upload-area">
-                        <p>Cliquez ici ou glissez-déposez une photo</p>
-                        <input type="file" id="item-photo" accept="image/*" style="display: none;">
-                        <img id="photo-preview" class="photo-preview" src="" alt="Aperçu de la photo">
+    <header>
+        <h1>Inventaire Vintage &amp; Revente</h1>
+        <p>Gérez vos trésors chinés, suivez vos ventes et trouvez d'un coup d'œil le bon casier.
+           L'application conserve vos données en local et vous aide à créer des fiches produits à partir d'une photo.</p>
+    </header>
+
+    <main class="container">
+        <section class="card" aria-labelledby="ajout-objet">
+            <h2 id="ajout-objet"><span>①</span>Nouvel objet</h2>
+            <form id="itemForm">
+                <div class="grid">
+                    <div>
+                        <label for="photo">Photo de l'objet</label>
+                        <input type="file" id="photo" accept="image/*" required>
+                        <div class="photo-preview" id="photoPreviewContainer">
+                            <img id="photoPreview" alt="Prévisualisation de l'objet">
+                        </div>
+                        <div class="title-suggestion" id="titleSuggestion" hidden>
+                            Suggestion automatique : <strong id="suggestedTitle"></strong>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="casier">Casier / Emplacement</label>
+                        <input type="text" id="casier" placeholder="Ex. A1, Bx1" required>
+
+                        <label for="prixAchat">Prix d'achat (€)</label>
+                        <input type="number" id="prixAchat" placeholder="0.00" min="0" step="0.01" required>
+
+                        <label for="dateAchat">Date d'achat</label>
+                        <input type="date" id="dateAchat" required>
+                    </div>
+                    <div>
+                        <label for="titreAuto">Titre généré</label>
+                        <input type="text" id="titreAuto" placeholder="En attente de la photo..." required>
+
+                        <label for="notes">Notes (facultatif)</label>
+                        <textarea id="notes" rows="6" placeholder="Détails complémentaires, état, provenance..."></textarea>
                     </div>
                 </div>
-                
-                <div class="form-group">
-                    <label for="item-title">Titre descriptif</label>
-                    <input type="text" id="item-title" placeholder="Titre généré automatiquement après téléchargement de la photo">
+                <div class="actions">
+                    <button type="reset" class="secondary" id="resetForm">Effacer</button>
+                    <button type="submit" class="primary">Ajouter à l'inventaire</button>
                 </div>
-                
-                <div class="form-group">
-                    <label for="item-location">Casier / Emplacement</label>
-                    <select id="item-location">
-                        <option value="">Sélectionnez un emplacement</option>
-                        <option value="A1">A1</option>
-                        <option value="A2">A2</option>
-                        <option value="A3">A3</option>
-                        <option value="B1">B1</option>
-                        <option value="B2">B2</option>
-                        <option value="B3">B3</option>
-                        <option value="C1">C1</option>
-                        <option value="C2">C2</option>
-                        <option value="C3">C3</option>
-                        <option value="D1">D1</option>
-                        <option value="D2">D2</option>
-                        <option value="D3">D3</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="item-purchase-price">Prix d'achat (€)</label>
-                    <input type="number" id="item-purchase-price" step="0.01" min="0" placeholder="0.00">
-                </div>
-                
-                <div class="form-group">
-                    <label for="item-purchase-date">Date d'achat</label>
-                    <input type="date" id="item-purchase-date">
-                </div>
-                
-                <button type="submit" class="secondary">Ajouter l'objet à l'inventaire</button>
             </form>
         </section>
-        
-        <!-- Section Inventaire -->
-        <section id="inventory" class="section">
-            <h2>Inventaire des objets</h2>
-            
+
+        <section class="card" aria-labelledby="filtres-liste">
+            <h2 id="filtres-liste"><span>②</span>Tableau de bord</h2>
             <div class="filters">
-                <input type="text" id="search-input" placeholder="Rechercher par titre ou casier...">
-                <select id="status-filter">
-                    <option value="">Tous les statuts</option>
+                <input type="search" id="searchInput" placeholder="Recherche rapide par titre...">
+                <select id="filterCasier">
+                    <option value="all">Tous les casiers</option>
+                </select>
+                <select id="filterPlateforme">
+                    <option value="all">Toutes les plateformes</option>
+                    <option value="eBay">eBay</option>
+                    <option value="Vinted">Vinted</option>
+                    <option value="Leboncoin">Leboncoin</option>
+                    <option value="Autre">Autre</option>
+                </select>
+                <select id="filterStatus">
+                    <option value="all">Tous les statuts</option>
                     <option value="available">Disponible</option>
                     <option value="sold">Vendu</option>
                 </select>
-                <select id="location-filter">
-                    <option value="">Tous les emplacements</option>
-                    <option value="A1">A1</option>
-                    <option value="A2">A2</option>
-                    <option value="A3">A3</option>
-                    <option value="B1">B1</option>
-                    <option value="B2">B2</option>
-                    <option value="B3">B3</option>
-                    <option value="C1">C1</option>
-                    <option value="C2">C2</option>
-                    <option value="C3">C3</option>
-                    <option value="D1">D1</option>
-                    <option value="D2">D2</option>
-                    <option value="D3">D3</option>
-                </select>
-                <button id="export-csv">Exporter en CSV</button>
+                <button class="secondary" id="exportCsv" type="button">Exporter CSV</button>
             </div>
-            
-            <table class="inventory-table">
-                <thead>
-                    <tr>
-                        <th>Photo</th>
-                        <th>Titre</th>
-                        <th>Casier</th>
-                        <th>Prix d'achat</th>
-                        <th>Statut</th>
-                        <th>Prix de vente</th>
-                        <th>Marge</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="inventory-table-body">
-                    <!-- Les éléments seront ajoutés dynamiquement ici -->
-                </tbody>
-            </table>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Photo</th>
+                            <th>Titre</th>
+                            <th>Casier</th>
+                            <th>Prix achat</th>
+                            <th>Prix vente</th>
+                            <th>Date achat</th>
+                            <th>Date vente</th>
+                            <th>Plateforme</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryTableBody"></tbody>
+                </table>
+                <div class="empty-state" id="emptyState" hidden>
+                    Aucun objet pour le moment. Ajoutez votre premier trésor !
+                </div>
+            </div>
         </section>
-        
-        <!-- Section Tableau de bord -->
-        <section id="dashboard" class="section">
-            <h2>Tableau de bord</h2>
-            
+
+        <section class="card" aria-labelledby="stats-globales">
+            <h2 id="stats-globales"><span>③</span>Statistiques &amp; synthèse</h2>
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-label">Objets en stock</div>
-                    <div class="stat-value" id="total-items">0</div>
+                    <h3>Objets en stock</h3>
+                    <div class="stat-value" id="statEnStock">0</div>
+                    <div class="stat-note">Encore disponibles à la vente</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">Objets vendus</div>
-                    <div class="stat-value" id="sold-items">0</div>
+                    <h3>Objets vendus</h3>
+                    <div class="stat-value" id="statVendus">0</div>
+                    <div class="stat-note">Total des fiches marquées "vendu"</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">Chiffre d'affaires total</div>
-                    <div class="stat-value" id="total-revenue">0€</div>
+                    <h3>Chiffre d'affaires</h3>
+                    <div class="stat-value" id="statCA">0 €</div>
+                    <div class="stat-note">Somme de vos ventes renseignées</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">Marge totale</div>
-                    <div class="stat-value" id="total-margin">0€</div>
+                    <h3>Marge totale</h3>
+                    <div class="stat-value" id="statMarge">0 €</div>
+                    <div class="stat-note">Différence entre ventes et achats</div>
                 </div>
             </div>
-            
-            <h3 style="margin-top: 30px;">Répartition par plateforme</h3>
-            <table class="inventory-table">
-                <thead>
-                    <tr>
-                        <th>Plateforme</th>
-                        <th>Nombre de ventes</th>
-                        <th>Chiffre d'affaires</th>
-                        <th>Marge moyenne</th>
-                    </tr>
-                </thead>
-                <tbody id="platform-stats-body">
-                    <!-- Les statistiques par plateforme seront ajoutées ici -->
-                </tbody>
-            </table>
         </section>
-    </div>
+    </main>
 
-    <!-- Modal pour marquer comme vendu -->
-    <div id="sold-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
-        <div style="background-color: white; padding: 30px; border-radius: 8px; width: 90%; max-width: 500px;">
-            <h3>Marquer l'objet comme vendu</h3>
-            <form id="sold-form">
-                <input type="hidden" id="sold-item-id">
-                
+    <template id="rowTemplate">
+        <tr>
+            <td><img class="thumbnail" alt="Objet vintage"></td>
+            <td class="col-title"></td>
+            <td class="col-casier"></td>
+            <td class="col-prix-achat"></td>
+            <td class="col-prix-vente"></td>
+            <td class="col-date-achat"></td>
+            <td class="col-date-vente"></td>
+            <td class="col-plateforme"></td>
+            <td class="col-status"></td>
+            <td class="col-actions"></td>
+        </tr>
+    </template>
+
+    <template id="tagTemplate">
+        <span class="tag"></span>
+    </template>
+
+    <div class="modal" id="saleModal" hidden role="dialog" aria-modal="true" aria-labelledby="saleModalTitle">
+        <div class="modal-content">
+            <button class="close-modal" id="closeModal" aria-label="Fermer">✕</button>
+            <h3 id="saleModalTitle">Renseigner la vente</h3>
+            <form id="saleForm">
+                <input type="hidden" id="saleItemId">
                 <div class="form-group">
-                    <label for="sale-price">Prix de vente (€)</label>
-                    <input type="number" id="sale-price" step="0.01" min="0" required>
+                    <label for="salePrice">Prix de vente (€)</label>
+                    <input type="number" id="salePrice" min="0" step="0.01">
                 </div>
-                
                 <div class="form-group">
-                    <label for="sale-date">Date de vente</label>
-                    <input type="date" id="sale-date" required>
+                    <label for="saleDate">Date de vente</label>
+                    <input type="date" id="saleDate">
                 </div>
-                
                 <div class="form-group">
-                    <label for="sale-platform">Plateforme de vente</label>
-                    <select id="sale-platform" required>
-                        <option value="">Sélectionnez une plateforme</option>
+                    <label for="salePlatform">Plateforme</label>
+                    <select id="salePlatform">
                         <option value="eBay">eBay</option>
                         <option value="Vinted">Vinted</option>
                         <option value="Leboncoin">Leboncoin</option>
                         <option value="Autre">Autre</option>
                     </select>
                 </div>
-                
-                <div style="display: flex; justify-content: space-between; margin-top: 20px;">
-                    <button type="button" id="cancel-sale">Annuler</button>
-                    <button type="submit" class="secondary">Confirmer la vente</button>
+                <div class="actions">
+                    <button type="button" class="secondary" id="markAvailable">Remettre en stock</button>
+                    <button type="submit" class="primary">Valider</button>
                 </div>
             </form>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.16.0/dist/tf.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.0" defer></script>
     <script>
-        // Stockage des données (simulation d'une base de données avec localStorage)
-        const STORAGE_KEY = 'inventoryItems';
-        
-        // Éléments DOM
-        const navButtons = document.querySelectorAll('.nav-btn');
-        const sections = document.querySelectorAll('.section');
-        const itemForm = document.getElementById('item-form');
-        const photoUploadArea = document.getElementById('photo-upload-area');
-        const itemPhoto = document.getElementById('item-photo');
-        const photoPreview = document.getElementById('photo-preview');
-        const inventoryTableBody = document.getElementById('inventory-table-body');
-        const searchInput = document.getElementById('search-input');
-        const statusFilter = document.getElementById('status-filter');
-        const locationFilter = document.getElementById('location-filter');
-        const exportCsvBtn = document.getElementById('export-csv');
-        const soldModal = document.getElementById('sold-modal');
-        const soldForm = document.getElementById('sold-form');
-        const cancelSaleBtn = document.getElementById('cancel-sale');
-        const alertsContainer = document.getElementById('alerts-container');
-        
-        // Variables globales
-        let inventoryItems = [];
-        let currentEditingItemId = null;
-        
-        // Initialisation
-        document.addEventListener('DOMContentLoaded', function() {
-            loadInventoryItems();
-            setupEventListeners();
-            renderInventoryTable();
-            updateDashboard();
-        });
-        
-        // Configuration des écouteurs d'événements
-        function setupEventListeners() {
-            // Navigation
-            navButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    const targetId = this.getAttribute('data-target');
-                    
-                    // Mettre à jour les boutons actifs
-                    navButtons.forEach(btn => btn.classList.remove('active'));
-                    this.classList.add('active');
-                    
-                    // Afficher la section correspondante
-                    sections.forEach(section => {
-                        section.classList.remove('active');
-                        if (section.id === targetId) {
-                            section.classList.add('active');
-                        }
-                    });
-                });
-            });
-            
-            // Upload de photo
-            photoUploadArea.addEventListener('click', function() {
-                itemPhoto.click();
-            });
-            
-            itemPhoto.addEventListener('change', function(e) {
-                if (e.target.files && e.target.files[0]) {
-                    const reader = new FileReader();
-                    
-                    reader.onload = function(e) {
-                        photoPreview.src = e.target.result;
-                        photoPreview.style.display = 'block';
-                        
-                        // Simuler la génération automatique d'un titre
-                        setTimeout(() => {
-                            document.getElementById('item-title').value = "Objet chiné - " + new Date().getFullYear();
-                        }, 1000);
-                    };
-                    
-                    reader.readAsDataURL(e.target.files[0]);
+        const STORAGE_KEY = 'inventaire_vintage_items_v1';
+        const DEFAULT_PLATFORM = 'Autre';
+        let mobilenetModel = null;
+
+        const elements = {
+            form: document.getElementById('itemForm'),
+            photoInput: document.getElementById('photo'),
+            previewContainer: document.getElementById('photoPreviewContainer'),
+            previewImage: document.getElementById('photoPreview'),
+            suggestionWrapper: document.getElementById('titleSuggestion'),
+            suggestionText: document.getElementById('suggestedTitle'),
+            titreAuto: document.getElementById('titreAuto'),
+            casier: document.getElementById('casier'),
+            prixAchat: document.getElementById('prixAchat'),
+            dateAchat: document.getElementById('dateAchat'),
+            notes: document.getElementById('notes'),
+            resetForm: document.getElementById('resetForm'),
+            tableBody: document.getElementById('inventoryTableBody'),
+            emptyState: document.getElementById('emptyState'),
+            filterCasier: document.getElementById('filterCasier'),
+            filterPlateforme: document.getElementById('filterPlateforme'),
+            filterStatus: document.getElementById('filterStatus'),
+            searchInput: document.getElementById('searchInput'),
+            exportCsv: document.getElementById('exportCsv'),
+            saleModal: document.getElementById('saleModal'),
+            closeModal: document.getElementById('closeModal'),
+            saleForm: document.getElementById('saleForm'),
+            saleItemId: document.getElementById('saleItemId'),
+            salePrice: document.getElementById('salePrice'),
+            saleDate: document.getElementById('saleDate'),
+            salePlatform: document.getElementById('salePlatform'),
+            markAvailable: document.getElementById('markAvailable'),
+            statEnStock: document.getElementById('statEnStock'),
+            statVendus: document.getElementById('statVendus'),
+            statCA: document.getElementById('statCA'),
+            statMarge: document.getElementById('statMarge')
+        };
+
+        const state = {
+            items: [],
+            filters: {
+                casier: 'all',
+                plateforme: 'all',
+                status: 'all',
+                search: ''
+            },
+            pendingClassification: false
+        };
+
+        async function loadMobilenet() {
+            try {
+                mobilenetModel = await mobilenet.load();
+                if (state.pendingClassification && elements.previewImage?.src) {
+                    suggestTitle(elements.previewImage);
                 }
-            });
-            
-            // Drag and drop pour les photos
-            photoUploadArea.addEventListener('dragover', function(e) {
-                e.preventDefault();
-                this.style.borderColor = '#3498db';
-                this.style.backgroundColor = '#f0f8ff';
-            });
-            
-            photoUploadArea.addEventListener('dragleave', function() {
-                this.style.borderColor = '#ddd';
-                this.style.backgroundColor = '';
-            });
-            
-            photoUploadArea.addEventListener('drop', function(e) {
-                e.preventDefault();
-                this.style.borderColor = '#ddd';
-                this.style.backgroundColor = '';
-                
-                if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                    itemPhoto.files = e.dataTransfer.files;
-                    
-                    const event = new Event('change');
-                    itemPhoto.dispatchEvent(event);
-                }
-            });
-            
-            // Formulaire d'ajout d'objet
-            itemForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                addNewItem();
-            });
-            
-            // Filtres
-            searchInput.addEventListener('input', renderInventoryTable);
-            statusFilter.addEventListener('change', renderInventoryTable);
-            locationFilter.addEventListener('change', renderInventoryTable);
-            
-            // Export CSV
-            exportCsvBtn.addEventListener('click', exportToCsv);
-            
-            // Modal de vente
-            soldForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                markItemAsSold();
-            });
-            
-            cancelSaleBtn.addEventListener('click', function() {
-                soldModal.style.display = 'none';
-            });
-        }
-        
-        // Charger les éléments depuis le stockage
-        function loadInventoryItems() {
-            const storedItems = localStorage.getItem(STORAGE_KEY);
-            if (storedItems) {
-                inventoryItems = JSON.parse(storedItems);
+            } catch (error) {
+                console.warn('Impossible de charger le modèle de reconnaissance :', error);
+                mobilenetModel = null;
+                state.pendingClassification = false;
             }
         }
-        
-        // Sauvegarder les éléments dans le stockage
-        function saveInventoryItems() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(inventoryItems));
+
+        function loadItems() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            state.items = stored ? JSON.parse(stored) : [];
         }
-        
-        // Ajouter un nouvel objet
-        function addNewItem() {
-            const title = document.getElementById('item-title').value;
-            const location = document.getElementById('item-location').value;
-            const purchasePrice = parseFloat(document.getElementById('item-purchase-price').value);
-            const purchaseDate = document.getElementById('item-purchase-date').value;
-            const photo = photoPreview.src;
-            
-            // Validation
-            if (!title || !location || isNaN(purchasePrice) || !purchaseDate) {
-                showAlert('Veuillez remplir tous les champs obligatoires', 'error');
+
+        function saveItems() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state.items));
+        }
+
+        function resetForm() {
+            elements.form.reset();
+            elements.previewContainer.style.display = 'none';
+            elements.previewImage.src = '';
+            delete elements.previewImage.dataset.imageData;
+            elements.suggestionWrapper.hidden = true;
+            elements.titreAuto.value = '';
+            state.pendingClassification = false;
+        }
+
+        async function handlePhotoChange(event) {
+            const file = event.target.files?.[0];
+            if (!file) {
+                elements.previewContainer.style.display = 'none';
+                elements.suggestionWrapper.hidden = true;
                 return;
             }
-            
-            // Créer un nouvel objet
-            const newItem = {
-                id: Date.now().toString(),
-                title: title,
-                location: location,
-                purchasePrice: purchasePrice,
-                purchaseDate: purchaseDate,
-                photo: photo,
-                status: 'available',
-                salePrice: null,
-                saleDate: null,
-                salePlatform: null,
-                addedDate: new Date().toISOString()
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const dataUrl = e.target.result;
+                elements.previewContainer.style.display = 'block';
+                elements.previewImage.src = dataUrl;
+                elements.previewImage.onload = () => suggestTitle(elements.previewImage);
+                elements.previewImage.dataset.imageData = dataUrl;
             };
-            
-            // Ajouter à l'inventaire
-            inventoryItems.push(newItem);
-            saveInventoryItems();
-            
-            // Réinitialiser le formulaire
-            itemForm.reset();
-            photoPreview.style.display = 'none';
-            photoPreview.src = '';
-            
-            // Mettre à jour l'interface
-            renderInventoryTable();
-            updateDashboard();
-            
-            // Afficher un message de confirmation
-            showAlert('Objet ajouté avec succès à l\'inventaire', 'success');
-            
-            // Basculer vers l'onglet Inventaire
-            document.querySelector('[data-target="inventory"]').click();
+            reader.readAsDataURL(file);
         }
-        
-        // Rendre le tableau d'inventaire
-        function renderInventoryTable() {
-            const searchTerm = searchInput.value.toLowerCase();
-            const statusFilterValue = statusFilter.value;
-            const locationFilterValue = locationFilter.value;
-            
-            // Filtrer les éléments
-            let filteredItems = inventoryItems.filter(item => {
-                const matchesSearch = item.title.toLowerCase().includes(searchTerm) || 
-                                     item.location.toLowerCase().includes(searchTerm);
-                const matchesStatus = !statusFilterValue || item.status === statusFilterValue;
-                const matchesLocation = !locationFilterValue || item.location === locationFilterValue;
-                
-                return matchesSearch && matchesStatus && matchesLocation;
-            });
-            
-            // Vider le tableau
-            inventoryTableBody.innerHTML = '';
-            
-            // Ajouter chaque élément filtré
-            filteredItems.forEach(item => {
-                const row = document.createElement('tr');
-                
-                // Calculer la marge si vendu
-                let marginText = '-';
-                let marginClass = '';
-                if (item.status === 'sold' && item.salePrice) {
-                    const margin = item.salePrice - item.purchasePrice;
-                    const marginPercent = ((margin / item.purchasePrice) * 100).toFixed(2);
-                    marginText = `${margin.toFixed(2)}€ (${marginPercent}%)`;
-                    marginClass = margin >= 0 ? 'status-available' : 'status-sold';
-                }
-                
-                row.innerHTML = `
-                    <td><img src="${item.photo}" alt="${item.title}" class="thumbnail" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAiIGhlaWdodD0iNTAiIHZpZXdCb3g9IjAgMCA1MCA1MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIiBmaWxsPSIjRTVFNUU1Ii8+CjxwYXRoIGQ9Ik0zMCAyMEMzMCAyMi4yMDkxIDI4LjIwOTEgMjQgMjYgMjRDMjMuNzkwOSAyNCAyMiAyMi4yMDkxIDIyIDIwQzIyIDE3Ljc5MDkgMjMuNzkwOSAxNiAyNiAxNkMyOC4yMDkxIDE2IDMwIDE3Ljc5MDkgMzAgMjBaIiBmaWxsPSIjQkFCQUJBIi8+CjxwYXRoIGQ9Ik0zNiAzNEgxNkMxNC44OTU0IDM0IDE0IDMzLjEwNDYgMTQgMzJWMjJDMTQgMjAuODk1NCAxNC44OTU0IDIwIDE2IDIwSDE4LjI0MkMxOC43ODIgMjAgMTkuMjc0MyAyMC4yMTI4IDE5LjU5MjIgMjAuNjU3M0wyMS4zMDQzIDIzLjA1MTdDMjEuNzI3OCAyMy42MjQzIDIyLjQxNzggMjQgMjMuMTU2NiAyNEgyNi44NDM0QzI3LjU4MjIgMjQgMjguMjcyMiAyMy42MjQzIDI4LjY5NTcgMjMuMDUxN0wzMC40MDc4IDIwLjY1NzNDMzAuNzI1NyAyMC4yMTI4IDMxLjIxOCAyMCAzMS43NTggMjBIMzRDMzUuMTA0NiAyMCAzNiAyMC44OTU0IDM2IDIyVjMyQzM2IDMzLjEwNDYgMzUuMTA0NiAzNCAzNCAzNFoiIGZpbGw9IiNCQUJBQkEiLz4KPC9zdmc+'"></td>
-                    <td>${item.title}</td>
-                    <td>${item.location}</td>
-                    <td>${item.purchasePrice.toFixed(2)}€</td>
-                    <td><span class="status-badge ${item.status === 'available' ? 'status-available' : 'status-sold'}">${item.status === 'available' ? 'Disponible' : 'Vendu'}</span></td>
-                    <td>${item.salePrice ? `${item.salePrice.toFixed(2)}€` : '-'}</td>
-                    <td><span class="${marginClass}">${marginText}</span></td>
-                    <td>
-                        ${item.status === 'available' ? 
-                          `<button class="secondary mark-sold" data-id="${item.id}">Vendre</button>` : 
-                          `<button class="danger delete-item" data-id="${item.id}">Supprimer</button>`
-                        }
-                    </td>
-                `;
-                
-                inventoryTableBody.appendChild(row);
-            });
-            
-            // Ajouter des écouteurs d'événements aux boutons
-            document.querySelectorAll('.mark-sold').forEach(button => {
-                button.addEventListener('click', function() {
-                    openSoldModal(this.getAttribute('data-id'));
-                });
-            });
-            
-            document.querySelectorAll('.delete-item').forEach(button => {
-                button.addEventListener('click', function() {
-                    deleteItem(this.getAttribute('data-id'));
-                });
-            });
-        }
-        
-        // Ouvrir le modal de vente
-        function openSoldModal(itemId) {
-            currentEditingItemId = itemId;
-            document.getElementById('sold-item-id').value = itemId;
-            document.getElementById('sale-date').value = new Date().toISOString().split('T')[0];
-            soldModal.style.display = 'flex';
-        }
-        
-        // Marquer un objet comme vendu
-        function markItemAsSold() {
-            const itemId = document.getElementById('sold-item-id').value;
-            const salePrice = parseFloat(document.getElementById('sale-price').value);
-            const saleDate = document.getElementById('sale-date').value;
-            const salePlatform = document.getElementById('sale-platform').value;
-            
-            // Validation
-            if (isNaN(salePrice) || !saleDate || !salePlatform) {
-                showAlert('Veuillez remplir tous les champs', 'error');
+
+        function suggestTitle(imageEl) {
+            if (!imageEl || !imageEl.complete) {
                 return;
             }
-            
-            // Trouver et mettre à jour l'objet
-            const itemIndex = inventoryItems.findIndex(item => item.id === itemId);
-            if (itemIndex !== -1) {
-                inventoryItems[itemIndex].status = 'sold';
-                inventoryItems[itemIndex].salePrice = salePrice;
-                inventoryItems[itemIndex].saleDate = saleDate;
-                inventoryItems[itemIndex].salePlatform = salePlatform;
-                
-                saveInventoryItems();
-                renderInventoryTable();
-                updateDashboard();
-                
-                soldModal.style.display = 'none';
-                showAlert('Objet marqué comme vendu avec succès', 'success');
-            }
-        }
-        
-        // Supprimer un objet
-        function deleteItem(itemId) {
-            if (confirm('Êtes-vous sûr de vouloir supprimer cet objet ?')) {
-                inventoryItems = inventoryItems.filter(item => item.id !== itemId);
-                saveInventoryItems();
-                renderInventoryTable();
-                updateDashboard();
-                showAlert('Objet supprimé avec succès', 'success');
-            }
-        }
-        
-        // Mettre à jour le tableau de bord
-        function updateDashboard() {
-            // Statistiques générales
-            const totalItems = inventoryItems.length;
-            const soldItems = inventoryItems.filter(item => item.status === 'sold').length;
-            
-            const totalRevenue = inventoryItems
-                .filter(item => item.status === 'sold' && item.salePrice)
-                .reduce((sum, item) => sum + item.salePrice, 0);
-                
-            const totalMargin = inventoryItems
-                .filter(item => item.status === 'sold' && item.salePrice)
-                .reduce((sum, item) => sum + (item.salePrice - item.purchasePrice), 0);
-            
-            // Mettre à jour les éléments DOM
-            document.getElementById('total-items').textContent = totalItems;
-            document.getElementById('sold-items').textContent = soldItems;
-            document.getElementById('total-revenue').textContent = totalRevenue.toFixed(2) + '€';
-            document.getElementById('total-margin').textContent = totalMargin.toFixed(2) + '€';
-            
-            // Statistiques par plateforme
-            const platformStats = {};
-            inventoryItems
-                .filter(item => item.status === 'sold' && item.salePlatform)
-                .forEach(item => {
-                    if (!platformStats[item.salePlatform]) {
-                        platformStats[item.salePlatform] = {
-                            count: 0,
-                            revenue: 0,
-                            totalMargin: 0
-                        };
-                    }
-                    
-                    platformStats[item.salePlatform].count++;
-                    platformStats[item.salePlatform].revenue += item.salePrice;
-                    platformStats[item.salePlatform].totalMargin += (item.salePrice - item.purchasePrice);
-                });
-            
-            // Rendre les statistiques par plateforme
-            const platformStatsBody = document.getElementById('platform-stats-body');
-            platformStatsBody.innerHTML = '';
-            
-            for (const platform in platformStats) {
-                const stats = platformStats[platform];
-                const avgMargin = stats.totalMargin / stats.count;
-                
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${platform}</td>
-                    <td>${stats.count}</td>
-                    <td>${stats.revenue.toFixed(2)}€</td>
-                    <td>${avgMargin.toFixed(2)}€</td>
-                `;
-                
-                platformStatsBody.appendChild(row);
-            }
-        }
-        
-        // Exporter en CSV
-        function exportToCsv() {
-            // Préparer les données
-            const headers = ['Titre', 'Casier', 'Prix d\'achat', 'Statut', 'Prix de vente', 'Date de vente', 'Plateforme', 'Marge (€)', 'Marge (%)'];
-            
-            const csvData = inventoryItems.map(item => {
-                let margin = 0;
-                let marginPercent = 0;
-                
-                if (item.status === 'sold' && item.salePrice) {
-                    margin = item.salePrice - item.purchasePrice;
-                    marginPercent = ((margin / item.purchasePrice) * 100).toFixed(2);
+
+            if (!mobilenetModel) {
+                state.pendingClassification = true;
+                if (!elements.titreAuto.value) {
+                    elements.titreAuto.placeholder = 'Titre manuel (modèle en cours de chargement)';
                 }
-                
-                return [
-                    `"${item.title}"`,
-                    item.location,
-                    item.purchasePrice.toFixed(2),
-                    item.status === 'available' ? 'Disponible' : 'Vendu',
-                    item.salePrice ? item.salePrice.toFixed(2) : '',
-                    item.saleDate || '',
-                    item.salePlatform || '',
-                    margin.toFixed(2),
-                    marginPercent
-                ];
+                elements.suggestionWrapper.hidden = true;
+                return;
+            }
+
+            mobilenetModel.classify(imageEl).then(results => {
+                if (!results || !results.length) {
+                    elements.titreAuto.value = elements.titreAuto.value || 'Objet vintage unique';
+                    elements.suggestionWrapper.hidden = true;
+                    state.pendingClassification = false;
+                    return;
+                }
+                const labels = results.slice(0, 3).map(r => r.className.split(',')[0].trim());
+                const uniqueLabels = Array.from(new Set(labels));
+                const suggestion = `Pièce vintage ${uniqueLabels.join(' & ')} - trouvé en brocante`;
+                elements.titreAuto.value = suggestion;
+                elements.suggestionText.textContent = suggestion;
+                elements.suggestionWrapper.hidden = false;
+                state.pendingClassification = false;
+            }).catch(err => {
+                console.warn('Classification impossible :', err);
+                elements.titreAuto.value = elements.titreAuto.value || 'Objet vintage unique';
+                elements.suggestionWrapper.hidden = true;
+                state.pendingClassification = false;
             });
-            
-            // Créer le contenu CSV
-            let csvContent = headers.join(',') + '\n';
-            csvData.forEach(row => {
-                csvContent += row.join(',') + '\n';
+        }
+
+        function createItemFromForm() {
+            const photoData = elements.previewImage.dataset.imageData || null;
+            return {
+                id: crypto.randomUUID ? crypto.randomUUID() : `item-${Date.now()}`,
+                titre: elements.titreAuto.value.trim() || 'Objet vintage',
+                casier: elements.casier.value.trim(),
+                prixAchat: Number(elements.prixAchat.value) || 0,
+                dateAchat: elements.dateAchat.value,
+                photoData,
+                notes: elements.notes.value.trim(),
+                vendu: false,
+                prixVente: null,
+                dateVente: '',
+                plateforme: '',
+                createdAt: new Date().toISOString()
+            };
+        }
+
+        function addItem(item) {
+            state.items.unshift(item);
+            saveItems();
+            render();
+        }
+
+        function updateItem(id, updates) {
+            const index = state.items.findIndex(item => item.id === id);
+            if (index === -1) return;
+            state.items[index] = { ...state.items[index], ...updates };
+            saveItems();
+            render();
+        }
+
+        function applyFilters(items) {
+            return items.filter(item => {
+                const matchCasier = state.filters.casier === 'all' || item.casier === state.filters.casier;
+                const matchPlateforme = state.filters.plateforme === 'all' || item.plateforme === state.filters.plateforme;
+                const matchStatus = state.filters.status === 'all' ||
+                    (state.filters.status === 'sold' && item.vendu) ||
+                    (state.filters.status === 'available' && !item.vendu);
+                const matchSearch = !state.filters.search || item.titre.toLowerCase().includes(state.filters.search.toLowerCase());
+                return matchCasier && matchPlateforme && matchStatus && matchSearch;
             });
-            
-            // Télécharger le fichier
+        }
+
+        function renderFilters() {
+            const uniqueCasiers = Array.from(new Set(state.items.map(item => item.casier))).sort();
+            const options = '<option value="all">Tous les casiers</option>' +
+                uniqueCasiers.map(c => `<option value="${c}">${c}</option>`).join('');
+            elements.filterCasier.innerHTML = options;
+            if (state.filters.casier !== 'all' && !uniqueCasiers.includes(state.filters.casier)) {
+                state.filters.casier = 'all';
+            }
+            elements.filterCasier.value = state.filters.casier;
+        }
+
+        function renderTable() {
+            const filtered = applyFilters(state.items);
+            elements.tableBody.innerHTML = '';
+            elements.emptyState.hidden = filtered.length !== 0;
+
+            filtered.forEach(item => {
+                const template = document.getElementById('rowTemplate');
+                const row = template.content.firstElementChild.cloneNode(true);
+                const img = row.querySelector('img');
+                img.src = item.photoData || 'https://via.placeholder.com/80x80?text=Photo';
+                img.alt = item.titre;
+
+                row.querySelector('.col-title').innerHTML = `${item.titre}${item.notes ? `<br><small>${item.notes}</small>` : ''}`;
+                row.querySelector('.col-casier').textContent = item.casier;
+                row.querySelector('.col-prix-achat').textContent = item.prixAchat ? `${item.prixAchat.toFixed(2)} €` : '-';
+                row.querySelector('.col-prix-vente').textContent = item.prixVente ? `${Number(item.prixVente).toFixed(2)} €` : '-';
+                row.querySelector('.col-date-achat').textContent = item.dateAchat ? formatDate(item.dateAchat) : '-';
+                row.querySelector('.col-date-vente').textContent = item.dateVente ? formatDate(item.dateVente) : '-';
+                row.querySelector('.col-plateforme').textContent = item.plateforme || '-';
+
+                const statusSpan = document.createElement('span');
+                statusSpan.className = `status ${item.vendu ? 'sold' : 'on-sale'}`;
+                statusSpan.textContent = item.vendu ? 'Vendu' : 'Disponible';
+                row.querySelector('.col-status').appendChild(statusSpan);
+
+                const actionsCell = row.querySelector('.col-actions');
+                const saleBtn = document.createElement('button');
+                saleBtn.className = 'secondary';
+                saleBtn.type = 'button';
+                saleBtn.textContent = item.vendu ? 'Modifier la vente' : 'Marquer comme vendu';
+                saleBtn.addEventListener('click', () => openSaleModal(item));
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'danger';
+                deleteBtn.type = 'button';
+                deleteBtn.textContent = 'Supprimer';
+                deleteBtn.addEventListener('click', () => {
+                    if (confirm('Supprimer cet objet de votre inventaire ?')) {
+                        state.items = state.items.filter(i => i.id !== item.id);
+                        saveItems();
+                        render();
+                    }
+                });
+
+                actionsCell.appendChild(saleBtn);
+                actionsCell.appendChild(deleteBtn);
+
+                elements.tableBody.appendChild(row);
+            });
+        }
+
+        function renderStats() {
+            const totalSold = state.items.filter(item => item.vendu);
+            const totalStock = state.items.length - totalSold.length;
+            const chiffreAffaires = totalSold.reduce((sum, item) => sum + (Number(item.prixVente) || 0), 0);
+            const coutTotal = state.items.reduce((sum, item) => sum + (Number(item.prixAchat) || 0), 0);
+            const marge = chiffreAffaires - coutTotal;
+
+            elements.statEnStock.textContent = totalStock;
+            elements.statVendus.textContent = totalSold.length;
+            elements.statCA.textContent = `${chiffreAffaires.toFixed(2)} €`;
+            elements.statMarge.textContent = `${marge.toFixed(2)} €`;
+        }
+
+        function render() {
+            renderFilters();
+            renderTable();
+            renderStats();
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('fr-FR');
+        }
+
+        function openSaleModal(item) {
+            elements.saleModal.hidden = false;
+            elements.saleItemId.value = item.id;
+            elements.salePrice.value = item.prixVente ?? '';
+            elements.saleDate.value = item.dateVente || '';
+            elements.salePlatform.value = item.plateforme || DEFAULT_PLATFORM;
+            elements.markAvailable.style.display = item.vendu ? 'inline-flex' : 'none';
+        }
+
+        function closeSaleModal() {
+            elements.saleModal.hidden = true;
+            elements.saleForm.reset();
+        }
+
+        function exportAsCsv() {
+            if (!state.items.length) {
+                alert('Aucune donnée à exporter.');
+                return;
+            }
+            const headers = ['Titre', 'Casier', 'PrixAchat', 'PrixVente', 'DateAchat', 'DateVente', 'Plateforme', 'Vendu', 'Notes'];
+            const rows = state.items.map(item => [
+                wrapCsv(item.titre),
+                wrapCsv(item.casier),
+                item.prixAchat,
+                item.prixVente ?? '',
+                item.dateAchat,
+                item.dateVente,
+                wrapCsv(item.plateforme),
+                item.vendu ? 'oui' : 'non',
+                wrapCsv(item.notes)
+            ].join(','));
+            const csvContent = [headers.join(','), ...rows].join('\n');
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
-            link.setAttribute('href', url);
-            link.setAttribute('download', 'inventaire_objets_chines.csv');
-            link.style.visibility = 'hidden';
+            link.href = url;
+            link.setAttribute('download', `inventaire-vintage-${new Date().toISOString().split('T')[0]}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            
-            showAlert('Export CSV effectué avec succès', 'success');
+            URL.revokeObjectURL(url);
         }
-        
-        // Afficher une alerte
-        function showAlert(message, type) {
-            const alert = document.createElement('div');
-            alert.className = `alert alert-${type}`;
-            alert.textContent = message;
-            
-            alertsContainer.appendChild(alert);
-            alert.style.display = 'block';
-            
-            // Supprimer l'alerte après 5 secondes
-            setTimeout(() => {
-                alert.remove();
-            }, 5000);
+
+        function wrapCsv(value) {
+            if (value == null) return '';
+            const str = String(value).replace(/"/g, '""');
+            return `"${str}"`;
         }
+
+        elements.form.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const item = createItemFromForm();
+            if (!item.photoData) {
+                alert('Merci d\'ajouter une photo pour générer la fiche.');
+                return;
+            }
+            addItem(item);
+            resetForm();
+        });
+
+        elements.resetForm.addEventListener('click', resetForm);
+        elements.photoInput.addEventListener('change', handlePhotoChange);
+        elements.filterCasier.addEventListener('change', (e) => {
+            state.filters.casier = e.target.value;
+            render();
+        });
+        elements.filterPlateforme.addEventListener('change', (e) => {
+            state.filters.plateforme = e.target.value;
+            render();
+        });
+        elements.filterStatus.addEventListener('change', (e) => {
+            state.filters.status = e.target.value;
+            render();
+        });
+        elements.searchInput.addEventListener('input', (e) => {
+            state.filters.search = e.target.value;
+            render();
+        });
+        elements.exportCsv.addEventListener('click', exportAsCsv);
+
+        elements.closeModal.addEventListener('click', closeSaleModal);
+        elements.saleModal.addEventListener('click', (event) => {
+            if (event.target === elements.saleModal) {
+                closeSaleModal();
+            }
+        });
+
+        elements.saleForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            const id = elements.saleItemId.value;
+            const updates = {
+                vendu: true,
+                prixVente: elements.salePrice.value ? Number(elements.salePrice.value) : null,
+                dateVente: elements.saleDate.value || '',
+                plateforme: elements.salePlatform.value || DEFAULT_PLATFORM
+            };
+            updateItem(id, updates);
+            closeSaleModal();
+        });
+
+        elements.markAvailable.addEventListener('click', () => {
+            const id = elements.saleItemId.value;
+            updateItem(id, {
+                vendu: false,
+                prixVente: null,
+                dateVente: '',
+                plateforme: ''
+            });
+            closeSaleModal();
+        });
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            closeSaleModal();
+            loadItems();
+            render();
+            await loadMobilenet();
+        });
     </script>
 </body>
 </html>
