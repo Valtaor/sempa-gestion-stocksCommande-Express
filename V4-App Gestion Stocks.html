@@ -2,2118 +2,2259 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Gestion des Stocks SEMPA</title>
     <style>
         :root {
-            --primary: #ffa300;
-            --primary-light: #FFF1EB;
-            --dark: #0F172A;
-            --light: #F8FAFC;
-            --gray: #94A3B8;
-            --gray-light: #E2E8F0;
-            --success: #10B981;
-            --error: #EF4444;
-            --warning: #F59E0B;
-            --info: #3B82F6;
-            --radius: 8px;
-            --shadow-sm: 0 1px 3px rgba(0,0,0,0.1);
-            --body-bg: #F1F5F9;
+            color-scheme: light;
+            --bg: #F2F4F8;
+            --bg-alt: #E6EBF5;
             --surface: #FFFFFF;
-            --surface-alt: #F8FAFC;
-            --text: #1F2937;
+            --surface-alt: #F8FAFF;
+            --border: rgba(15, 23, 42, 0.08);
+            --border-strong: rgba(15, 23, 42, 0.16);
+            --shadow-sm: 0 8px 24px rgba(15, 23, 42, 0.12);
+            --shadow-lg: 0 28px 80px rgba(15, 23, 42, 0.18);
+            --primary: #FF9F1C;
+            --primary-dark: #E78F17;
+            --primary-soft: rgba(255, 159, 28, 0.16);
+            --text: #0F172A;
             --text-muted: #64748B;
-            --border-color: #E2E8F0;
-            --input-bg: #FFFFFF;
-            --table-hover: rgba(15, 23, 42, 0.04);
-            --alert-bg: #FEF2F2;
-            --alert-border: #EF4444;
+            --text-subtle: #94A3B8;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --radius-sm: 10px;
+            --radius-md: 16px;
+            --radius-lg: 22px;
+            --transition: 0.25s ease;
+            font-synthesis: none;
         }
 
         body {
-            background: var(--body-bg);
+            margin: 0;
+            min-height: 100vh;
+            font-family: "Inter", "SF Pro Text", system-ui, -apple-system, sans-serif;
+            background: radial-gradient(circle at top right, var(--bg-alt) 0%, var(--bg) 45%, #E0E6F2 100%);
             color: var(--text);
-            transition: background 0.3s ease, color 0.3s ease;
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            transition: background var(--transition), color var(--transition);
         }
 
         body.dark-theme {
-            --body-bg: #0B1120;
-            --surface: #111827;
-            --surface-alt: #1E293B;
-            --text: #E2E8F0;
-            --text-muted: #94A3B8;
-            --border-color: rgba(148, 163, 184, 0.3);
-            --input-bg: #0F172A;
-            --table-hover: rgba(148, 163, 184, 0.12);
-            --alert-bg: rgba(239, 68, 68, 0.12);
-            --alert-border: rgba(239, 68, 68, 0.75);
-            --shadow-sm: 0 10px 30px rgba(15, 23, 42, 0.5);
-            --primary-light: rgba(255, 163, 0, 0.15);
-            --light: #1E293B;
-            --gray-light: rgba(148, 163, 184, 0.15);
             color-scheme: dark;
+            --bg: #020617;
+            --bg-alt: #0A1222;
+            --surface: #0F172A;
+            --surface-alt: #111C32;
+            --border: rgba(148, 163, 184, 0.18);
+            --border-strong: rgba(148, 163, 184, 0.32);
+            --shadow-sm: 0 10px 30px rgba(2, 6, 23, 0.6);
+            --shadow-lg: 0 40px 90px rgba(2, 6, 23, 0.75);
+            --text: #E2E8F0;
+            --text-muted: #A3B4D4;
+            --text-subtle: #7C8CB2;
+            --primary-soft: rgba(255, 159, 28, 0.2);
+            background: radial-gradient(circle at top right, #0A1222 0%, #040817 50%, #020415 100%);
         }
 
-        .sempa-stock-app {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        h1, h2, h3, h4, h5 {
+            font-weight: 700;
+            line-height: 1.2;
+            margin: 0;
+        }
+
+        p {
+            margin: 0;
+        }
+
+        a {
+            color: inherit;
+        }
+
+        .app-shell {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-header {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            padding: clamp(18px, 3vw, 32px);
+            backdrop-filter: blur(18px);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.62));
+            border-bottom: 1px solid rgba(15, 23, 42, 0.05);
+            box-shadow: var(--shadow-sm);
+        }
+
+        body.dark-theme .app-header {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.76));
+            border-bottom-color: rgba(148, 163, 184, 0.2);
+        }
+
+        .header-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
             max-width: 1200px;
             margin: 0 auto;
-            padding: 20px;
-            color: var(--text);
-            transition: color 0.3s ease;
         }
 
-        .sempa-header {
-            background: var(--surface);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow-sm);
-            padding: 20px;
-            margin-bottom: 20px;
-            text-align: center;
-            border: 1px solid var(--border-color);
-            transition: background 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
-        }
-
-        .sempa-header-controls {
+        .brand {
             display: flex;
-            justify-content: flex-end;
-            margin-bottom: 10px;
+            align-items: center;
+            gap: 16px;
         }
 
-        .sempa-header h1 {
-            color: var(--primary);
-            margin-bottom: 10px;
+        .brand-mark {
+            width: 52px;
+            height: 52px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--primary), rgba(255, 197, 109, 0.85));
+            color: #fff;
+            font-weight: 700;
+            display: grid;
+            place-items: center;
+            letter-spacing: 0.08em;
+            box-shadow: 0 18px 32px rgba(255, 159, 28, 0.35);
         }
 
-        .sempa-header p {
+        .brand h1 {
+            font-size: clamp(1.5rem, 2vw, 2.2rem);
+            letter-spacing: -0.02em;
+        }
+
+        .brand p {
             color: var(--text-muted);
-            margin: 0;
-            margin-top: 5px;
+            margin-top: 4px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .icon-button {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+        }
+
+        .icon-button:hover,
+        .icon-button:focus-visible {
+            transform: translateY(-2px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 22px rgba(255, 159, 28, 0.24);
+            outline: none;
+        }
+
+        .btn-primary {
+            border: none;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: #fff;
+            padding: 12px 18px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            box-shadow: 0 16px 30px rgba(255, 159, 28, 0.25);
+            transition: transform var(--transition), filter var(--transition);
+        }
+
+        .btn-primary:hover,
+        .btn-primary:focus-visible {
+            transform: translateY(-1px);
+            filter: brightness(1.05);
+            outline: none;
+        }
+
+        .btn-ghost {
+            border-radius: 12px;
+            border: 1px solid rgba(255, 159, 28, 0.38);
+            background: transparent;
+            color: var(--primary);
+            padding: 10px 16px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background var(--transition), transform var(--transition);
+        }
+
+        .btn-ghost:hover,
+        .btn-ghost:focus-visible {
+            background: var(--primary-soft);
+            transform: translateY(-1px);
+            outline: none;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: clamp(22px, 4vw, 42px);
+        }
+
+        .content-max {
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
         .sempa-tabs {
-            display: flex;
-            background: var(--surface);
-            border-radius: var(--radius);
+            display: grid;
+            grid-auto-flow: column;
+            gap: 12px;
+            padding: 6px;
+            background: rgba(255, 255, 255, 0.92);
+            border-radius: var(--radius-lg);
+            border: 1px solid rgba(15, 23, 42, 0.06);
             box-shadow: var(--shadow-sm);
-            margin-bottom: 20px;
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-            transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+            overflow-x: auto;
+            margin-bottom: clamp(20px, 4vw, 36px);
+        }
+
+        body.dark-theme .sempa-tabs {
+            background: rgba(15, 23, 42, 0.92);
+            border-color: rgba(148, 163, 184, 0.24);
         }
 
         .sempa-tab {
-            padding: 15px 20px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.3s;
-            flex: 1;
-            text-align: center;
-            color: var(--text);
+            border: none;
+            border-radius: var(--radius-md);
             background: transparent;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.95rem;
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: background var(--transition), color var(--transition), transform var(--transition);
+            white-space: nowrap;
         }
 
         .sempa-tab.active {
             background: var(--primary);
-            color: white;
+            color: #fff;
+            box-shadow: 0 12px 28px rgba(255, 159, 28, 0.26);
         }
 
-        .sempa-tab:not(.active):hover {
-            background: var(--primary-light);
-            color: var(--primary);
+        .sempa-tab:not(.active):hover,
+        .sempa-tab:not(.active):focus-visible {
+            background: var(--primary-soft);
+            color: var(--text);
+            outline: none;
         }
 
         .sempa-content {
             display: none;
-            background: var(--surface);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow-sm);
-            padding: 20px;
-            margin-bottom: 20px;
-            border: 1px solid var(--border-color);
-            transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+            animation: fade 0.3s ease;
         }
 
         .sempa-content.active {
             display: block;
         }
-        
-        .sempa-stats {
+
+        @keyframes fade {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: clamp(16px, 3vw, 26px);
+        }
+
+        .section-heading h2 {
+            font-size: clamp(1.25rem, 1.8vw, 1.6rem);
+            letter-spacing: -0.01em;
+        }
+
+        .metrics-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
+            gap: 16px;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            margin-bottom: clamp(20px, 4vw, 36px);
         }
 
-        .sempa-stat {
-            background: var(--surface-alt);
-            border-radius: var(--radius);
-            padding: 15px;
-            text-align: center;
-            border: 1px solid var(--border-color);
-            transition: background 0.3s ease, border-color 0.3s ease;
+        .metric-card {
+            position: relative;
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            transition: transform var(--transition), box-shadow var(--transition);
         }
 
-        .sempa-stat h3 {
-            font-size: 14px;
+        .metric-card::after {
+            content: "";
+            position: absolute;
+            inset: auto -40% -40% -40%;
+            height: 60%;
+            background: radial-gradient(circle, rgba(255, 159, 28, 0.18), transparent 65%);
+            pointer-events: none;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
             color: var(--text-muted);
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
 
-        .sempa-stat .value {
-            font-size: 24px;
+        .metric-value {
+            font-size: clamp(1.6rem, 2.4vw, 2.1rem);
             font-weight: 700;
-            color: var(--primary);
-        }
-        
-        .sempa-alert {
-            background: var(--alert-bg);
-            border-left: 4px solid var(--alert-border);
-            padding: 15px;
-            margin-bottom: 15px;
-            border-radius: var(--radius);
-            border: 1px solid var(--border-color);
-            transition: background 0.3s ease, border-color 0.3s ease;
         }
 
-        .sempa-alert-item {
+        .dashboard-grid {
+            display: grid;
+            gap: 24px;
+        }
+
+        @media (min-width: 980px) {
+            .dashboard-grid.cols-2 {
+                grid-template-columns: 2.1fr 1.1fr;
+                align-items: start;
+            }
+        }
+
+        .card {
+            border-radius: var(--radius-lg);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: clamp(18px, 3vw, 26px);
+            box-shadow: var(--shadow-sm);
+            transition: transform var(--transition), box-shadow var(--transition);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card h3 {
+            font-size: 1.05rem;
+            margin-bottom: 16px;
+        }
+
+        .alert-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .alert-item {
+            padding: 14px 16px;
+            border-radius: var(--radius-md);
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.22);
             display: flex;
             justify-content: space-between;
-            padding: 12px 0;
-            border-bottom: 1px solid var(--border-color);
+            flex-wrap: wrap;
+            gap: 8px;
         }
 
-        .sempa-alert-item:last-child {
-            border-bottom: none;
+        .empty-state {
+            padding: 18px;
+            border-radius: var(--radius-md);
+            border: 1px dashed var(--border);
+            color: var(--text-muted);
+            text-align: center;
         }
 
-        .sempa-product-name {
-            font-weight: 500;
-        }
-
-        .sempa-stock-level {
-            color: var(--error);
-            font-weight: 600;
-        }
-
-        .sempa-dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
-        }
-
-        .sempa-panel {
-            background: var(--surface-alt);
-            border-radius: var(--radius);
-            border: 1px solid var(--border-color);
-            padding: 16px;
-        }
-
-        .sempa-panel h3 {
-            margin-top: 0;
-            margin-bottom: 12px;
-        }
-
-        .sempa-panel ul {
+        .list {
             list-style: none;
             margin: 0;
             padding: 0;
+            display: grid;
+            gap: 12px;
         }
 
-        .sempa-panel li {
-            padding: 10px 0;
-            border-bottom: 1px solid var(--border-color);
+        .list li {
+            padding: 14px 16px;
+            border-radius: var(--radius-md);
+            background: rgba(148, 163, 184, 0.1);
             display: flex;
             justify-content: space-between;
-            gap: 10px;
-            align-items: center;
-        }
-
-        .sempa-panel li:last-child {
-            border-bottom: none;
-        }
-
-        .sempa-panel li span {
-            font-weight: 600;
-        }
-
-        .sempa-panel li.sempa-empty-state {
-            padding: 6px 0;
-            border: none;
-            font-weight: 400;
-            display: block;
-        }
-
-        .sempa-text-muted {
-            color: var(--text-muted);
-            font-size: 13px;
-        }
-
-        .sempa-mini-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .sempa-mini-table td {
-            padding: 6px 0;
-            font-size: 14px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .sempa-mini-table tr:last-child td {
-            border-bottom: none;
-        }
-
-        .sempa-mini-table td:last-child {
-            text-align: right;
-            font-weight: 600;
-        }
-
-        .sempa-empty-state {
-            color: var(--text-muted);
-            font-size: 14px;
-        }
-
-        textarea.sempa-input {
-            resize: vertical;
-            min-height: 80px;
-        }
-        
-        .sempa-btn {
-            padding: 10px 15px;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: var(--radius);
-            font-weight: 500;
-            cursor: pointer;
-            transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .sempa-btn:hover {
-            background: #e59400;
-        }
-
-        .sempa-btn-secondary {
-            background: var(--surface-alt);
-            color: var(--text);
-            border: 1px solid var(--border-color);
-        }
-
-        .sempa-btn-secondary:hover {
-            background: var(--primary-light);
-            color: var(--primary);
-            border-color: var(--primary);
-        }
-
-        .sempa-btn-danger {
-            background: rgba(239, 68, 68, 0.1);
-            color: var(--error);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-        }
-
-        .sempa-btn-danger:hover {
-            background: rgba(239, 68, 68, 0.2);
-        }
-
-        .sempa-btn-ghost {
-            background: transparent;
-            color: var(--primary);
-            border: 1px solid rgba(255, 163, 0, 0.3);
-        }
-
-        .sempa-btn-ghost:hover {
-            background: rgba(255, 163, 0, 0.12);
-        }
-
-        .sempa-btn-small {
-            padding: 6px 10px;
-            font-size: 13px;
-        }
-
-        .sempa-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 16px;
-        }
-        
-        .sempa-table th, .sempa-table td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .sempa-table th {
-            font-weight: 600;
-            color: var(--text-muted);
-            background: var(--surface-alt);
-        }
-
-        .sempa-table tbody tr {
-            transition: background-color 0.3s ease, transform 0.2s ease;
-        }
-
-        .sempa-table tbody tr:hover {
-            background-color: var(--table-hover);
-            transform: translateY(-2px);
-        }
-
-        .sempa-indicator {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            margin-right: 8px;
-        }
-        
-        .sempa-low {
-            background-color: var(--error);
-        }
-        
-        .sempa-medium {
-            background-color: var(--warning);
-        }
-        
-        .sempa-good {
-            background-color: var(--success);
-        }
-        
-        .sempa-form-group {
-            margin-bottom: 15px;
-        }
-        
-        .sempa-label {
-            display: block;
-            font-size: 14px;
-            font-weight: 500;
-            margin-bottom: 8px;
-            color: var(--text-muted);
-        }
-
-        .sempa-input, .sempa-select {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius);
-            font-size: 14px;
-            background: var(--input-bg);
-            color: var(--text);
-            transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease, box-shadow 0.2s ease;
-        }
-
-        .sempa-input:focus, .sempa-select:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(255, 163, 0, 0.2);
-        }
-
-        .sempa-select {
-            appearance: none;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            padding-right: 40px;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%2394A3B8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 8 10 12 14 8'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 12px center;
-            background-size: 14px 14px;
-        }
-
-        .dark-theme .sempa-select {
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23CBD5F5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 8 10 12 14 8'/%3E%3C/svg%3E");
-        }
-
-        .sempa-select::-ms-expand {
-            display: none;
-        }
-
-        .sempa-search {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
+            gap: 12px;
             flex-wrap: wrap;
         }
 
-        .sempa-filters {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 15px;
-            align-items: center;
+        body.dark-theme .list li {
+            background: rgba(148, 163, 184, 0.14);
         }
 
-        .sempa-filters .sempa-select {
-            min-width: 180px;
-        }
-
-        .sempa-category-chips {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 20px;
-        }
-
-        .sempa-chip {
-            border: 1px solid var(--border-color);
-            background: var(--surface-alt);
-            color: var(--text);
-            padding: 6px 14px;
-            border-radius: 999px;
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease, transform 0.2s ease;
-        }
-
-        .sempa-chip:hover {
-            transform: translateY(-1px);
-            border-color: var(--primary);
-            color: var(--primary);
-        }
-
-        .sempa-chip.active {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
-            box-shadow: 0 6px 12px rgba(255, 163, 0, 0.2);
-        }
-
-        .sempa-product-groups {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .sempa-product-group {
-            background: var(--surface-alt);
-            border-radius: var(--radius);
-            border: 1px solid var(--border-color);
-            padding: 14px;
+        .inventory-header {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 18px;
+            margin-bottom: clamp(18px, 3vw, 28px);
         }
 
-        .sempa-product-group h3 {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 16px;
-            margin: 0;
-            color: var(--text);
+        .filter-bar {
+            display: grid;
+            gap: 12px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
         }
 
-        .sempa-chip-counter {
-            background: var(--primary-light);
-            color: var(--primary);
-            border-radius: 999px;
-            padding: 2px 8px;
-            font-size: 12px;
-            font-weight: 600;
+        .search-field {
+            position: relative;
         }
 
-        .sempa-product-pill-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
+        .search-input {
+            width: 100%;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            background: var(--surface);
+            padding: 12px 16px 12px 44px;
+            font-size: 0.95rem;
+            transition: border-color var(--transition), box-shadow var(--transition);
         }
 
-        .sempa-product-pill {
-            border: 1px dashed var(--border-color);
-            background: transparent;
-            color: var(--text);
-            padding: 6px 10px;
-            border-radius: 999px;
-            font-size: 12px;
-            cursor: pointer;
-            transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease, transform 0.2s ease;
-        }
-
-        .sempa-product-pill:hover {
-            background: var(--primary-light);
+        .search-input:focus {
+            outline: none;
             border-color: var(--primary);
-            color: var(--primary);
-            transform: translateY(-1px);
+            box-shadow: 0 0 0 4px rgba(255, 159, 28, 0.18);
         }
 
-        .sempa-table tr.sempa-highlight {
-            animation: sempaHighlight 1.6s ease;
+        .search-field svg {
+            position: absolute;
+            top: 50%;
+            left: 16px;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            stroke: var(--text-muted);
         }
 
-        @keyframes sempaHighlight {
-            0% {
-                background-color: rgba(255, 163, 0, 0.1);
-            }
-            50% {
-                background-color: rgba(255, 163, 0, 0.22);
-            }
-            100% {
-                background-color: transparent;
-            }
+        .select {
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            background: var(--surface);
+            padding: 12px 16px;
+            font-size: 0.95rem;
+            transition: border-color var(--transition), box-shadow var(--transition);
         }
 
-        .sempa-actions {
+        .select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(255, 159, 28, 0.18);
+        }
+
+        .chips-scroll {
             display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 4px;
         }
 
-        .sempa-badge {
+        .chip {
+            flex: none;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            background: rgba(148, 163, 184, 0.14);
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.85rem;
+            padding: 8px 16px;
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            padding: 4px 10px;
-            border-radius: 999px;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-            background: var(--surface-alt);
+            cursor: pointer;
+            transition: background var(--transition), color var(--transition), border-color var(--transition);
+        }
+
+        .chip.active {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 10px 24px rgba(255, 159, 28, 0.25);
+        }
+
+        .chip-counter {
+            font-weight: 500;
+            opacity: 0.8;
+        }
+
+        .table-wrapper {
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            background: var(--surface);
+            box-shadow: var(--shadow-sm);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: rgba(148, 163, 184, 0.12);
             color: var(--text-muted);
         }
 
-        .sempa-badge .sempa-indicator {
-            margin-right: 0;
+        th, td {
+            text-align: left;
+            padding: 14px 18px;
+            font-size: 0.92rem;
+            border-bottom: 1px solid var(--border);
         }
 
-        .sempa-badge.low {
-            background: rgba(239, 68, 68, 0.12);
-            color: var(--error);
+        tbody tr:hover {
+            background: rgba(148, 163, 184, 0.08);
         }
 
-        .sempa-badge.medium {
-            background: rgba(245, 158, 11, 0.12);
-            color: var(--warning);
+        .row-highlight {
+            box-shadow: inset 0 0 0 2px var(--primary);
+            background: rgba(255, 159, 28, 0.12) !important;
+            transition: background 0.4s ease;
         }
 
-        .sempa-badge.good {
-            background: rgba(16, 185, 129, 0.12);
-            color: var(--success);
-        }
-
-        .sempa-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            justify-content: center;
+        .badge {
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            display: inline-flex;
             align-items: center;
-            z-index: 1000;
+            gap: 8px;
         }
 
-        .sempa-modal-content {
-            background: var(--surface);
-            border-radius: var(--radius);
-            padding: 20px;
-            width: 90%;
-            max-width: 500px;
-            max-height: 90vh;
-            overflow-y: auto;
-            border: 1px solid var(--border-color);
-            transition: background 0.3s ease, border-color 0.3s ease;
+        .badge::before {
+            content: "";
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
         }
 
-        .sempa-modal-header {
+        .badge.low { color: var(--danger); }
+        .badge.medium { color: var(--warning); }
+        .badge.good { color: var(--success); }
+
+        .table-actions {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 8px;
         }
 
-        .sempa-close {
-            background: none;
-            border: none;
-            font-size: 24px;
+        .btn-secondary,
+        .btn-outline,
+        .btn-danger {
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: 1px solid transparent;
             cursor: pointer;
+            background: rgba(148, 163, 184, 0.14);
             color: var(--text);
+            transition: background var(--transition), color var(--transition);
         }
 
-        .sempa-theme-toggle {
+        .btn-secondary:hover,
+        .btn-outline:hover,
+        .btn-danger:hover {
+            background: rgba(148, 163, 184, 0.22);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border-color: rgba(148, 163, 184, 0.38);
+        }
+
+        .btn-danger {
+            color: var(--danger);
+            background: rgba(239, 68, 68, 0.12);
+            border-color: rgba(239, 68, 68, 0.2);
+        }
+
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.18);
+        }
+
+        .product-groups {
+            margin-top: clamp(24px, 4vw, 40px);
+            display: grid;
+            gap: 18px;
+        }
+
+        .group-card {
+            border-radius: var(--radius-lg);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 18px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .pill-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .pill {
             padding: 8px 14px;
-            background: var(--surface-alt);
-            color: var(--text);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius);
-            font-weight: 500;
+            border-radius: 999px;
+            border: 1px solid rgba(148, 163, 184, 0.45);
+            background: transparent;
+            font-size: 0.85rem;
             cursor: pointer;
-            transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+            transition: border-color var(--transition), transform var(--transition);
         }
 
-        .sempa-theme-toggle:hover {
-            background: var(--primary-light);
-            color: var(--primary);
+        .pill:hover,
+        .pill:focus-visible {
             border-color: var(--primary);
+            transform: translateY(-1px);
+            outline: none;
         }
-        
-        @media (max-width: 768px) {
-            .sempa-tabs {
+
+        .movements-grid {
+            display: grid;
+            gap: 24px;
+        }
+
+        @media (min-width: 960px) {
+            .movements-grid {
+                grid-template-columns: 1.1fr 1.2fr;
+            }
+        }
+
+        label {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        input[type="text"],
+        input[type="number"],
+        textarea,
+        select {
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            background: var(--surface);
+            padding: 12px 14px;
+            font-size: 0.95rem;
+            transition: border-color var(--transition), box-shadow var(--transition);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(255, 159, 28, 0.18);
+        }
+
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.48);
+            display: none;
+            place-items: center;
+            z-index: 40;
+            padding: 24px;
+        }
+
+        .modal-backdrop.open {
+            display: grid;
+        }
+
+        .modal-panel {
+            width: min(640px, 100%);
+            max-height: min(90vh, 720px);
+            border-radius: clamp(var(--radius-md), 5vw, 28px);
+            background: var(--surface);
+            border: 1px solid var(--border-strong);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            animation: modal 0.28s ease;
+        }
+
+        @keyframes modal {
+            from { opacity: 0; transform: translateY(20px) scale(0.96); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .modal-header {
+            padding: 22px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .modal-body {
+            padding: clamp(20px, 4vw, 28px);
+            display: grid;
+            gap: 16px;
+        }
+
+        .form-grid {
+            display: grid;
+            gap: 16px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .modal-close {
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 1.4rem;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .floating-action {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: #fff;
+            font-size: 1.6rem;
+            box-shadow: 0 20px 40px rgba(255, 159, 28, 0.35);
+            display: none;
+            place-items: center;
+            cursor: pointer;
+            z-index: 30;
+        }
+
+        .text-muted { color: var(--text-muted); }
+
+        @media (max-width: 780px) {
+            .app-header {
+                border-radius: 0 0 24px 24px;
+            }
+
+            .header-actions .btn-primary {
+                display: none;
+            }
+
+            .floating-action {
+                display: grid;
+            }
+
+            thead {
+                display: none;
+            }
+
+            tbody tr {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 10px;
+                border-bottom: none;
+                padding: 16px;
+                margin: 10px;
+                border-radius: var(--radius-lg);
+                background: rgba(148, 163, 184, 0.1);
+            }
+
+            tbody tr td {
+                border-bottom: none;
+                padding: 0;
+                display: flex;
                 flex-direction: column;
+                gap: 4px;
+                font-size: 0.9rem;
             }
 
-            .sempa-stats {
-                grid-template-columns: 1fr;
+            tbody tr td::before {
+                content: attr(data-label);
+                font-size: 0.75rem;
+                color: var(--text-muted);
+                letter-spacing: 0.04em;
+                text-transform: uppercase;
             }
 
-            .sempa-product-groups {
-                grid-template-columns: 1fr;
+            .table-actions {
+                grid-column: 1 / -1;
+            }
+        }
+
+        @media (max-width: 560px) {
+            .brand {
+                width: 100%;
             }
 
-            .sempa-table {
-                display: block;
-                overflow-x: auto;
+            .brand h1 {
+                font-size: 1.4rem;
             }
 
-            .sempa-actions {
-                flex-direction: column;
-                align-items: stretch;
+            .metrics-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
             }
         }
     </style>
 </head>
 <body>
-    <div class="sempa-stock-app">
-        <div class="sempa-header">
-            <div class="sempa-header-controls">
-                <button id="theme-toggle" class="sempa-theme-toggle" type="button" aria-label="Activer le mode sombre" aria-pressed="false">Mode sombre</button>
-            </div>
-            <h1>Gestion de Stock SEMPA</h1>
-            <p>Application de suivi des stocks de bouteilles PET</p>
-        </div>
-        
-        <div class="sempa-tabs">
-            <div class="sempa-tab active" data-tab="dashboard">Tableau de bord</div>
-            <div class="sempa-tab" data-tab="products">Produits</div>
-            <div class="sempa-tab" data-tab="movements">Mouvements</div>
-        </div>
-        
-        <div id="dashboard" class="sempa-content active">
-            <h2>Tableau de Bord</h2>
-            
-            <div class="sempa-stats">
-                <div class="sempa-stat">
-                    <h3>Produits en stock</h3>
-                    <div class="value" id="total-products">4</div>
+    <div class="app-shell">
+        <header class="app-header">
+            <div class="header-inner">
+                <div class="brand">
+                    <div class="brand-mark">SE</div>
+                    <div>
+                        <h1>Gestion des Stocks SEMPA</h1>
+                        <p>Visualisez et ajustez vos stocks instantanément, même en mobilité.</p>
+                    </div>
                 </div>
-                <div class="sempa-stat">
-                    <h3>Stocks faibles</h3>
-                    <div class="value" id="low-stock-count">0</div>
-                </div>
-                <div class="sempa-stat">
-                    <h3>Total cartons</h3>
-                    <div class="value" id="total-cartons">473</div>
-                </div>
-                <div class="sempa-stat">
-                    <h3>Valeur totale du stock</h3>
-                    <div class="value" id="total-value">€0</div>
-                </div>
-                <div class="sempa-stat">
-                    <h3>Alertes</h3>
-                    <div class="value" id="alerts-count">0</div>
+                <div class="header-actions">
+                    <button id="theme-toggle" class="icon-button" type="button" aria-label="Basculer le thème">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <path d="M12 3v2" />
+                            <path d="M12 19v2" />
+                            <path d="M5.22 5.22l1.42 1.42" />
+                            <path d="M17.36 17.36l1.42 1.42" />
+                            <path d="M3 12h2" />
+                            <path d="M19 12h2" />
+                            <path d="M5.22 18.78l1.42-1.42" />
+                            <path d="M17.36 6.64l1.42-1.42" />
+                            <circle cx="12" cy="12" r="4" />
+                        </svg>
+                    </button>
+                    <button class="btn-primary" type="button" onclick="openModal('new')">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M12 5v14" />
+                            <path d="M5 12h14" />
+                        </svg>
+                        Nouveau produit
+                    </button>
                 </div>
             </div>
+        </header>
 
-            <div id="alerts-container">
-                <!-- Les alertes seront ajoutées ici dynamiquement -->
-            </div>
+        <main class="main-content">
+            <div class="content-max">
+                <nav class="sempa-tabs" aria-label="Navigation principale">
+                    <button class="sempa-tab active" type="button" data-tab="overview">Vue globale</button>
+                    <button class="sempa-tab" type="button" data-tab="inventory">Inventaire</button>
+                    <button class="sempa-tab" type="button" data-tab="movements">Mouvements</button>
+                    <button class="sempa-tab" type="button" data-tab="reports">Rapports</button>
+                </nav>
 
-            <div class="sempa-dashboard-grid">
-                <div class="sempa-panel">
-                    <h3>Répartition par catégorie</h3>
-                    <div id="category-summary" class="sempa-empty-state">Aucune donnée à afficher.</div>
-                </div>
-                <div class="sempa-panel">
-                    <h3>Actions recommandées</h3>
-                    <ul id="recommended-actions">
-                        <li class="sempa-empty-state">Analyse en cours...</li>
-                    </ul>
-                </div>
-            </div>
+                <section class="sempa-content active" id="overview">
+                    <div class="section-heading">
+                        <h2>Pilotez votre stock d'un coup d'œil</h2>
+                        <button class="btn-ghost" type="button" onclick="exportInventory()">Exporter l'inventaire</button>
+                    </div>
 
-            <div class="sempa-panel" style="margin-top: 20px;">
-                <h3>Dernières mises à jour</h3>
-                <ul id="recent-updates">
-                    <li class="sempa-empty-state">Aucune mise à jour pour le moment.</li>
-                </ul>
-            </div>
+                    <div class="metrics-grid">
+                        <article class="metric-card">
+                            <div class="metric-label">Produits actifs</div>
+                            <div class="metric-value" id="total-products">0</div>
+                        </article>
+                        <article class="metric-card">
+                            <div class="metric-label">Alertes de stock</div>
+                            <div class="metric-value" id="alerts-count">0</div>
+                        </article>
+                        <article class="metric-card">
+                            <div class="metric-label">Cartons disponibles</div>
+                            <div class="metric-value" id="total-cartons">0</div>
+                        </article>
+                        <article class="metric-card">
+                            <div class="metric-label">Valeur estimée</div>
+                            <div class="metric-value" id="total-value">0 €</div>
+                        </article>
+                    </div>
 
-            <h3>État des Stocks</h3>
-            <table class="sempa-table">
-                <thead>
-                    <tr>
-                        <th>Produit</th>
-                        <th>Cartons en stock</th>
-                        <th>Seuil d'alerte</th>
-                        <th>Statut</th>
-                    </tr>
-                </thead>
-                <tbody id="recent-products">
-                    <tr>
-                        <td>Bouteille PET 1/4 de litre</td>
-                        <td>99 cartons</td>
-                        <td>20 cartons</td>
-                        <td><span class="sempa-indicator sempa-good"></span> Bon</td>
-                    </tr>
-                    <tr>
-                        <td>Bouteille PET 1/2 litre</td>
-                        <td>83 cartons</td>
-                        <td>20 cartons</td>
-                        <td><span class="sempa-indicator sempa-good"></span> Bon</td>
-                    </tr>
-                    <tr>
-                        <td>Bouteille PET 1/3 litre</td>
-                        <td>131 cartons</td>
-                        <td>20 cartons</td>
-                        <td><span class="sempa-indicator sempa-good"></span> Bon</td>
-                    </tr>
-                    <tr>
-                        <td>Bouteille PET 1 litre</td>
-                        <td>160 cartons</td>
-                        <td>20 cartons</td>
-                        <td><span class="sempa-indicator sempa-good"></span> Bon</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        
-        <div id="products" class="sempa-content">
-            <h2>Gestion des Produits</h2>
-            
-            <div class="sempa-search">
-                <input type="text" id="product-search" class="sempa-input" placeholder="Rechercher un produit..." onkeyup="filterProducts()">
-                <button class="sempa-btn" onclick="openModal('new')">Nouveau Produit</button>
-            </div>
+                    <div class="dashboard-grid cols-2">
+                        <div class="card" id="alerts-container">
+                            <h3>Alertes prioritaires</h3>
+                            <div class="empty-state">Chargement des alertes…</div>
+                        </div>
+                        <div class="card">
+                            <h3>Répartition par catégorie</h3>
+                            <div id="category-summary" class="empty-state">Chargement…</div>
+                        </div>
+                    </div>
 
-            <div class="sempa-filters">
-                <select id="filter-category" class="sempa-select" onchange="filterProducts()">
-                    <option value="">Toutes les catégories</option>
-                </select>
-                <select id="filter-status" class="sempa-select" onchange="filterProducts()">
-                    <option value="">Tous les statuts</option>
-                    <option value="good">Stock confortable</option>
-                    <option value="medium">À surveiller</option>
-                    <option value="low">Critique</option>
-                </select>
-                <button class="sempa-btn sempa-btn-ghost sempa-btn-small" type="button" onclick="resetFilters()">Réinitialiser</button>
-                <button class="sempa-btn sempa-btn-secondary sempa-btn-small" type="button" onclick="exportInventory()">Exporter (CSV)</button>
-            </div>
+                    <div class="dashboard-grid" style="margin-top: clamp(24px, 5vw, 40px);">
+                        <div class="card">
+                            <h3>Actions recommandées</h3>
+                            <ul class="list" id="recommended-actions"></ul>
+                        </div>
+                        <div class="card">
+                            <h3>Dernières mises à jour</h3>
+                            <ul class="list" id="recent-updates"></ul>
+                        </div>
+                    </div>
+                </section>
 
-            <div class="sempa-category-chips" id="category-chips" aria-live="polite"></div>
+                <section class="sempa-content" id="inventory" aria-labelledby="inventory-title">
+                    <div class="inventory-header">
+                        <div class="section-heading">
+                            <h2 id="inventory-title">Inventaire détaillé</h2>
+                            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                                <button class="btn-ghost" type="button" onclick="resetFilters()">Réinitialiser</button>
+                                <button class="btn-primary" type="button" onclick="openModal('new')">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path d="M12 5v14" />
+                                        <path d="M5 12h14" />
+                                    </svg>
+                                    Ajouter un produit
+                                </button>
+                            </div>
+                        </div>
 
-            <div class="sempa-product-groups" id="product-groups"></div>
+                        <div class="filter-bar">
+                            <div class="search-field">
+                                <input type="search" id="product-search" class="search-input" placeholder="Rechercher par nom ou référence" autocomplete="off">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                    <path d="M21 21l-4.35-4.35" />
+                                    <circle cx="11" cy="11" r="7" />
+                                </svg>
+                            </div>
+                            <select id="filter-category" class="select">
+                                <option value="">Toutes les catégories</option>
+                            </select>
+                            <select id="filter-status" class="select">
+                                <option value="">Tous les statuts</option>
+                                <option value="low">Critique</option>
+                                <option value="medium">À surveiller</option>
+                                <option value="good">Stable</option>
+                            </select>
+                        </div>
+                        <div class="chips-scroll" id="category-chips" aria-label="Catégories disponibles"></div>
+                    </div>
 
-            <table class="sempa-table">
-                <thead>
-                    <tr>
-                        <th>Produit</th>
-                        <th>Référence</th>
-                        <th>Cartons en stock</th>
-                        <th>Seuil d'alerte</th>
-                        <th>Statut</th>
-                        <th>Dernière mise à jour</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="products-table"></tbody>
-            </table>
-        </div>
-        
-        <div id="movements" class="sempa-content">
-            <h2>Mouvements de Stock</h2>
-            
-            <div class="sempa-form-group">
-                <label class="sempa-label">Produit</label>
-                <select id="movement-product" class="sempa-select">
-                    <option value="">Sélectionner un produit</option>
-                    <option value="1">Bouteille PET 1/4 de litre</option>
-                    <option value="2">Bouteille PET 1/2 litre</option>
-                    <option value="3">Bouteille PET 1/3 litre</option>
-                    <option value="4">Bouteille PET 1 litre</option>
-                </select>
+                    <div class="table-wrapper" role="region" aria-live="polite">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Produit</th>
+                                    <th>Référence</th>
+                                    <th>Stock</th>
+                                    <th>Seuil</th>
+                                    <th>Statut</th>
+                                    <th>Mise à jour</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="products-table"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="product-groups" id="product-groups"></div>
+                </section>
+
+                <section class="sempa-content" id="movements" aria-labelledby="movements-title">
+                    <div class="section-heading">
+                        <h2 id="movements-title">Suivi des mouvements</h2>
+                        <p class="text-muted">Consignez chaque entrée, sortie ou ajustement pour garder un historique complet.</p>
+                    </div>
+                    <div class="movements-grid">
+                        <div class="card">
+                            <h3>Enregistrer un mouvement</h3>
+                            <div class="form-grid">
+                                <label>Produit
+                                    <select id="movement-product">
+                                        <option value="">Sélectionner un produit</option>
+                                    </select>
+                                </label>
+                                <label>Type
+                                    <select id="movement-type">
+                                        <option value="in">Entrée</option>
+                                        <option value="out">Sortie</option>
+                                        <option value="adjust">Ajustement</option>
+                                    </select>
+                                </label>
+                                <label>Quantité
+                                    <input type="number" id="movement-quantity" min="1" value="1">
+                                </label>
+                                <label>Raison
+                                    <input type="text" id="movement-reason" placeholder="Réception, commande client, contrôle…">
+                                </label>
+                            </div>
+                            <button class="btn-primary" type="button" onclick="addStockMovement()">Valider le mouvement</button>
+                        </div>
+
+                        <div class="card">
+                            <h3>Historique récent</h3>
+                            <div class="table-wrapper" style="box-shadow:none;border-radius:var(--radius-md);">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Produit</th>
+                                            <th>Type</th>
+                                            <th>Quantité</th>
+                                            <th>Commentaire</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="movements-table"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="sempa-content" id="reports" aria-labelledby="reports-title">
+                    <div class="section-heading">
+                        <h2 id="reports-title">Rapports & Prévisions</h2>
+                    </div>
+                    <div class="card" style="margin-bottom:24px;">
+                        <h3>Exporter vos données</h3>
+                        <p class="text-muted" style="margin-bottom:18px;">Téléchargez un fichier CSV regroupant l'ensemble de l'inventaire pour l'analyser dans Excel, Google Sheets ou votre ERP.</p>
+                        <button class="btn-primary" type="button" onclick="exportInventory()">Exporter en CSV</button>
+                    </div>
+                    <div class="card">
+                        <h3>Conseils d'utilisation mobile</h3>
+                        <ul class="list">
+                            <li>
+                                <span>Sauvegardez l'application sur l'écran d'accueil</span>
+                                <span class="text-muted">Accédez à vos stocks depuis l'entrepôt en un geste.</span>
+                            </li>
+                            <li>
+                                <span>Utilisez les puces de catégorie</span>
+                                <span class="text-muted">Affinez vos recherches pendant les inventaires physiques.</span>
+                            </li>
+                            <li>
+                                <span>Mode hors-ligne</span>
+                                <span class="text-muted">Les données restent disponibles sur l'appareil même sans connexion.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </section>
             </div>
-            
-            <div class="sempa-form-group">
-                <label class="sempa-label">Type de mouvement</label>
-                <select id="movement-type" class="sempa-select">
-                    <option value="in">Entrée de stock</option>
-                    <option value="out">Sortie de stock</option>
-                    <option value="adjust">Ajustement</option>
-                </select>
+        </main>
+    </div>
+
+    <button class="floating-action" type="button" onclick="openModal('new')" aria-label="Ajouter un produit">
+        +
+    </button>
+
+    <div class="modal-backdrop" id="product-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal-panel">
+            <div class="modal-header">
+                <h2 id="modal-title">Nouveau produit</h2>
+                <button class="modal-close" type="button" aria-label="Fermer" onclick="closeModal()">×</button>
             </div>
-            
-            <div class="sempa-form-group">
-                <label class="sempa-label">Quantité (cartons)</label>
-                <input type="number" id="movement-quantity" class="sempa-input" min="0" value="1">
-            </div>
-            
-            <div class="sempa-form-group">
-                <label class="sempa-label">Raison</label>
-                <input type="text" id="movement-reason" class="sempa-input" placeholder="Ex: Livraison, Commande client, Inventaire...">
-            </div>
-            
-            <button class="sempa-btn" onclick="addStockMovement()">Enregistrer le mouvement</button>
-            
-            <h3 style="margin-top: 30px;">Historique des Mouvements</h3>
-            <table class="sempa-table">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Produit</th>
-                        <th>Type</th>
-                        <th>Quantité</th>
-                        <th>Raison</th>
-                    </tr>
-                </thead>
-                <tbody id="movements-table">
-                    <!-- L'historique sera ajouté ici dynamiquement -->
-                </tbody>
-            </table>
-        </div>
-        
-        <!-- Modal pour créer/modifier un produit -->
-        <div id="product-modal" class="sempa-modal">
-            <div class="sempa-modal-content">
-                <div class="sempa-modal-header">
-                    <h2 id="modal-title">Nouveau Produit</h2>
-                    <button class="sempa-close" onclick="closeModal()">&times;</button>
+            <div class="modal-body">
+                <div class="form-grid">
+                    <label>Nom du produit
+                        <input type="text" id="product-name" autocomplete="off" required>
+                    </label>
+                    <label>Référence
+                        <input type="text" id="product-ref" autocomplete="off" required>
+                    </label>
                 </div>
-                
-                <div class="sempa-form-group">
-                    <label class="sempa-label">Nom du produit</label>
-                    <input type="text" id="product-name" class="sempa-input" required>
+                <div class="form-grid">
+                    <label>Stock actuel (cartons)
+                        <input type="number" id="product-stock" min="0" value="0">
+                    </label>
+                    <label>Seuil d'alerte
+                        <input type="number" id="product-minstock" min="1" value="20">
+                    </label>
                 </div>
-                
-                <div class="sempa-form-group">
-                    <label class="sempa-label">Référence</label>
-                    <input type="text" id="product-ref" class="sempa-input" required>
+                <div class="form-grid">
+                    <label>Prix unitaire (€)
+                        <input type="number" id="product-price" min="0" step="0.01" value="0">
+                    </label>
+                    <label>Catégorie
+                        <select id="product-category">
+                            <option value="capot">Capot</option>
+                            <option value="presse">Presse</option>
+                            <option value="rotor">Rotor</option>
+                            <option value="extracteur">Extracteur</option>
+                            <option value="coutau">Coutau</option>
+                            <option value="raclette_support">Raclette / Support Raclette</option>
+                            <option value="languette_presse">Languette Presse</option>
+                            <option value="vis_capot">Vis Capot</option>
+                            <option value="tete_robinet">Tête de Robinet</option>
+                            <option value="bouteille">Bouteille PET</option>
+                            <option value="gobelet">Gobelet</option>
+                            <option value="nettoyant">Nettoyant</option>
+                            <option value="piece">Pièce détachée</option>
+                            <option value="autre">Autre</option>
+                        </select>
+                    </label>
                 </div>
-                
-                <div class="sempa-form-group">
-                    <label class="sempa-label">Cartons en stock</label>
-                    <input type="number" id="product-stock" class="sempa-input" min="0" value="0" required>
+                <label>Description
+                    <textarea id="product-desc" rows="3" placeholder="Notes, compatibilité machine, emplacement…"></textarea>
+                </label>
+                <div class="modal-actions">
+                    <button class="btn-ghost" type="button" onclick="closeModal()">Annuler</button>
+                    <button class="btn-primary" type="button" onclick="saveProduct()">Enregistrer</button>
                 </div>
-                
-                <div class="sempa-form-group">
-                    <label class="sempa-label">Seuil d'alerte (cartons)</label>
-                    <input type="number" id="product-minstock" class="sempa-input" min="1" value="20" required>
-                </div>
-                
-                <div class="sempa-form-group">
-                    <label class="sempa-label">Prix unitaire (€)</label>
-                    <input type="number" id="product-price" class="sempa-input" min="0" step="0.01" value="0">
-                </div>
-                
-                <div class="sempa-form-group">
-                    <label class="sempa-label">Catégorie</label>
-                    <select id="product-category" class="sempa-select">
-                        <option value="capot">Capot</option>
-                        <option value="presse">Presse</option>
-                        <option value="rotor">Rotor</option>
-                        <option value="extracteur">Extracteur</option>
-                        <option value="coutau">Coutau</option>
-                        <option value="raclette_support">Raclette / Support Raclette</option>
-                        <option value="languette_presse">Languette Presse</option>
-                        <option value="vis_capot">Vis Capot</option>
-                        <option value="tete_robinet">Tête de Robinet</option>
-                        <option value="bouteille">Bouteille PET</option>
-                        <option value="gobelet">Gobelet</option>
-                        <option value="nettoyant">Nettoyant</option>
-                        <option value="piece">Pièce détachée</option>
-                        <option value="autre">Autre</option>
-                    </select>
-                </div>
-                
-                <div class="sempa-form-group">
-                    <label class="sempa-label">Description</label>
-                    <textarea id="product-desc" class="sempa-input" rows="3"></textarea>
-                </div>
-                
-                <button class="sempa-btn" onclick="saveProduct()">Enregistrer</button>
             </div>
         </div>
     </div>
-
-
     <script>
-        // Données de l'application (stockées dans le localStorage)
-        let products = JSON.parse(localStorage.getItem('sempa_products')) || [];
-        let movements = JSON.parse(localStorage.getItem('sempa_movements')) || [];
-        let currentProductId = null;
+        const App = (() => {
+            const STORAGE_KEYS = {
+                products: 'sempa_products',
+                movements: 'sempa_movements',
+                theme: 'sempa_theme'
+            };
 
-        const THEME_STORAGE_KEY = 'sempa_theme';
-        const CATEGORY_LABELS = {
-            capot: 'Capot',
-            presse: 'Presse',
-            rotor: 'Rotor',
-            extracteur: 'Extracteur',
-            coutau: 'Coutau',
-            raclette_support: 'Raclette / Support Raclette',
-            languette_presse: 'Languette Presse',
-            vis_capot: 'Vis Capot',
-            tete_robinet: 'Tête de Robinet',
-            bouteille: 'Bouteille PET',
-            gobelet: 'Gobelet',
-            nettoyant: 'Nettoyant',
-            piece: 'Pièce détachée',
-            autre: 'Autre'
-        };
-        const CATEGORY_ORDER = [
-            'capot',
-            'presse',
-            'rotor',
-            'extracteur',
-            'coutau',
-            'raclette_support',
-            'languette_presse',
-            'vis_capot',
-            'tete_robinet',
-            'bouteille',
-            'gobelet',
-            'nettoyant',
-            'piece',
-            'autre'
-        ];
-        const DEFAULT_PRODUCT_DEFINITIONS = [
-            {
-                category: 'capot',
-                label: 'Capot',
-                minStock: 5,
-                defaultStock: 12,
-                segments: [
-                    { state: 'Neuf', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] },
-                    { state: 'Reco', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] }
-                ]
-            },
-            {
-                category: 'presse',
-                label: 'Presse',
-                minStock: 5,
-                defaultStock: 12,
-                segments: [
-                    { state: 'Neuf', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] },
-                    { state: 'Reco', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] }
-                ]
-            },
-            {
-                category: 'rotor',
-                label: 'Rotor',
-                minStock: 4,
-                defaultStock: 10,
-                segments: [
-                    { state: 'Neuf', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] },
-                    { state: 'Reco', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] }
-                ]
-            },
-            {
-                category: 'extracteur',
-                label: 'Extracteur',
-                minStock: 4,
-                defaultStock: 10,
-                segments: [
-                    { state: 'Neuf', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] },
-                    { state: 'Reco', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] }
-                ]
-            },
-            {
-                category: 'coutau',
-                label: 'Coutau',
-                minStock: 6,
-                defaultStock: 14,
-                segments: [
-                    { state: 'Neuf', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] },
-                    { state: 'Reco', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] }
-                ]
-            },
-            {
-                category: 'raclette_support',
-                label: 'Raclette / Support Raclette',
-                minStock: 3,
-                defaultStock: 8,
-                segments: [
-                    { state: 'Neuf', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] },
-                    { state: 'Reco', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] }
-                ]
-            },
-            {
-                category: 'languette_presse',
-                label: 'Languette Presse',
-                minStock: 6,
-                defaultStock: 15,
-                segments: [
-                    { state: 'Neuf', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] },
-                    { state: 'Reco', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] }
-                ]
-            },
-            {
-                category: 'vis_capot',
-                label: 'Vis Capot',
-                minStock: 10,
-                defaultStock: 22,
-                segments: [
-                    { state: 'Neuf', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] },
-                    { state: 'Reco', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] }
-                ]
-            },
-            {
-                category: 'tete_robinet',
-                label: 'Tête de Robinet',
-                minStock: 5,
-                defaultStock: 12,
-                segments: [
-                    { state: 'Neuf', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] },
-                    { state: 'Reco', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] }
-                ]
-            }
-        ];
-        function generateReferenceFromName(name) {
-            if (!name) return '';
-            return name
-                .toString()
-                .normalize('NFD')
-                .replace(/[\u0300-\u036f]/g, '')
-                .replace(/[^a-zA-Z0-9]+/g, '-')
-                .replace(/-+/g, '-')
-                .replace(/^-|-$/g, '')
-                .toUpperCase();
-        }
-        const DEFAULT_PRODUCTS = (() => {
-            const now = new Date().toISOString();
-            let counter = 1;
-            const generatedProducts = DEFAULT_PRODUCT_DEFINITIONS.flatMap(definition => {
-                return definition.segments.flatMap(segment => {
-                    return segment.codes.map(code => {
-                        const name = `${definition.label} ${segment.state} ${code}`;
-                        return {
-                            id: `default-${counter++}`,
-                            name,
-                            reference: generateReferenceFromName(name),
-                            stock: definition.defaultStock,
-                            minStock: definition.minStock,
-                            price: 0,
-                            category: definition.category,
-                            description: `${definition.label} ${segment.state} ${code}`,
-                            lastUpdated: now
-                        };
-                    });
-                });
-            });
+            const CATEGORY_LABELS = {
+                capot: 'Capot',
+                presse: 'Presse',
+                rotor: 'Rotor',
+                extracteur: 'Extracteur',
+                coutau: 'Coutau',
+                raclette_support: 'Raclette / Support Raclette',
+                languette_presse: 'Languette Presse',
+                vis_capot: 'Vis Capot',
+                tete_robinet: 'Tête de Robinet',
+                bouteille: 'Bouteille PET',
+                gobelet: 'Gobelet',
+                nettoyant: 'Nettoyant',
+                piece: 'Pièce détachée',
+                autre: 'Autre'
+            };
 
-            const legacyProducts = [
+            const CATEGORY_ORDER = [
+                'capot',
+                'presse',
+                'rotor',
+                'extracteur',
+                'coutau',
+                'raclette_support',
+                'languette_presse',
+                'vis_capot',
+                'tete_robinet',
+                'bouteille',
+                'gobelet',
+                'nettoyant',
+                'piece',
+                'autre'
+            ];
+
+            const STATUS_LABELS = {
+                low: 'Critique',
+                medium: 'À surveiller',
+                good: 'Stable'
+            };
+
+            const DEFAULT_PRODUCT_DEFINITIONS = [
                 {
-                    id: `default-${counter++}`,
-                    name: 'Bouteille PET 1/4 de litre',
-                    reference: 'PET-025L',
-                    stock: 99,
-                    minStock: 20,
-                    price: 0.08,
-                    category: 'bouteille',
-                    description: 'Bouteille PET 0.25L',
-                    lastUpdated: now
+                    category: 'capot',
+                    label: 'Capot',
+                    minStock: 5,
+                    defaultStock: 12,
+                    segments: [
+                        { state: 'Neuf', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] },
+                        { state: 'Reco', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] }
+                    ]
                 },
                 {
-                    id: `default-${counter++}`,
-                    name: 'Bouteille PET 1/2 litre',
-                    reference: 'PET-050L',
-                    stock: 83,
-                    minStock: 20,
-                    price: 0.09,
-                    category: 'bouteille',
-                    description: 'Bouteille PET 0.5L',
-                    lastUpdated: now
+                    category: 'presse',
+                    label: 'Presse',
+                    minStock: 5,
+                    defaultStock: 12,
+                    segments: [
+                        { state: 'Neuf', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] },
+                        { state: 'Reco', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] }
+                    ]
                 },
                 {
-                    id: `default-${counter++}`,
-                    name: 'Bouteille PET 1/3 litre',
-                    reference: 'PET-033L',
-                    stock: 131,
-                    minStock: 20,
-                    price: 0.1,
-                    category: 'bouteille',
-                    description: 'Bouteille PET 0.33L',
-                    lastUpdated: now
+                    category: 'rotor',
+                    label: 'Rotor',
+                    minStock: 4,
+                    defaultStock: 10,
+                    segments: [
+                        { state: 'Neuf', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] },
+                        { state: 'Reco', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] }
+                    ]
                 },
                 {
-                    id: `default-${counter++}`,
-                    name: 'Bouteille PET 1 litre',
-                    reference: 'PET-100L',
-                    stock: 160,
-                    minStock: 20,
-                    price: 0.12,
-                    category: 'bouteille',
-                    description: 'Bouteille PET 1L',
-                    lastUpdated: now
+                    category: 'extracteur',
+                    label: 'Extracteur',
+                    minStock: 4,
+                    defaultStock: 10,
+                    segments: [
+                        { state: 'Neuf', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] },
+                        { state: 'Reco', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] }
+                    ]
+                },
+                {
+                    category: 'coutau',
+                    label: 'Coutau',
+                    minStock: 4,
+                    defaultStock: 9,
+                    segments: [
+                        { state: 'Neuf', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] },
+                        { state: 'Reco', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] }
+                    ]
+                },
+                {
+                    category: 'raclette_support',
+                    label: 'Raclette / Support Raclette',
+                    minStock: 3,
+                    defaultStock: 8,
+                    segments: [
+                        { state: 'Neuf', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] },
+                        { state: 'Reco', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] }
+                    ]
+                },
+                {
+                    category: 'languette_presse',
+                    label: 'Languette Presse',
+                    minStock: 6,
+                    defaultStock: 15,
+                    segments: [
+                        { state: 'Neuf', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] },
+                        { state: 'Reco', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] }
+                    ]
+                },
+                {
+                    category: 'vis_capot',
+                    label: 'Vis Capot',
+                    minStock: 10,
+                    defaultStock: 22,
+                    segments: [
+                        { state: 'Neuf', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] },
+                        { state: 'Reco', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] }
+                    ]
+                },
+                {
+                    category: 'tete_robinet',
+                    label: 'Tête de Robinet',
+                    minStock: 5,
+                    defaultStock: 12,
+                    segments: [
+                        { state: 'Neuf', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] },
+                        { state: 'Reco', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] }
+                    ]
                 }
             ];
 
-            return [...generatedProducts, ...legacyProducts];
-        })();
-        const STATUS_LABELS = {
-            good: 'Stock confortable',
-            medium: 'À surveiller',
-            low: 'Critique'
-        };
+            const DEFAULT_PRODUCTS = (() => {
+                const now = new Date().toISOString();
+                let counter = 1;
 
-        function applyTheme(theme) {
-            const isDark = theme === 'dark';
-            document.body.classList.toggle('dark-theme', isDark);
+                const generated = DEFAULT_PRODUCT_DEFINITIONS.flatMap(def =>
+                    def.segments.flatMap(segment =>
+                        segment.codes.map(code => {
+                            const name = `${def.label} ${segment.state} ${code}`;
+                            return {
+                                id: `default-${counter++}`,
+                                name,
+                                reference: generateReferenceFromName(name),
+                                stock: def.defaultStock,
+                                minStock: def.minStock,
+                                price: 0,
+                                category: def.category,
+                                description: `${def.label} ${segment.state} ${code}`,
+                                lastUpdated: now
+                            };
+                        })
+                    )
+                );
 
-            const toggleButton = document.getElementById('theme-toggle');
-            if (toggleButton) {
-                toggleButton.textContent = isDark ? 'Mode clair' : 'Mode sombre';
-                toggleButton.setAttribute('aria-pressed', isDark);
-                toggleButton.setAttribute('aria-label', isDark ? 'Activer le mode clair' : 'Activer le mode sombre');
+                const legacy = [
+                    {
+                        id: `default-${counter++}`,
+                        name: 'Bouteille PET 1/4 de litre',
+                        reference: 'PET-025L',
+                        stock: 99,
+                        minStock: 20,
+                        price: 0.08,
+                        category: 'bouteille',
+                        description: 'Bouteille PET 0.25L',
+                        lastUpdated: now
+                    },
+                    {
+                        id: `default-${counter++}`,
+                        name: 'Bouteille PET 1/2 litre',
+                        reference: 'PET-050L',
+                        stock: 83,
+                        minStock: 20,
+                        price: 0.09,
+                        category: 'bouteille',
+                        description: 'Bouteille PET 0.5L',
+                        lastUpdated: now
+                    },
+                    {
+                        id: `default-${counter++}`,
+                        name: 'Bouteille PET 1/3 litre',
+                        reference: 'PET-033L',
+                        stock: 131,
+                        minStock: 20,
+                        price: 0.1,
+                        category: 'bouteille',
+                        description: 'Bouteille PET 0.33L',
+                        lastUpdated: now
+                    },
+                    {
+                        id: `default-${counter++}`,
+                        name: 'Bouteille PET 1 litre',
+                        reference: 'PET-100L',
+                        stock: 160,
+                        minStock: 20,
+                        price: 0.12,
+                        category: 'bouteille',
+                        description: 'Bouteille PET 1L',
+                        lastUpdated: now
+                    },
+                    {
+                        id: `default-${counter++}`,
+                        name: 'Gobelet carton 20cl',
+                        reference: 'GOBELET-20CL',
+                        stock: 250,
+                        minStock: 80,
+                        price: 0.07,
+                        category: 'gobelet',
+                        description: 'Gobelet carton 20cl',
+                        lastUpdated: now
+                    },
+                    {
+                        id: `default-${counter++}`,
+                        name: 'Nettoyant circuit pressurisé',
+                        reference: 'CLEAN-PRO',
+                        stock: 48,
+                        minStock: 12,
+                        price: 7.8,
+                        category: 'nettoyant',
+                        description: 'Nettoyant circuit pressurisé',
+                        lastUpdated: now
+                    }
+                ];
+
+                return [...generated, ...legacy];
+            })();
+
+            let state = {
+                products: JSON.parse(localStorage.getItem(STORAGE_KEYS.products) || '[]'),
+                movements: JSON.parse(localStorage.getItem(STORAGE_KEYS.movements) || '[]'),
+                currentProductId: null
+            };
+            function generateReferenceFromName(name) {
+                if (!name) return '';
+                return name
+                    .toString()
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .replace(/[^a-zA-Z0-9]+/g, '-')
+                    .replace(/-+/g, '-')
+                    .replace(/^-|-$/g, '')
+                    .toUpperCase();
             }
 
-            localStorage.setItem(THEME_STORAGE_KEY, theme);
-        }
+            function ensureDefaults() {
+                if (!state.products.length) {
+                    state.products = DEFAULT_PRODUCTS.map(product => ({ ...product }));
+                    persistProducts();
+                }
+            }
 
-        const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
-        applyTheme(savedTheme === 'dark' ? 'dark' : 'light');
+            function persistProducts() {
+                localStorage.setItem(STORAGE_KEYS.products, JSON.stringify(state.products));
+            }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            initApp();
-            loadProducts();
-            loadMovements();
-            updateDashboard();
+            function persistMovements() {
+                localStorage.setItem(STORAGE_KEYS.movements, JSON.stringify(state.movements));
+            }
 
-            const themeToggleButton = document.getElementById('theme-toggle');
-            if (themeToggleButton) {
-                themeToggleButton.addEventListener('click', function() {
-                    const newTheme = document.body.classList.contains('dark-theme') ? 'light' : 'dark';
-                    applyTheme(newTheme);
+            function applyTheme(theme) {
+                const nextTheme = theme === 'dark' ? 'dark' : 'light';
+                document.body.classList.toggle('dark-theme', nextTheme === 'dark');
+                localStorage.setItem(STORAGE_KEYS.theme, nextTheme);
+
+                const icon = document.querySelector('#theme-toggle svg');
+                if (icon) {
+                    icon.innerHTML = nextTheme === 'dark'
+                        ? '<path d="M21 12.79A9 9 0 0 1 11.21 3 7 7 0 0 0 12 19a7 7 0 0 0 9-6.21Z" />'
+                        : '<path d="M12 3v2" /><path d="M12 19v2" /><path d="M5.22 5.22l1.42 1.42" /><path d="M17.36 17.36l1.42 1.42" /><path d="M3 12h2" /><path d="M19 12h2" /><path d="M5.22 18.78l1.42-1.42" /><path d="M17.36 6.64l1.42-1.42" /><circle cx="12" cy="12" r="4" />';
+                }
+            }
+
+            function initTheme() {
+                const saved = localStorage.getItem(STORAGE_KEYS.theme) || 'light';
+                applyTheme(saved);
+            }
+
+            function bindEvents() {
+                const themeToggle = document.getElementById('theme-toggle');
+                if (themeToggle) {
+                    themeToggle.addEventListener('click', () => {
+                        const isDark = document.body.classList.contains('dark-theme');
+                        applyTheme(isDark ? 'light' : 'dark');
+                    });
+                }
+
+                const nameInput = document.getElementById('product-name');
+                if (nameInput) {
+                    nameInput.addEventListener('input', () => {
+                        const refInput = document.getElementById('product-ref');
+                        if (!state.currentProductId && refInput && !refInput.value) {
+                            refInput.value = generateReferenceFromName(nameInput.value);
+                        }
+                    });
+                }
+
+                const searchInput = document.getElementById('product-search');
+                if (searchInput) {
+                    ['input', 'search'].forEach(evt => searchInput.addEventListener(evt, filterProducts));
+                }
+
+                const categorySelect = document.getElementById('filter-category');
+                if (categorySelect) {
+                    categorySelect.addEventListener('change', filterProducts);
+                }
+
+                const statusSelect = document.getElementById('filter-status');
+                if (statusSelect) {
+                    statusSelect.addEventListener('change', filterProducts);
+                }
+
+                document.querySelectorAll('.sempa-tab').forEach(tab => {
+                    tab.addEventListener('click', () => switchToTab(tab.dataset.tab));
                 });
 
-                applyTheme(document.body.classList.contains('dark-theme') ? 'dark' : 'light');
-            }
+                const modal = document.getElementById('product-modal');
+                if (modal) {
+                    modal.addEventListener('click', event => {
+                        if (event.target === modal) {
+                            closeModal();
+                        }
+                    });
+                }
 
-            const searchInput = document.getElementById('product-search');
-            if (searchInput) {
-                searchInput.addEventListener('input', filterProducts);
-                searchInput.addEventListener('search', filterProducts);
-            }
-
-            const categoryFilter = document.getElementById('filter-category');
-            if (categoryFilter) {
-                categoryFilter.addEventListener('change', filterProducts);
-            }
-
-            const statusFilter = document.getElementById('filter-status');
-            if (statusFilter) {
-                statusFilter.addEventListener('change', filterProducts);
-            }
-
-            document.querySelectorAll('.sempa-tab').forEach(tab => {
-                tab.addEventListener('click', function() {
-                    switchToTab(this.dataset.tab);
+                window.addEventListener('keydown', event => {
+                    if (event.key === 'Escape') {
+                        closeModal();
+                    }
                 });
-            });
-        });
-
-        function initApp() {
-            if (products.length === 0) {
-                products = DEFAULT_PRODUCTS.map(product => ({ ...product }));
-                saveProducts();
             }
-        }
+            function loadProducts() {
+                const tableBody = document.getElementById('products-table');
+                const movementSelect = document.getElementById('movement-product');
+                if (!tableBody) return;
 
-        function saveProducts() {
-            localStorage.setItem('sempa_products', JSON.stringify(products));
-        }
+                tableBody.innerHTML = '';
+                const sorted = [...state.products].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'fr', { sensitivity: 'base' }));
 
-        function saveMovements() {
-            localStorage.setItem('sempa_movements', JSON.stringify(movements));
-        }
+                sorted.forEach(product => {
+                    const status = getStockStatus(product.stock, product.minStock);
+                    const row = document.createElement('tr');
+                    row.dataset.category = product.category || 'autre';
+                    row.dataset.status = status;
+                    row.dataset.name = (product.name || '').toLowerCase();
+                    row.dataset.reference = (product.reference || '').toLowerCase();
+                    row.dataset.id = product.id;
 
-        function loadProducts() {
-            const table = document.getElementById('products-table');
-            if (!table) return;
+                    row.innerHTML = `
+                        <td data-label="Produit">${product.name}</td>
+                        <td data-label="Référence">${product.reference}</td>
+                        <td data-label="Stock">${formatNumber(product.stock)}</td>
+                        <td data-label="Seuil">${formatNumber(product.minStock)}</td>
+                        <td data-label="Statut"><span class="badge ${status}">${STATUS_LABELS[status] || status}</span></td>
+                        <td data-label="Mise à jour">${formatDate(product.lastUpdated)}</td>
+                        <td data-label="Actions">
+                            <div class="table-actions">
+                                <button class="btn-secondary" type="button" onclick="openModal('edit', '${product.id}')">Modifier</button>
+                                <button class="btn-primary" type="button" onclick="openQuickMovement('${product.id}', 'in')">Entrée</button>
+                                <button class="btn-outline" type="button" onclick="openQuickMovement('${product.id}', 'out')">Sortie</button>
+                                <button class="btn-danger" type="button" onclick="deleteProduct('${product.id}')">Supprimer</button>
+                            </div>
+                        </td>`;
 
-            table.innerHTML = '';
-
-            const movementSelect = document.getElementById('movement-product');
-            const previousMovementSelection = movementSelect ? movementSelect.value : '';
-            if (movementSelect) {
-                movementSelect.innerHTML = '<option value="">Sélectionner un produit</option>';
-            }
-
-            const sortedProducts = [...products].sort((a, b) => {
-                const nameA = (a.name || '').toString();
-                const nameB = (b.name || '').toString();
-                return nameA.localeCompare(nameB, 'fr', { sensitivity: 'base' });
-            });
-
-            sortedProducts.forEach(product => {
-                const status = getStockStatus(product.stock, product.minStock);
-                const statusIndicatorClass = status === 'low' ? 'sempa-low' : status === 'medium' ? 'sempa-medium' : 'sempa-good';
-                const statusText = STATUS_LABELS[status] || status;
-                const formattedUpdated = formatDate(product.lastUpdated);
-
-                const row = document.createElement('tr');
-                row.dataset.category = product.category || 'autre';
-                row.dataset.status = status;
-                row.dataset.name = (product.name || '').toLowerCase();
-                row.dataset.reference = (product.reference || '').toLowerCase();
-                row.dataset.id = product.id;
-
-                row.innerHTML = `
-                    <td>${product.name}</td>
-                    <td>${product.reference}</td>
-                    <td>${formatNumber(product.stock)}</td>
-                    <td>${formatNumber(product.minStock)}</td>
-                    <td><span class="sempa-badge ${status}"><span class="sempa-indicator ${statusIndicatorClass}"></span>${statusText}</span></td>
-                    <td>${formattedUpdated}</td>
-                    <td>
-                        <div class="sempa-actions">
-                            <button class="sempa-btn sempa-btn-secondary sempa-btn-small" type="button" onclick="openModal('edit', '${product.id}')">Modifier</button>
-                            <button class="sempa-btn sempa-btn-small" type="button" onclick="openQuickMovement('${product.id}', 'in')">Entrée</button>
-                            <button class="sempa-btn sempa-btn-ghost sempa-btn-small" type="button" onclick="openQuickMovement('${product.id}', 'out')">Sortie</button>
-                            <button class="sempa-btn sempa-btn-danger sempa-btn-small" type="button" onclick="deleteProduct('${product.id}')">Supprimer</button>
-                        </div>
-                    </td>
-                `;
-                table.appendChild(row);
+                    tableBody.appendChild(row);
+                });
 
                 if (movementSelect) {
-                    const option = document.createElement('option');
-                    option.value = product.id;
-                    option.textContent = product.name;
-                    movementSelect.appendChild(option);
-                }
-            });
-
-            if (movementSelect && previousMovementSelection) {
-                movementSelect.value = previousMovementSelection;
-            }
-
-            populateCategoryFilter();
-            renderCategoryChips();
-            renderProductGroups();
-            filterProducts();
-        }
-
-        function populateCategoryFilter() {
-            const categorySelect = document.getElementById('filter-category');
-            if (!categorySelect) return;
-
-            const currentValue = categorySelect.value;
-            const summary = products.reduce((acc, product) => {
-                const key = product.category || 'autre';
-                if (!acc[key]) {
-                    acc[key] = { count: 0 };
-                }
-                acc[key].count += 1;
-                return acc;
-            }, {});
-
-            const categories = Object.keys(summary).sort(sortCategories);
-
-            categorySelect.innerHTML = '<option value="">Toutes les catégories</option>';
-
-            categories.forEach(key => {
-                const option = document.createElement('option');
-                option.value = key;
-                option.textContent = `${getCategoryLabel(key)} (${summary[key].count})`;
-                categorySelect.appendChild(option);
-            });
-
-            if (currentValue && summary[currentValue]) {
-                categorySelect.value = currentValue;
-            }
-        }
-
-        function getCategoryLabel(key) {
-            return CATEGORY_LABELS[key] || (key ? key.charAt(0).toUpperCase() + key.slice(1) : 'Non classé');
-        }
-
-        function getCategoryOrder(key) {
-            const index = CATEGORY_ORDER.indexOf(key);
-            return index === -1 ? Number.MAX_SAFE_INTEGER : index;
-        }
-
-        function sortCategories(a, b) {
-            const orderA = getCategoryOrder(a);
-            const orderB = getCategoryOrder(b);
-            if (orderA !== orderB) {
-                return orderA - orderB;
-            }
-            return getCategoryLabel(a).localeCompare(getCategoryLabel(b), 'fr', { sensitivity: 'base' });
-        }
-
-        function renderCategoryChips() {
-            const container = document.getElementById('category-chips');
-            if (!container) return;
-
-            const summary = products.reduce((acc, product) => {
-                const key = product.category || 'autre';
-                if (!acc[key]) {
-                    acc[key] = 0;
-                }
-                acc[key] += 1;
-                return acc;
-            }, {});
-
-            const categories = Object.keys(summary).sort(sortCategories);
-            container.innerHTML = '';
-
-            if (categories.length === 0) {
-                container.style.display = 'none';
-                return;
-            }
-
-            container.style.display = 'flex';
-
-            categories.forEach(key => {
-                const chip = document.createElement('button');
-                chip.type = 'button';
-                chip.className = 'sempa-chip';
-                chip.dataset.category = key;
-                chip.innerHTML = `${getCategoryLabel(key)} <span class="sempa-chip-counter">${summary[key]}</span>`;
-                chip.addEventListener('click', () => {
-                    const categorySelect = document.getElementById('filter-category');
-                    if (categorySelect) {
-                        const isActive = categorySelect.value === key;
-                        categorySelect.value = isActive ? '' : key;
+                    const previous = movementSelect.value;
+                    movementSelect.innerHTML = '<option value="">Sélectionner un produit</option>';
+                    sorted.forEach(product => {
+                        const option = document.createElement('option');
+                        option.value = product.id;
+                        option.textContent = product.name;
+                        movementSelect.appendChild(option);
+                    });
+                    if (previous) {
+                        movementSelect.value = previous;
                     }
-                    filterProducts();
-                });
-                container.appendChild(chip);
-            });
+                }
 
-            const categorySelect = document.getElementById('filter-category');
-            const activeCategory = categorySelect ? categorySelect.value : '';
-            setActiveCategoryChip(activeCategory);
-        }
-
-        function setActiveCategoryChip(categoryKey) {
-            const chips = document.querySelectorAll('.sempa-chip');
-            chips.forEach(chip => {
-                const isActive = Boolean(categoryKey) && chip.dataset.category === categoryKey;
-                chip.classList.toggle('active', isActive);
-                chip.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-            });
-        }
-
-        function renderProductGroups() {
-            const container = document.getElementById('product-groups');
-            if (!container) return;
-
-            container.innerHTML = '';
-
-            if (!products.length) {
-                const empty = document.createElement('div');
-                empty.className = 'sempa-empty-state';
-                empty.textContent = 'Aucun produit enregistré.';
-                container.appendChild(empty);
-                return;
+                populateCategoryFilter();
+                renderCategoryChips();
+                renderProductGroups();
+                filterProducts();
             }
 
-            const grouped = products.reduce((acc, product) => {
-                const key = product.category || 'autre';
-                if (!acc[key]) {
-                    acc[key] = [];
+            function loadMovements() {
+                const tableBody = document.getElementById('movements-table');
+                if (!tableBody) return;
+
+                tableBody.innerHTML = '';
+                const sorted = [...state.movements].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+                sorted.forEach(movement => {
+                    const product = state.products.find(p => p.id === movement.productId);
+                    const productName = product ? product.name : (movement.productName || 'Produit archivé');
+                    const date = new Date(movement.date);
+                    const formattedDate = Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('fr-FR');
+                    const typeLabel = movement.type === 'in' ? 'Entrée' : movement.type === 'out' ? 'Sortie' : 'Ajustement';
+                    const quantityDisplay = movement.type === 'in'
+                        ? `+${movement.quantity}`
+                        : movement.type === 'out'
+                            ? `-${movement.quantity}`
+                            : `=${movement.quantity}`;
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${formattedDate}</td>
+                        <td>${productName}</td>
+                        <td>${typeLabel}</td>
+                        <td>${quantityDisplay}</td>
+                        <td>${movement.reason || '-'}</td>`;
+                    tableBody.appendChild(row);
+                });
+            }
+
+            function populateCategoryFilter() {
+                const select = document.getElementById('filter-category');
+                if (!select) return;
+
+                const summary = state.products.reduce((acc, product) => {
+                    const key = product.category || 'autre';
+                    acc[key] = (acc[key] || 0) + 1;
+                    return acc;
+                }, {});
+
+                const categories = Object.keys(summary).sort(sortCategories);
+                const current = select.value;
+                select.innerHTML = '<option value="">Toutes les catégories</option>';
+
+                categories.forEach(key => {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    option.textContent = `${getCategoryLabel(key)} (${summary[key]})`;
+                    select.appendChild(option);
+                });
+
+                if (current && summary[current]) {
+                    select.value = current;
                 }
-                acc[key].push(product);
-                return acc;
-            }, {});
+            }
 
-            const categories = Object.keys(grouped).sort(sortCategories);
+            function renderCategoryChips() {
+                const container = document.getElementById('category-chips');
+                if (!container) return;
 
-            categories.forEach(key => {
-                const groupCard = document.createElement('div');
-                groupCard.className = 'sempa-product-group';
+                container.innerHTML = '';
+                const summary = state.products.reduce((acc, product) => {
+                    const key = product.category || 'autre';
+                    acc[key] = (acc[key] || 0) + 1;
+                    return acc;
+                }, {});
 
-                const header = document.createElement('h3');
-                header.innerHTML = `${getCategoryLabel(key)} <span class="sempa-chip-counter">${grouped[key].length}</span>`;
-                groupCard.appendChild(header);
+                const categories = Object.keys(summary).sort(sortCategories);
+                if (!categories.length) {
+                    return;
+                }
 
-                const pillContainer = document.createElement('div');
-                pillContainer.className = 'sempa-product-pill-container';
+                categories.forEach(key => {
+                    const chip = document.createElement('button');
+                    chip.type = 'button';
+                    chip.className = 'chip';
+                    chip.dataset.category = key;
+                    chip.innerHTML = `${getCategoryLabel(key)} <span class="chip-counter">${summary[key]}</span>`;
+                    chip.addEventListener('click', () => {
+                        const select = document.getElementById('filter-category');
+                        if (select) {
+                            select.value = select.value === key ? '' : key;
+                        }
+                        filterProducts();
+                    });
+                    container.appendChild(chip);
+                });
 
-                grouped[key]
-                    .slice()
-                    .sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }))
-                    .forEach(product => {
-                        const pill = document.createElement('button');
-                        pill.type = 'button';
-                        pill.className = 'sempa-product-pill';
-                        pill.dataset.productId = product.id;
-                        pill.textContent = product.name;
-                        pill.addEventListener('click', () => {
-                            const searchInput = document.getElementById('product-search');
-                            if (searchInput) {
-                                searchInput.value = product.name;
-                                searchInput.focus();
-                            }
+                const active = document.getElementById('filter-category')?.value;
+                setActiveCategoryChip(active || '');
+            }
 
-                            const categorySelect = document.getElementById('filter-category');
-                            if (categorySelect) {
-                                categorySelect.value = key;
-                            }
+            function setActiveCategoryChip(categoryKey) {
+                document.querySelectorAll('.chip').forEach(chip => {
+                    chip.classList.toggle('active', categoryKey && chip.dataset.category === categoryKey);
+                    chip.setAttribute('aria-pressed', categoryKey && chip.dataset.category === categoryKey ? 'true' : 'false');
+                });
+            }
 
-                            filterProducts();
-                            highlightProductRow(product.id);
+            function renderProductGroups() {
+                const container = document.getElementById('product-groups');
+                if (!container) return;
+
+                container.innerHTML = '';
+                if (!state.products.length) {
+                    container.innerHTML = '<div class="empty-state">Aucun produit enregistré pour le moment.</div>';
+                    return;
+                }
+
+                const grouped = state.products.reduce((acc, product) => {
+                    const key = product.category || 'autre';
+                    acc[key] = acc[key] || [];
+                    acc[key].push(product);
+                    return acc;
+                }, {});
+
+                Object.keys(grouped).sort(sortCategories).forEach(key => {
+                    const card = document.createElement('div');
+                    card.className = 'group-card';
+                    card.innerHTML = `<h3>${getCategoryLabel(key)} <span class="chip-counter">${grouped[key].length}</span></h3>`;
+
+                    const pills = document.createElement('div');
+                    pills.className = 'pill-container';
+                    grouped[key]
+                        .slice()
+                        .sort((a, b) => (a.name || '').localeCompare(b.name || '', 'fr', { sensitivity: 'base' }))
+                        .forEach(product => {
+                            const pill = document.createElement('button');
+                            pill.type = 'button';
+                            pill.className = 'pill';
+                            pill.textContent = product.name;
+                            pill.addEventListener('click', () => {
+                                const searchInput = document.getElementById('product-search');
+                                if (searchInput) {
+                                    searchInput.value = product.name;
+                                }
+                                const select = document.getElementById('filter-category');
+                                if (select) {
+                                    select.value = key;
+                                }
+                                filterProducts();
+                                highlightProductRow(product.id);
+                            });
+                            pills.appendChild(pill);
                         });
-                        pillContainer.appendChild(pill);
+
+                    card.appendChild(pills);
+                    container.appendChild(card);
+                });
+            }
+            function renderDashboard() {
+                const totalProducts = state.products.length;
+                const lowStock = state.products.filter(p => getStockStatus(p.stock, p.minStock) === 'low');
+                const mediumStock = state.products.filter(p => getStockStatus(p.stock, p.minStock) === 'medium');
+                const totalCartons = state.products.reduce((sum, p) => sum + (Number(p.stock) || 0), 0);
+                const totalValue = state.products.reduce((sum, p) => sum + ((Number(p.stock) || 0) * (Number(p.price) || 0)), 0);
+
+                setText('total-products', totalProducts);
+                setText('alerts-count', lowStock.length);
+                setText('total-cartons', formatNumber(totalCartons));
+                setText('total-value', formatCurrency(totalValue));
+
+                renderAlerts(lowStock);
+                renderCategorySummary();
+                renderRecommendations(lowStock, mediumStock);
+                renderRecentUpdates();
+            }
+
+            function renderAlerts(lowStockProducts) {
+                const container = document.getElementById('alerts-container');
+                if (!container) return;
+
+                container.innerHTML = '<h3>Alertes prioritaires</h3>';
+                if (!lowStockProducts.length) {
+                    const empty = document.createElement('div');
+                    empty.className = 'empty-state';
+                    empty.textContent = 'Aucune alerte pour le moment. Continuez vos vérifications régulières !';
+                    container.appendChild(empty);
+                    return;
+                }
+
+                const list = document.createElement('div');
+                list.className = 'alert-list';
+                lowStockProducts
+                    .slice()
+                    .sort((a, b) => (a.stock || 0) - (b.stock || 0))
+                    .forEach(product => {
+                        const item = document.createElement('div');
+                        item.className = 'alert-item';
+                        item.innerHTML = `<span>${product.name}</span><span>${formatNumber(product.stock)} cartons · seuil ${formatNumber(product.minStock)}</span>`;
+                        list.appendChild(item);
+                    });
+                container.appendChild(list);
+            }
+
+            function renderCategorySummary() {
+                const container = document.getElementById('category-summary');
+                if (!container) return;
+
+                if (!state.products.length) {
+                    container.className = 'empty-state';
+                    container.textContent = 'Aucun produit enregistré.';
+                    return;
+                }
+
+                const summary = state.products.reduce((acc, product) => {
+                    const key = product.category || 'autre';
+                    if (!acc[key]) {
+                        acc[key] = { products: 0, cartons: 0 };
+                    }
+                    acc[key].products += 1;
+                    acc[key].cartons += Number(product.stock) || 0;
+                    return acc;
+                }, {});
+
+                const categories = Object.keys(summary).sort(sortCategories);
+                const table = document.createElement('table');
+                table.innerHTML = categories.map(key => `
+                    <tr>
+                        <td>${getCategoryLabel(key)} (${summary[key].products})</td>
+                        <td>${formatNumber(summary[key].cartons)} cartons</td>
+                    </tr>
+                `).join('');
+
+                container.classList.remove('empty-state');
+                container.innerHTML = '';
+                container.appendChild(table);
+            }
+
+            function renderRecommendations(lowStockProducts, mediumStockProducts) {
+                const list = document.getElementById('recommended-actions');
+                if (!list) return;
+
+                list.innerHTML = '';
+                if (!lowStockProducts.length && !mediumStockProducts.length) {
+                    const li = document.createElement('li');
+                    li.className = 'empty-state';
+                    li.textContent = 'Stock sous contrôle. Planifiez une vérification hebdomadaire.';
+                    list.appendChild(li);
+                    return;
+                }
+
+                lowStockProducts
+                    .slice()
+                    .sort((a, b) => (a.stock / Math.max(a.minStock || 1, 1)) - (b.stock / Math.max(b.minStock || 1, 1)))
+                    .slice(0, 4)
+                    .forEach(product => {
+                        const stockValue = Number(product.stock) || 0;
+                        const minStockValue = Number(product.minStock) || 0;
+                        const deficit = Math.max(minStockValue - stockValue, 0);
+                        const target = Math.max(minStockValue * 1.5, minStockValue + 10);
+                        const reorderQty = Math.max(Math.ceil(target - stockValue), deficit + 1);
+
+                        const li = document.createElement('li');
+                        li.innerHTML = `<span>${product.name}</span><span class="text-muted">Commander ${formatNumber(reorderQty)} cartons</span>`;
+                        list.appendChild(li);
                     });
 
-                groupCard.appendChild(pillContainer);
-                container.appendChild(groupCard);
-            });
-        }
-
-        function loadMovements() {
-            const table = document.getElementById('movements-table');
-            if (!table) return;
-
-            table.innerHTML = '';
-
-            const sortedMovements = [...movements].sort((a, b) => new Date(b.date) - new Date(a.date));
-
-            sortedMovements.forEach(movement => {
-                const product = products.find(p => p.id === movement.productId);
-                const productName = product ? product.name : (movement.productName || 'Produit archivé');
-
-                const movementDate = new Date(movement.date);
-                const formattedDate = Number.isNaN(movementDate.getTime()) ? '' : movementDate.toLocaleDateString('fr-FR');
-                const typeLabel = movement.type === 'in' ? 'Entrée' : movement.type === 'out' ? 'Sortie' : 'Ajustement';
-                const quantityDisplay = movement.type === 'in'
-                    ? `+${movement.quantity}`
-                    : movement.type === 'out'
-                        ? `-${movement.quantity}`
-                        : `=${movement.quantity}`;
-
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${formattedDate}</td>
-                    <td>${productName}</td>
-                    <td>${typeLabel}</td>
-                    <td>${quantityDisplay}</td>
-                    <td>${movement.reason || '-'}</td>
-                `;
-                table.appendChild(row);
-            });
-        }
-
-        function updateDashboard() {
-            const totalProducts = products.length;
-            const lowStockProducts = products.filter(p => getStockStatus(p.stock, p.minStock) === 'low');
-            const mediumStockProducts = products.filter(p => getStockStatus(p.stock, p.minStock) === 'medium');
-            const totalCartons = products.reduce((sum, p) => {
-                const stockValue = Number(p.stock);
-                return Number.isFinite(stockValue) ? sum + stockValue : sum;
-            }, 0);
-            const totalValue = products.reduce((sum, p) => {
-                const stockValue = Number(p.stock);
-                const priceValue = Number(p.price);
-                const productValue = (Number.isFinite(stockValue) ? stockValue : 0) * (Number.isFinite(priceValue) ? priceValue : 0);
-                return sum + productValue;
-            }, 0);
-
-            const totalProductsEl = document.getElementById('total-products');
-            const lowStockCountEl = document.getElementById('low-stock-count');
-            const totalCartonsEl = document.getElementById('total-cartons');
-            const alertsCountEl = document.getElementById('alerts-count');
-            const totalValueEl = document.getElementById('total-value');
-
-            if (totalProductsEl) totalProductsEl.textContent = totalProducts;
-            if (lowStockCountEl) lowStockCountEl.textContent = lowStockProducts.length;
-            if (totalCartonsEl) totalCartonsEl.textContent = formatNumber(totalCartons);
-            if (alertsCountEl) alertsCountEl.textContent = lowStockProducts.length;
-            if (totalValueEl) totalValueEl.textContent = formatCurrency(totalValue);
-
-            const alertsContainer = document.getElementById('alerts-container');
-            if (alertsContainer) {
-                alertsContainer.innerHTML = '';
-
-                if (lowStockProducts.length > 0) {
-                    const alertDiv = document.createElement('div');
-                    alertDiv.className = 'sempa-alert';
-                    alertDiv.innerHTML = '<h3>Stocks Faibles - Attention</h3>';
-
-                    lowStockProducts
-                        .sort((a, b) => a.stock - b.stock)
-                        .forEach(product => {
-                            const alertItem = document.createElement('div');
-                            alertItem.className = 'sempa-alert-item';
-                            alertItem.innerHTML = `
-                                <div class="sempa-product-name">${product.name}</div>
-                                <div class="sempa-stock-level">${formatNumber(product.stock)} cartons (seuil: ${formatNumber(product.minStock)})</div>
-                            `;
-                            alertDiv.appendChild(alertItem);
-                        });
-
-                    alertsContainer.appendChild(alertDiv);
-                } else {
-                    const okDiv = document.createElement('div');
-                    okDiv.className = 'sempa-empty-state';
-                    okDiv.textContent = 'Aucune alerte de stock pour le moment.';
-                    alertsContainer.appendChild(okDiv);
-                }
-            }
-
-            renderCategorySummary();
-            renderRecommendations(lowStockProducts, mediumStockProducts);
-            renderRecentUpdates();
-        }
-
-        function renderCategorySummary() {
-            const container = document.getElementById('category-summary');
-            if (!container) return;
-
-            if (products.length === 0) {
-                container.classList.add('sempa-empty-state');
-                container.textContent = 'Aucun produit enregistré.';
-                return;
-            }
-
-            container.classList.remove('sempa-empty-state');
-            const summary = products.reduce((acc, product) => {
-                const key = product.category || 'autre';
-                if (!acc[key]) {
-                    acc[key] = { products: 0, cartons: 0 };
-                }
-                acc[key].products += 1;
-                acc[key].cartons += Number(product.stock) || 0;
-                return acc;
-            }, {});
-
-            const categories = Object.keys(summary).sort(sortCategories);
-
-            const table = document.createElement('table');
-            table.className = 'sempa-mini-table';
-
-            categories.forEach(key => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${getCategoryLabel(key)} (${summary[key].products})</td>
-                    <td>${formatNumber(summary[key].cartons)} cartons</td>
-                `;
-                table.appendChild(row);
-            });
-
-            container.innerHTML = '';
-            container.appendChild(table);
-        }
-
-        function renderRecommendations(lowStockProducts, mediumStockProducts) {
-            const list = document.getElementById('recommended-actions');
-            if (!list) return;
-
-            list.innerHTML = '';
-
-            if (lowStockProducts.length === 0 && mediumStockProducts.length === 0) {
-                const li = document.createElement('li');
-                li.className = 'sempa-empty-state';
-                li.textContent = 'Stock sous contrôle. Planifiez une vérification hebdomadaire.';
-                list.appendChild(li);
-                return;
-            }
-
-            lowStockProducts
-                .sort((a, b) => (a.stock / Math.max(a.minStock || 1, 1)) - (b.stock / Math.max(b.minStock || 1, 1)))
-                .slice(0, 4)
-                .forEach(product => {
-                    const stockValue = Number(product.stock) || 0;
-                    const minStockValue = Number(product.minStock) || 0;
-                    const deficit = Math.max(minStockValue - stockValue, 0);
-                    const target = Math.max(minStockValue * 1.5, minStockValue + 10);
-                    const reorderQty = Math.max(Math.ceil(target - stockValue), deficit + 1);
-
+                if (mediumStockProducts.length) {
+                    const product = [...mediumStockProducts].sort((a, b) => a.stock - b.stock)[0];
                     const li = document.createElement('li');
-                    li.innerHTML = `
-                        <span>${product.name}</span>
-                        <span class="sempa-text-muted">Commander ${formatNumber(reorderQty)} cartons</span>
-                    `;
+                    li.innerHTML = `<span>${product.name}</span><span class="text-muted">Surveiller (${formatNumber(product.stock)} / seuil ${formatNumber(product.minStock)})</span>`;
+                    list.appendChild(li);
+                }
+            }
+
+            function renderRecentUpdates() {
+                const list = document.getElementById('recent-updates');
+                if (!list) return;
+
+                list.innerHTML = '';
+                const updated = state.products
+                    .filter(product => product.lastUpdated)
+                    .sort((a, b) => new Date(b.lastUpdated) - new Date(a.lastUpdated))
+                    .slice(0, 5);
+
+                if (!updated.length) {
+                    const li = document.createElement('li');
+                    li.className = 'empty-state';
+                    li.textContent = 'Aucune mise à jour récente.';
+                    list.appendChild(li);
+                    return;
+                }
+
+                updated.forEach(product => {
+                    const li = document.createElement('li');
+                    li.innerHTML = `<span>${product.name}</span><span class="text-muted">${formatRelativeDate(product.lastUpdated)}</span>`;
                     list.appendChild(li);
                 });
-
-            if (mediumStockProducts.length > 0) {
-                const product = [...mediumStockProducts].sort((a, b) => a.stock - b.stock)[0];
-                const li = document.createElement('li');
-                li.innerHTML = `
-                    <span>${product.name}</span>
-                    <span class="sempa-text-muted">Surveiller (${formatNumber(product.stock)} / seuil ${formatNumber(product.minStock)})</span>
-                `;
-                list.appendChild(li);
-            }
-        }
-
-        function renderRecentUpdates() {
-            const list = document.getElementById('recent-updates');
-            if (!list) return;
-
-            list.innerHTML = '';
-
-            const updatedProducts = products
-                .filter(product => product.lastUpdated)
-                .sort((a, b) => new Date(b.lastUpdated) - new Date(a.lastUpdated))
-                .slice(0, 5);
-
-            if (updatedProducts.length === 0) {
-                const li = document.createElement('li');
-                li.className = 'sempa-empty-state';
-                li.textContent = 'Aucune mise à jour pour le moment.';
-                list.appendChild(li);
-                return;
             }
 
-            updatedProducts.forEach(product => {
-                const li = document.createElement('li');
-                li.innerHTML = `
-                    <span>${product.name}</span>
-                    <span class="sempa-text-muted">${formatRelativeDate(product.lastUpdated)}</span>
-                `;
-                list.appendChild(li);
-            });
-        }
+            function getStockStatus(stock, minStock) {
+                const stockValue = Number(stock) || 0;
+                const minValue = Number(minStock) || 0;
 
-        function getStockStatus(stock, minStock) {
-            const parsedStock = Number(stock);
-            const parsedMinStock = Number(minStock);
-            const stockValue = Number.isFinite(parsedStock) ? parsedStock : 0;
-            const minStockValue = Number.isFinite(parsedMinStock) ? parsedMinStock : 0;
+                if (minValue <= 0) {
+                    return stockValue > 0 ? 'good' : 'low';
+                }
 
-            if (minStockValue <= 0) {
-                return stockValue > 0 ? 'good' : 'low';
+                if (stockValue <= minValue * 0.3) return 'low';
+                if (stockValue <= minValue) return 'medium';
+                return 'good';
             }
 
-            if (stockValue <= minStockValue * 0.3) return 'low';
-            if (stockValue <= minStockValue) return 'medium';
-            return 'good';
-        }
+            function filterProducts() {
+                const search = document.getElementById('product-search');
+                const categorySelect = document.getElementById('filter-category');
+                const statusSelect = document.getElementById('filter-status');
 
-        function filterProducts() {
-            const searchInput = document.getElementById('product-search');
-            const categorySelect = document.getElementById('filter-category');
-            const statusSelect = document.getElementById('filter-status');
+                const searchText = search ? search.value.trim().toLowerCase() : '';
+                const selectedCategory = categorySelect ? categorySelect.value : '';
+                const selectedStatus = statusSelect ? statusSelect.value : '';
 
-            const searchText = searchInput ? searchInput.value.trim().toLowerCase() : '';
-            const selectedCategory = categorySelect ? categorySelect.value : '';
-            const selectedStatus = statusSelect ? statusSelect.value : '';
+                const table = document.getElementById('products-table');
+                if (!table) return;
 
-            const table = document.getElementById('products-table');
-            if (!table) return;
+                const rows = Array.from(table.getElementsByTagName('tr'));
+                rows.forEach(row => {
+                    const matchesSearch = !searchText || row.dataset.name.includes(searchText) || row.dataset.reference.includes(searchText);
+                    const matchesCategory = !selectedCategory || row.dataset.category === selectedCategory;
+                    const matchesStatus = !selectedStatus || row.dataset.status === selectedStatus;
+                    row.style.display = matchesSearch && matchesCategory && matchesStatus ? '' : 'none';
+                });
 
-            const rows = table.getElementsByTagName('tr');
-
-            for (let i = 0; i < rows.length; i++) {
-                const row = rows[i];
-                const rowCategory = row.dataset.category || '';
-                const rowStatus = row.dataset.status || '';
-                const rowName = row.dataset.name || '';
-                const rowReference = row.dataset.reference || '';
-
-                const matchesSearch = !searchText || rowName.includes(searchText) || rowReference.includes(searchText);
-                const matchesCategory = !selectedCategory || rowCategory === selectedCategory;
-                const matchesStatus = !selectedStatus || rowStatus === selectedStatus;
-
-                row.style.display = matchesSearch && matchesCategory && matchesStatus ? '' : 'none';
+                setActiveCategoryChip(selectedCategory);
             }
 
-            setActiveCategoryChip(selectedCategory);
-        }
+            function resetFilters() {
+                const search = document.getElementById('product-search');
+                const categorySelect = document.getElementById('filter-category');
+                const statusSelect = document.getElementById('filter-status');
 
-        function resetFilters() {
-            const searchInput = document.getElementById('product-search');
-            const categorySelect = document.getElementById('filter-category');
-            const statusSelect = document.getElementById('filter-status');
+                if (search) search.value = '';
+                if (categorySelect) categorySelect.value = '';
+                if (statusSelect) statusSelect.value = '';
 
-            if (searchInput) searchInput.value = '';
-            if (categorySelect) categorySelect.value = '';
-            if (statusSelect) statusSelect.value = '';
+                highlightProductRow(null);
+                filterProducts();
+            }
 
-            highlightProductRow(null);
-            filterProducts();
-        }
+            function highlightProductRow(productId) {
+                const table = document.getElementById('products-table');
+                if (!table) return;
 
-        function openModal(action, productId = null) {
-            currentProductId = productId;
-            const modal = document.getElementById('product-modal');
-            const title = document.getElementById('modal-title');
+                Array.from(table.getElementsByTagName('tr')).forEach(row => row.classList.remove('row-highlight'));
+                if (!productId) return;
 
-            if (!modal || !title) return;
+                const target = Array.from(table.getElementsByTagName('tr')).find(row => row.dataset.id === productId);
+                if (target) {
+                    target.classList.add('row-highlight');
+                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setTimeout(() => target.classList.remove('row-highlight'), 1600);
+                }
+            }
+            function openModal(action, productId = null) {
+                state.currentProductId = productId;
+                const modal = document.getElementById('product-modal');
+                const title = document.getElementById('modal-title');
+                if (!modal || !title) return;
 
-            if (action === 'new') {
-                title.textContent = 'Nouveau Produit';
-                document.getElementById('product-name').value = '';
-                document.getElementById('product-ref').value = '';
-                document.getElementById('product-stock').value = '0';
-                document.getElementById('product-minstock').value = '20';
-                document.getElementById('product-price').value = '0';
-                document.getElementById('product-category').value = 'capot';
-                document.getElementById('product-desc').value = '';
-            } else if (action === 'edit' && productId) {
-                title.textContent = 'Modifier le Produit';
-                const product = products.find(p => p.id === productId);
-                if (product) {
-                    document.getElementById('product-name').value = product.name;
-                    document.getElementById('product-ref').value = product.reference;
-                    document.getElementById('product-stock').value = product.stock;
-                    document.getElementById('product-minstock').value = product.minStock;
-                    document.getElementById('product-price').value = product.price;
-                    document.getElementById('product-category').value = product.category || 'autre';
-                    document.getElementById('product-desc').value = product.description || '';
+                if (action === 'new') {
+                    title.textContent = 'Nouveau produit';
+                    document.getElementById('product-name').value = '';
+                    document.getElementById('product-ref').value = '';
+                    document.getElementById('product-stock').value = '0';
+                    document.getElementById('product-minstock').value = '20';
+                    document.getElementById('product-price').value = '0';
+                    document.getElementById('product-category').value = 'capot';
+                    document.getElementById('product-desc').value = '';
+                } else if (action === 'edit' && productId) {
+                    title.textContent = 'Modifier le produit';
+                    const product = state.products.find(p => p.id === productId);
+                    if (product) {
+                        document.getElementById('product-name').value = product.name;
+                        document.getElementById('product-ref').value = product.reference;
+                        document.getElementById('product-stock').value = product.stock;
+                        document.getElementById('product-minstock').value = product.minStock;
+                        document.getElementById('product-price').value = product.price;
+                        document.getElementById('product-category').value = product.category || 'autre';
+                        document.getElementById('product-desc').value = product.description || '';
+                    }
+                }
+
+                modal.classList.add('open');
+                const nameInput = document.getElementById('product-name');
+                if (nameInput) {
+                    setTimeout(() => nameInput.focus(), 100);
                 }
             }
 
-            modal.style.display = 'flex';
-
-            const nameInput = document.getElementById('product-name');
-            if (nameInput) {
-                setTimeout(() => nameInput.focus(), 100);
-            }
-        }
-
-        function closeModal() {
-            const modal = document.getElementById('product-modal');
-            if (modal) {
-                modal.style.display = 'none';
-            }
-            currentProductId = null;
-        }
-
-        function saveProduct() {
-            const name = document.getElementById('product-name').value.trim();
-            const reference = document.getElementById('product-ref').value.trim();
-            const stockInput = Number.parseInt(document.getElementById('product-stock').value, 10);
-            const minStockInput = Number.parseInt(document.getElementById('product-minstock').value, 10);
-            let priceInput = Number.parseFloat(document.getElementById('product-price').value);
-            const category = document.getElementById('product-category').value || 'autre';
-            const description = document.getElementById('product-desc').value.trim();
-
-            if (!name || !reference) {
-                alert('Veuillez remplir au moins le nom et la référence du produit');
-                return;
+            function closeModal() {
+                const modal = document.getElementById('product-modal');
+                if (modal) {
+                    modal.classList.remove('open');
+                }
+                state.currentProductId = null;
             }
 
-            if (!Number.isFinite(stockInput) || stockInput < 0) {
-                alert('Veuillez saisir un stock valide (0 ou plus).');
-                return;
-            }
+            function saveProduct() {
+                const name = document.getElementById('product-name').value.trim();
+                const reference = document.getElementById('product-ref').value.trim();
+                const stockValue = Number.parseInt(document.getElementById('product-stock').value, 10);
+                const minStockValue = Number.parseInt(document.getElementById('product-minstock').value, 10);
+                let priceValue = Number.parseFloat(document.getElementById('product-price').value);
+                const category = document.getElementById('product-category').value || 'autre';
+                const description = document.getElementById('product-desc').value.trim();
 
-            if (!Number.isFinite(minStockInput) || minStockInput <= 0) {
-                alert("Veuillez saisir un seuil d'alerte valide (supérieur à 0).");
-                return;
-            }
+                if (!name || !reference) {
+                    alert('Veuillez remplir au moins le nom et la référence du produit.');
+                    return;
+                }
 
-            if (!Number.isFinite(priceInput)) {
-                priceInput = 0;
-            } else if (priceInput < 0) {
-                alert('Veuillez saisir un prix unitaire positif.');
-                return;
-            }
+                if (!Number.isFinite(stockValue) || stockValue < 0) {
+                    alert('Veuillez saisir un stock valide (0 ou plus).');
+                    return;
+                }
 
-            const stock = stockInput;
-            const minStock = minStockInput;
-            const price = Math.round(priceInput * 100) / 100;
+                if (!Number.isFinite(minStockValue) || minStockValue <= 0) {
+                    alert("Veuillez saisir un seuil d'alerte valide (supérieur à 0).");
+                    return;
+                }
 
-            if (currentProductId) {
-                const index = products.findIndex(p => p.id === currentProductId);
-                if (index !== -1) {
-                    products[index] = {
-                        ...products[index],
+                if (!Number.isFinite(priceValue)) {
+                    priceValue = 0;
+                } else if (priceValue < 0) {
+                    alert('Veuillez saisir un prix unitaire positif.');
+                    return;
+                }
+
+                if (state.currentProductId) {
+                    const index = state.products.findIndex(p => p.id === state.currentProductId);
+                    if (index !== -1) {
+                        state.products[index] = {
+                            ...state.products[index],
+                            name,
+                            reference,
+                            stock: stockValue,
+                            minStock: minStockValue,
+                            price: Math.round(priceValue * 100) / 100,
+                            category,
+                            description,
+                            lastUpdated: new Date().toISOString()
+                        };
+
+                        state.movements = state.movements.map(movement => movement.productId === state.currentProductId ? { ...movement, productName: name } : movement);
+                    }
+                } else {
+                    const newId = Date.now().toString();
+                    state.products.push({
+                        id: newId,
                         name,
                         reference,
-                        stock,
-                        minStock,
-                        price,
+                        stock: stockValue,
+                        minStock: minStockValue,
+                        price: Math.round(priceValue * 100) / 100,
                         category,
                         description,
                         lastUpdated: new Date().toISOString()
-                    };
-
-                    movements = movements.map(movement => movement.productId === currentProductId ? { ...movement, productName: name } : movement);
+                    });
                 }
-            } else {
-                const newId = Date.now().toString();
-                products.push({
-                    id: newId,
-                    name,
-                    reference,
-                    stock,
-                    minStock,
-                    price,
-                    category,
-                    description,
+
+                persistProducts();
+                persistMovements();
+                loadProducts();
+                renderDashboard();
+                closeModal();
+                alert('Produit enregistré avec succès');
+            }
+
+            function addStockMovement() {
+                const productId = document.getElementById('movement-product').value;
+                const type = document.getElementById('movement-type').value;
+                const quantityValue = Number.parseInt(document.getElementById('movement-quantity').value, 10);
+                const reason = document.getElementById('movement-reason').value.trim();
+
+                if (!productId) {
+                    alert('Veuillez sélectionner un produit.');
+                    return;
+                }
+
+                const quantityInvalid = !Number.isFinite(quantityValue) || (type === 'adjust' ? quantityValue < 0 : quantityValue <= 0);
+                if (quantityInvalid) {
+                    alert('Veuillez saisir une quantité valide.');
+                    return;
+                }
+
+                if (!reason) {
+                    alert('Veuillez indiquer une raison.');
+                    return;
+                }
+
+                const index = state.products.findIndex(p => p.id === productId);
+                if (index === -1) {
+                    alert('Produit introuvable.');
+                    return;
+                }
+
+                let newStock = state.products[index].stock;
+                if (type === 'in') {
+                    newStock += quantityValue;
+                } else if (type === 'out') {
+                    if (quantityValue > newStock) {
+                        alert('Stock insuffisant pour cette sortie.');
+                        return;
+                    }
+                    newStock -= quantityValue;
+                } else if (type === 'adjust') {
+                    newStock = quantityValue;
+                }
+
+                state.products[index] = {
+                    ...state.products[index],
+                    stock: newStock,
                     lastUpdated: new Date().toISOString()
+                };
+
+                state.movements.push({
+                    id: Date.now().toString(),
+                    productId,
+                    productName: state.products[index].name,
+                    type,
+                    quantity: quantityValue,
+                    reason,
+                    date: new Date().toISOString()
+                });
+
+                persistProducts();
+                persistMovements();
+                loadProducts();
+                loadMovements();
+                renderDashboard();
+
+                document.getElementById('movement-quantity').value = '1';
+                document.getElementById('movement-reason').value = '';
+
+                alert('Mouvement enregistré avec succès');
+            }
+
+            function openQuickMovement(productId, type = 'in') {
+                const product = state.products.find(p => p.id === productId);
+                if (!product) return;
+
+                switchToTab('movements');
+
+                const select = document.getElementById('movement-product');
+                if (select) {
+                    select.value = productId;
+                }
+
+                const typeSelect = document.getElementById('movement-type');
+                if (typeSelect) {
+                    typeSelect.value = type;
+                }
+
+                const quantityInput = document.getElementById('movement-quantity');
+                if (quantityInput) {
+                    quantityInput.value = '1';
+                    quantityInput.focus();
+                }
+
+                const reasonInput = document.getElementById('movement-reason');
+                if (reasonInput && !reasonInput.value) {
+                    const base = product.reference ? ` ${product.reference}` : '';
+                    reasonInput.value = type === 'in' ? `Réception${base}`.trim() : type === 'out' ? `Sortie${base}`.trim() : `Ajustement${base}`.trim();
+                }
+            }
+
+            function switchToTab(tabId) {
+                document.querySelectorAll('.sempa-tab').forEach(tab => {
+                    tab.classList.toggle('active', tab.dataset.tab === tabId);
+                });
+
+                document.querySelectorAll('.sempa-content').forEach(section => {
+                    section.classList.toggle('active', section.id === tabId);
                 });
             }
 
-            saveProducts();
-            saveMovements();
-            loadProducts();
-            updateDashboard();
-            closeModal();
+            function deleteProduct(productId) {
+                const product = state.products.find(p => p.id === productId);
+                if (!product) return;
 
-            alert('Produit enregistré avec succès');
-        }
-
-        function addStockMovement() {
-            const productId = document.getElementById('movement-product').value;
-            const type = document.getElementById('movement-type').value;
-            const quantityInput = Number.parseInt(document.getElementById('movement-quantity').value, 10);
-            const reason = document.getElementById('movement-reason').value.trim();
-
-            if (!productId) {
-                alert('Veuillez sélectionner un produit.');
-                return;
-            }
-
-            const quantityIsInvalid = !Number.isFinite(quantityInput) ||
-                (type === 'adjust' ? quantityInput < 0 : quantityInput <= 0);
-
-            if (quantityIsInvalid) {
-                alert('Veuillez saisir une quantité valide.');
-                return;
-            }
-
-            if (!reason) {
-                alert('Veuillez indiquer une raison.');
-                return;
-            }
-
-            const quantity = quantityInput;
-
-            const productIndex = products.findIndex(p => p.id === productId);
-            if (productIndex === -1) {
-                alert('Produit non trouvé');
-                return;
-            }
-
-            let newStock = products[productIndex].stock;
-            if (type === 'in') {
-                newStock += quantity;
-            } else if (type === 'out') {
-                if (quantity > newStock) {
-                    alert('Stock insuffisant pour cette sortie');
+                const confirmDelete = confirm(`Voulez-vous vraiment supprimer "${product.name}" ?`);
+                if (!confirmDelete) {
                     return;
                 }
-                newStock -= quantity;
-            } else if (type === 'adjust') {
-                newStock = quantity;
+
+                state.products = state.products.filter(p => p.id !== productId);
+                state.movements = state.movements.map(movement => movement.productId === productId ? { ...movement, productName: movement.productName || product.name } : movement);
+
+                persistProducts();
+                persistMovements();
+                loadProducts();
+                loadMovements();
+                renderDashboard();
+
+                alert('Produit supprimé avec succès');
+            }
+            function exportInventory() {
+                if (!state.products.length) {
+                    alert('Aucun produit à exporter.');
+                    return;
+                }
+
+                const headers = ['Nom', 'Référence', 'Catégorie', 'Stock (cartons)', 'Seuil', 'Prix unitaire (€)', 'Valeur stock (€)', 'Dernière mise à jour'];
+                const rows = state.products.map(product => [
+                    product.name,
+                    product.reference,
+                    getCategoryLabel(product.category || 'autre'),
+                    formatNumber(product.stock),
+                    formatNumber(product.minStock),
+                    product.price,
+                    (Number(product.price) || 0) * (Number(product.stock) || 0),
+                    formatDate(product.lastUpdated)
+                ]);
+
+                const csv = [headers, ...rows]
+                    .map(columns => columns.map(value => wrapCsvValue(value)).join(';'))
+                    .join('\n');
+
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `inventaire-sempa-${new Date().toISOString().slice(0, 10)}.csv`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
             }
 
-            products[productIndex] = {
-                ...products[productIndex],
-                stock: newStock,
-                lastUpdated: new Date().toISOString()
-            };
-
-            movements.push({
-                id: Date.now().toString(),
-                productId,
-                productName: products[productIndex].name,
-                type,
-                quantity,
-                reason,
-                date: new Date().toISOString()
-            });
-
-            saveProducts();
-            saveMovements();
-            loadProducts();
-            loadMovements();
-            updateDashboard();
-
-            document.getElementById('movement-quantity').value = '1';
-            document.getElementById('movement-reason').value = '';
-
-            alert('Mouvement de stock enregistré avec succès');
-        }
-
-        function openQuickMovement(productId, type = 'in') {
-            const product = products.find(p => p.id === productId);
-            if (!product) return;
-
-            switchToTab('movements');
-
-            const productSelect = document.getElementById('movement-product');
-            if (productSelect) {
-                productSelect.value = productId;
+            function wrapCsvValue(value) {
+                const stringValue = value ?? '';
+                const text = typeof stringValue === 'string' ? stringValue : String(stringValue);
+                const escaped = text.replace(/"/g, '""');
+                return /[";\n]/.test(escaped) ? `"${escaped}"` : escaped;
             }
 
-            const typeSelect = document.getElementById('movement-type');
-            if (typeSelect) {
-                typeSelect.value = type;
-            }
-
-            const quantityInput = document.getElementById('movement-quantity');
-            if (quantityInput) {
-                quantityInput.value = '1';
-                quantityInput.focus();
-            }
-
-            const reasonInput = document.getElementById('movement-reason');
-            if (reasonInput && !reasonInput.value) {
-                const base = product.reference ? ` ${product.reference}` : '';
-                if (type === 'in') {
-                    reasonInput.value = `Réception${base}`.trim();
-                } else if (type === 'out') {
-                    reasonInput.value = `Sortie${base}`.trim();
-                } else {
-                    reasonInput.value = `Ajustement${base}`.trim();
+            function setText(id, value) {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.textContent = value;
                 }
             }
-        }
 
-        function switchToTab(tabId) {
-            document.querySelectorAll('.sempa-tab').forEach(tab => {
-                tab.classList.toggle('active', tab.dataset.tab === tabId);
-            });
-
-            document.querySelectorAll('.sempa-content').forEach(content => {
-                content.classList.toggle('active', content.id === tabId);
-            });
-        }
-
-        function deleteProduct(productId) {
-            const product = products.find(p => p.id === productId);
-            if (!product) return;
-
-            const confirmation = confirm(`Voulez-vous vraiment supprimer "${product.name}" du catalogue ?`);
-            if (!confirmation) {
-                return;
+            function getCategoryLabel(key) {
+                return CATEGORY_LABELS[key] || (key ? key.charAt(0).toUpperCase() + key.slice(1) : 'Non classé');
             }
 
-            products = products.filter(p => p.id !== productId);
-            movements = movements.map(movement => movement.productId === productId ? { ...movement, productName: movement.productName || product.name } : movement);
-
-            saveProducts();
-            saveMovements();
-            loadProducts();
-            loadMovements();
-            updateDashboard();
-
-            alert('Produit supprimé avec succès');
-        }
-
-        function exportInventory() {
-            if (!products.length) {
-                alert('Aucun produit à exporter.');
-                return;
+            function getCategoryOrder(key) {
+                const index = CATEGORY_ORDER.indexOf(key);
+                return index === -1 ? Number.MAX_SAFE_INTEGER : index;
             }
 
-            const headers = [
-                'Nom',
-                'Référence',
-                'Catégorie',
-                'Stock (cartons)',
-                'Seuil',
-                'Prix unitaire (€)',
-                'Valeur stock (€)',
-                'Dernière mise à jour'
-            ];
-
-            const rows = products.map(product => {
-                const stockValue = Number(product.stock) || 0;
-                const priceValue = Number(product.price) || 0;
-                const stockWorth = stockValue * priceValue;
-
-                return [
-                    wrapCsvValue(product.name),
-                    wrapCsvValue(product.reference),
-                    wrapCsvValue(getCategoryLabel(product.category || 'autre')),
-                    wrapCsvValue(formatNumber(stockValue)),
-                    wrapCsvValue(formatNumber(product.minStock)),
-                    wrapCsvValue(priceValue.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })),
-                    wrapCsvValue(stockWorth.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })),
-                    wrapCsvValue(formatDate(product.lastUpdated))
-                ].join(';');
-            });
-
-            const csvContent = [headers.join(';'), ...rows].join('\n');
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `inventaire-sempa-${new Date().toISOString().slice(0, 10)}.csv`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-        }
-
-        function wrapCsvValue(value) {
-            if (value === null || value === undefined) {
-                return '""';
-            }
-            const stringValue = String(value).replace(/"/g, '""');
-            return `"${stringValue}"`;
-        }
-
-        function formatNumber(value) {
-            const number = Number(value);
-            if (!Number.isFinite(number)) return '0';
-            return number.toLocaleString('fr-FR');
-        }
-
-        function formatCurrency(value) {
-            const number = Number(value);
-            if (!Number.isFinite(number)) return '€0';
-            return number.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        }
-
-        function formatDate(dateString) {
-            if (!dateString) return 'Non renseigné';
-            const date = new Date(dateString);
-            if (Number.isNaN(date.getTime())) return 'Non renseigné';
-            return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
-        }
-
-        function formatRelativeDate(dateString) {
-            if (!dateString) return 'Date inconnue';
-            const date = new Date(dateString);
-            if (Number.isNaN(date.getTime())) return 'Date inconnue';
-
-            const now = new Date();
-            const diffMs = now.getTime() - date.getTime();
-            const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
-
-            if (diffDays <= 0) {
-                return `Aujourd'hui (${date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })})`;
-            }
-            if (diffDays === 1) {
-                return 'Il y a 1 jour';
-            }
-            if (diffDays < 7) {
-                return `Il y a ${diffDays} jours`;
-            }
-            return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
-        }
-
-        function highlightProductRow(productId) {
-            const table = document.getElementById('products-table');
-            if (!table) return;
-
-            const rows = Array.from(table.getElementsByTagName('tr'));
-            rows.forEach(row => row.classList.remove('sempa-highlight'));
-
-            if (!productId) {
-                return;
+            function sortCategories(a, b) {
+                const orderA = getCategoryOrder(a);
+                const orderB = getCategoryOrder(b);
+                if (orderA !== orderB) {
+                    return orderA - orderB;
+                }
+                return getCategoryLabel(a).localeCompare(getCategoryLabel(b), 'fr', { sensitivity: 'base' });
             }
 
-            const targetRow = rows.find(row => row.dataset.id === productId);
-            if (targetRow) {
-                targetRow.classList.add('sempa-highlight');
-                targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                setTimeout(() => targetRow.classList.remove('sempa-highlight'), 1600);
+            function formatNumber(value) {
+                const numeric = Number(value);
+                if (!Number.isFinite(numeric)) return '0';
+                return new Intl.NumberFormat('fr-FR').format(numeric);
             }
-        }
 
-        window.onclick = function(event) {
-            const modal = document.getElementById('product-modal');
-            if (event.target === modal) {
-                closeModal();
+            function formatCurrency(value) {
+                const numeric = Number(value);
+                if (!Number.isFinite(numeric)) return '0 €';
+                return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }).format(numeric);
             }
-        };
+
+            function formatDate(dateString) {
+                if (!dateString) return '';
+                const date = new Date(dateString);
+                if (Number.isNaN(date.getTime())) return '';
+                return date.toLocaleDateString('fr-FR');
+            }
+
+            function formatRelativeDate(dateString) {
+                if (!dateString) return '';
+                const date = new Date(dateString);
+                if (Number.isNaN(date.getTime())) return '';
+
+                const now = new Date();
+                const diff = now - date;
+                const minutes = Math.floor(diff / 60000);
+                const hours = Math.floor(minutes / 60);
+                const days = Math.floor(hours / 24);
+
+                if (minutes < 1) return "À l'instant";
+                if (minutes < 60) return `Il y a ${minutes} min`;
+                if (hours < 24) return `Il y a ${hours} h`;
+                if (days === 1) return 'Hier';
+                if (days < 7) return `Il y a ${days} jours`;
+                return date.toLocaleDateString('fr-FR');
+            }
+
+            function init() {
+                initTheme();
+                ensureDefaults();
+                bindEvents();
+                loadProducts();
+                loadMovements();
+                renderDashboard();
+            }
+
+            return {
+                init,
+                openModal,
+                closeModal,
+                saveProduct,
+                addStockMovement,
+                resetFilters,
+                openQuickMovement,
+                switchToTab,
+                deleteProduct,
+                exportInventory
+            };
+        })();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            App.init();
+        });
+
+        window.openModal = App.openModal;
+        window.closeModal = App.closeModal;
+        window.saveProduct = App.saveProduct;
+        window.addStockMovement = App.addStockMovement;
+        window.resetFilters = App.resetFilters;
+        window.openQuickMovement = App.openQuickMovement;
+        window.switchToTab = App.switchToTab;
+        window.deleteProduct = App.deleteProduct;
+        window.exportInventory = App.exportInventory;
     </script>
-
 </body>
 </html>
