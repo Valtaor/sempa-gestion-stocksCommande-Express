@@ -449,6 +449,113 @@
             min-width: 180px;
         }
 
+        .sempa-category-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .sempa-chip {
+            border: 1px solid var(--border-color);
+            background: var(--surface-alt);
+            color: var(--text);
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease, transform 0.2s ease;
+        }
+
+        .sempa-chip:hover {
+            transform: translateY(-1px);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .sempa-chip.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 6px 12px rgba(255, 163, 0, 0.2);
+        }
+
+        .sempa-product-groups {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .sempa-product-group {
+            background: var(--surface-alt);
+            border-radius: var(--radius);
+            border: 1px solid var(--border-color);
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .sempa-product-group h3 {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 16px;
+            margin: 0;
+            color: var(--text);
+        }
+
+        .sempa-chip-counter {
+            background: var(--primary-light);
+            color: var(--primary);
+            border-radius: 999px;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .sempa-product-pill-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .sempa-product-pill {
+            border: 1px dashed var(--border-color);
+            background: transparent;
+            color: var(--text);
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease, transform 0.2s ease;
+        }
+
+        .sempa-product-pill:hover {
+            background: var(--primary-light);
+            border-color: var(--primary);
+            color: var(--primary);
+            transform: translateY(-1px);
+        }
+
+        .sempa-table tr.sempa-highlight {
+            animation: sempaHighlight 1.6s ease;
+        }
+
+        @keyframes sempaHighlight {
+            0% {
+                background-color: rgba(255, 163, 0, 0.1);
+            }
+            50% {
+                background-color: rgba(255, 163, 0, 0.22);
+            }
+            100% {
+                background-color: transparent;
+            }
+        }
+
         .sempa-actions {
             display: flex;
             flex-wrap: wrap;
@@ -551,6 +658,10 @@
             }
 
             .sempa-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .sempa-product-groups {
                 grid-template-columns: 1fr;
             }
 
@@ -689,9 +800,12 @@
                     <option value="medium">À surveiller</option>
                     <option value="low">Critique</option>
                 </select>
-                <button class="sempa-btn sempa-btn-ghost sempa-btn-small" type="button" onclick="resetFilters()">Réinitialiser</button>
                 <button class="sempa-btn sempa-btn-secondary sempa-btn-small" type="button" onclick="exportInventory()">Exporter (CSV)</button>
             </div>
+
+            <div class="sempa-category-chips" id="category-chips" aria-live="polite"></div>
+
+            <div class="sempa-product-groups" id="product-groups"></div>
 
             <table class="sempa-table">
                 <thead>
@@ -797,6 +911,15 @@
                 <div class="sempa-form-group">
                     <label class="sempa-label">Catégorie</label>
                     <select id="product-category" class="sempa-select">
+                        <option value="capot">Capot</option>
+                        <option value="presse">Presse</option>
+                        <option value="rotor">Rotor</option>
+                        <option value="extracteur">Extracteur</option>
+                        <option value="coutau">Coutau</option>
+                        <option value="raclette_support">Raclette / Support Raclette</option>
+                        <option value="languette_presse">Languette Presse</option>
+                        <option value="vis_capot">Vis Capot</option>
+                        <option value="tete_robinet">Tête de Robinet</option>
                         <option value="bouteille">Bouteille PET</option>
                         <option value="gobelet">Gobelet</option>
                         <option value="nettoyant">Nettoyant</option>
@@ -822,14 +945,231 @@
         let movements = JSON.parse(localStorage.getItem('sempa_movements')) || [];
         let currentProductId = null;
 
+        const CATALOG_VERSION_KEY = 'sempa_catalog_version';
+        const CURRENT_CATALOG_VERSION = 2;
         const THEME_STORAGE_KEY = 'sempa_theme';
         const CATEGORY_LABELS = {
+            capot: 'Capot',
+            presse: 'Presse',
+            rotor: 'Rotor',
+            extracteur: 'Extracteur',
+            coutau: 'Coutau',
+            raclette_support: 'Raclette / Support Raclette',
+            languette_presse: 'Languette Presse',
+            vis_capot: 'Vis Capot',
+            tete_robinet: 'Tête de Robinet',
             bouteille: 'Bouteille PET',
             gobelet: 'Gobelet',
             nettoyant: 'Nettoyant',
             piece: 'Pièce détachée',
             autre: 'Autre'
         };
+        const CATEGORY_ORDER = [
+            'capot',
+            'presse',
+            'rotor',
+            'extracteur',
+            'coutau',
+            'raclette_support',
+            'languette_presse',
+            'vis_capot',
+            'tete_robinet',
+            'bouteille',
+            'gobelet',
+            'nettoyant',
+            'piece',
+            'autre'
+        ];
+        const DEFAULT_PRODUCT_DEFINITIONS = [
+            {
+                category: 'capot',
+                label: 'Capot',
+                minStock: 5,
+                defaultStock: 12,
+                segments: [
+                    { state: 'Neuf', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] },
+                    { state: 'Reco', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] }
+                ]
+            },
+            {
+                category: 'presse',
+                label: 'Presse',
+                minStock: 5,
+                defaultStock: 12,
+                segments: [
+                    { state: 'Neuf', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] },
+                    { state: 'Reco', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] }
+                ]
+            },
+            {
+                category: 'rotor',
+                label: 'Rotor',
+                minStock: 4,
+                defaultStock: 10,
+                segments: [
+                    { state: 'Neuf', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] },
+                    { state: 'Reco', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] }
+                ]
+            },
+            {
+                category: 'extracteur',
+                label: 'Extracteur',
+                minStock: 4,
+                defaultStock: 10,
+                segments: [
+                    { state: 'Neuf', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] },
+                    { state: 'Reco', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] }
+                ]
+            },
+            {
+                category: 'coutau',
+                label: 'Coutau',
+                minStock: 6,
+                defaultStock: 14,
+                segments: [
+                    { state: 'Neuf', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] },
+                    { state: 'Reco', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] }
+                ]
+            },
+            {
+                category: 'raclette_support',
+                label: 'Raclette / Support Raclette',
+                minStock: 3,
+                defaultStock: 8,
+                segments: [
+                    { state: 'Neuf', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] },
+                    { state: 'Reco', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] }
+                ]
+            },
+            {
+                category: 'languette_presse',
+                label: 'Languette Presse',
+                minStock: 6,
+                defaultStock: 15,
+                segments: [
+                    { state: 'Neuf', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] },
+                    { state: 'Reco', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] }
+                ]
+            },
+            {
+                category: 'vis_capot',
+                label: 'Vis Capot',
+                minStock: 10,
+                defaultStock: 22,
+                segments: [
+                    { state: 'Neuf', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] },
+                    { state: 'Reco', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] }
+                ]
+            },
+            {
+                category: 'tete_robinet',
+                label: 'Tête de Robinet',
+                minStock: 5,
+                defaultStock: 12,
+                segments: [
+                    { state: 'Neuf', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] },
+                    { state: 'Reco', codes: ['OL 41', 'OL 61', 'OL 101', 'OL 201', 'OL 301'] }
+                ]
+            }
+        ];
+        function generateReferenceFromName(name) {
+            if (!name) return '';
+            return name
+                .toString()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-zA-Z0-9]+/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/^-|-$/g, '')
+                .toUpperCase();
+        }
+        const DEFAULT_PRODUCTS = (() => {
+            const now = new Date().toISOString();
+            let counter = 1;
+            const generatedProducts = DEFAULT_PRODUCT_DEFINITIONS.flatMap(definition => {
+                return definition.segments.flatMap(segment => {
+                    return segment.codes.map(code => {
+                        const name = `${definition.label} ${segment.state} ${code}`;
+                        return {
+                            id: `default-${counter++}`,
+                            name,
+                            reference: generateReferenceFromName(name),
+                            stock: definition.defaultStock,
+                            minStock: definition.minStock,
+                            price: 0,
+                            category: definition.category,
+                            description: `${definition.label} ${segment.state} ${code}`,
+                            lastUpdated: now
+                        };
+                    });
+                });
+            });
+
+            const legacyProducts = [
+                {
+                    id: `default-${counter++}`,
+                    name: 'Bouteille PET 1/4 de litre',
+                    reference: 'PET-025L',
+                    stock: 99,
+                    minStock: 20,
+                    price: 0.08,
+                    category: 'bouteille',
+                    description: 'Bouteille PET 0.25L',
+                    lastUpdated: now
+                },
+                {
+                    id: `default-${counter++}`,
+                    name: 'Bouteille PET 1/2 litre',
+                    reference: 'PET-050L',
+                    stock: 83,
+                    minStock: 20,
+                    price: 0.09,
+                    category: 'bouteille',
+                    description: 'Bouteille PET 0.5L',
+                    lastUpdated: now
+                },
+                {
+                    id: `default-${counter++}`,
+                    name: 'Bouteille PET 1/3 litre',
+                    reference: 'PET-033L',
+                    stock: 131,
+                    minStock: 20,
+                    price: 0.1,
+                    category: 'bouteille',
+                    description: 'Bouteille PET 0.33L',
+                    lastUpdated: now
+                },
+                {
+                    id: `default-${counter++}`,
+                    name: 'Bouteille PET 1 litre',
+                    reference: 'PET-100L',
+                    stock: 160,
+                    minStock: 20,
+                    price: 0.12,
+                    category: 'bouteille',
+                    description: 'Bouteille PET 1L',
+                    lastUpdated: now
+                }
+            ];
+
+            return [...generatedProducts, ...legacyProducts];
+        })();
+
+        function generateProductId() {
+            const timestamp = Date.now().toString(36);
+            const randomPart = Math.random().toString(36).slice(2, 8);
+            return `p-${timestamp}-${randomPart}`;
+        }
+
+        function createProductSignature(product) {
+            if (!product) return 'empty';
+            const reference = (product.reference || '').toString().trim().toLowerCase();
+            if (reference) {
+                return `ref:${reference}`;
+            }
+            return `name:${(product.name || '').toString().trim().toLowerCase()}`;
+        }
+
         const STATUS_LABELS = {
             good: 'Stock confortable',
             medium: 'À surveiller',
@@ -893,55 +1233,26 @@
         });
 
         function initApp() {
+            const storedVersion = Number.parseInt(localStorage.getItem(CATALOG_VERSION_KEY), 10) || 0;
+
+            if (!Array.isArray(products)) {
+                products = [];
+            }
+
             if (products.length === 0) {
-                const now = new Date();
-                products = [
-                    {
-                        id: '1',
-                        name: 'Bouteille PET 1/4 de litre',
-                        reference: 'PET-025L',
-                        stock: 99,
-                        minStock: 20,
-                        price: 0.08,
-                        category: 'bouteille',
-                        description: 'Bouteille PET 0.25L',
-                        lastUpdated: now.toISOString()
-                    },
-                    {
-                        id: '2',
-                        name: 'Bouteille PET 1/2 litre',
-                        reference: 'PET-050L',
-                        stock: 83,
-                        minStock: 20,
-                        price: 0.09,
-                        category: 'bouteille',
-                        description: 'Bouteille PET 0.5L',
-                        lastUpdated: now.toISOString()
-                    },
-                    {
-                        id: '3',
-                        name: 'Bouteille PET 1/3 litre',
-                        reference: 'PET-033L',
-                        stock: 131,
-                        minStock: 20,
-                        price: 0.1,
-                        category: 'bouteille',
-                        description: 'Bouteille PET 0.33L',
-                        lastUpdated: now.toISOString()
-                    },
-                    {
-                        id: '4',
-                        name: 'Bouteille PET 1 litre',
-                        reference: 'PET-100L',
-                        stock: 160,
-                        minStock: 20,
-                        price: 0.12,
-                        category: 'bouteille',
-                        description: 'Bouteille PET 1L',
-                        lastUpdated: now.toISOString()
-                    }
-                ];
+                products = DEFAULT_PRODUCTS.map(product => ({ ...product }));
                 saveProducts();
+                localStorage.setItem(CATALOG_VERSION_KEY, CURRENT_CATALOG_VERSION.toString());
+                return;
+            }
+
+            const upgradesApplied = applyCatalogueUpgrades(storedVersion);
+            if (upgradesApplied) {
+                saveProducts();
+            }
+
+            if (storedVersion < CURRENT_CATALOG_VERSION) {
+                localStorage.setItem(CATALOG_VERSION_KEY, CURRENT_CATALOG_VERSION.toString());
             }
         }
 
@@ -951,6 +1262,112 @@
 
         function saveMovements() {
             localStorage.setItem('sempa_movements', JSON.stringify(movements));
+        }
+
+        function applyCatalogueUpgrades(storedVersion) {
+            let hasChanges = false;
+            const now = new Date().toISOString();
+            const migratedIds = new Map();
+            const seenIds = new Set();
+
+            products = products.map(product => {
+                const normalized = { ...product };
+                const originalId = normalized.id;
+
+                if (!normalized.id || seenIds.has(normalized.id)) {
+                    normalized.id = generateProductId();
+                    if (originalId && originalId !== normalized.id) {
+                        migratedIds.set(originalId, normalized.id);
+                    }
+                    hasChanges = true;
+                }
+
+                seenIds.add(normalized.id);
+
+                const parsedStock = Number(normalized.stock);
+                if (!Number.isFinite(parsedStock)) {
+                    normalized.stock = 0;
+                    hasChanges = true;
+                } else if (typeof normalized.stock !== 'number') {
+                    normalized.stock = parsedStock;
+                    hasChanges = true;
+                }
+
+                const parsedMinStock = Number(normalized.minStock);
+                if (!Number.isFinite(parsedMinStock) || parsedMinStock <= 0) {
+                    normalized.minStock = 20;
+                    hasChanges = true;
+                } else if (typeof normalized.minStock !== 'number') {
+                    normalized.minStock = parsedMinStock;
+                    hasChanges = true;
+                }
+
+                const parsedPrice = Number(normalized.price);
+                if (!Number.isFinite(parsedPrice) || parsedPrice < 0) {
+                    normalized.price = 0;
+                    hasChanges = true;
+                } else if (typeof normalized.price !== 'number') {
+                    normalized.price = Math.round(parsedPrice * 100) / 100;
+                    hasChanges = true;
+                }
+
+                if (!normalized.category) {
+                    normalized.category = 'autre';
+                    hasChanges = true;
+                }
+
+                if (!normalized.reference) {
+                    normalized.reference = generateReferenceFromName(normalized.name);
+                    hasChanges = true;
+                }
+
+                if (!normalized.description) {
+                    normalized.description = normalized.name || '';
+                    hasChanges = true;
+                }
+
+                if (!normalized.lastUpdated) {
+                    normalized.lastUpdated = now;
+                    hasChanges = true;
+                }
+
+                return normalized;
+            });
+
+            if (migratedIds.size > 0) {
+                movements = movements.map(movement => {
+                    if (migratedIds.has(movement.productId)) {
+                        hasChanges = true;
+                        return { ...movement, productId: migratedIds.get(movement.productId) };
+                    }
+                    return movement;
+                });
+            }
+
+            if (storedVersion < CURRENT_CATALOG_VERSION) {
+                const existingSignatures = new Set(products.map(createProductSignature));
+                const existingIds = new Set(products.map(product => product.id));
+
+                DEFAULT_PRODUCTS.forEach(template => {
+                    const signature = createProductSignature(template);
+                    if (existingSignatures.has(signature)) {
+                        return;
+                    }
+
+                    const productToAdd = {
+                        ...template,
+                        id: template.id && !existingIds.has(template.id) ? template.id : generateProductId(),
+                        lastUpdated: now
+                    };
+
+                    products.push(productToAdd);
+                    existingSignatures.add(signature);
+                    existingIds.add(productToAdd.id);
+                    hasChanges = true;
+                });
+            }
+
+            return hasChanges;
         }
 
         function loadProducts() {
@@ -982,6 +1399,7 @@
                 row.dataset.status = status;
                 row.dataset.name = (product.name || '').toLowerCase();
                 row.dataset.reference = (product.reference || '').toLowerCase();
+                row.dataset.id = product.id;
 
                 row.innerHTML = `
                     <td>${product.name}</td>
@@ -1014,6 +1432,8 @@
             }
 
             populateCategoryFilter();
+            renderCategoryChips();
+            renderProductGroups();
             filterProducts();
         }
 
@@ -1022,35 +1442,174 @@
             if (!categorySelect) return;
 
             const currentValue = categorySelect.value;
-            const summary = products.reduce((acc, product) => {
-                const key = product.category || 'autre';
-                if (!acc[key]) {
-                    acc[key] = { count: 0 };
-                }
-                acc[key].count += 1;
+            const summary = CATEGORY_ORDER.reduce((acc, key) => {
+                acc[key] = 0;
                 return acc;
             }, {});
 
-            const categories = Object.keys(summary).sort((a, b) => {
-                return getCategoryLabel(a).localeCompare(getCategoryLabel(b), 'fr', { sensitivity: 'base' });
+            products.forEach(product => {
+                const key = product.category || 'autre';
+                if (summary[key] === undefined) {
+                    summary[key] = 0;
+                }
+                summary[key] += 1;
             });
+
+            const categories = Object.keys(summary).sort(sortCategories);
 
             categorySelect.innerHTML = '<option value="">Toutes les catégories</option>';
 
             categories.forEach(key => {
                 const option = document.createElement('option');
                 option.value = key;
-                option.textContent = `${getCategoryLabel(key)} (${summary[key].count})`;
+                const count = summary[key] || 0;
+                option.textContent = `${getCategoryLabel(key)} (${count})`;
                 categorySelect.appendChild(option);
             });
 
-            if (currentValue && summary[currentValue]) {
+            if (currentValue && Object.prototype.hasOwnProperty.call(summary, currentValue)) {
                 categorySelect.value = currentValue;
             }
         }
 
         function getCategoryLabel(key) {
             return CATEGORY_LABELS[key] || (key ? key.charAt(0).toUpperCase() + key.slice(1) : 'Non classé');
+        }
+
+        function getCategoryOrder(key) {
+            const index = CATEGORY_ORDER.indexOf(key);
+            return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+        }
+
+        function sortCategories(a, b) {
+            const orderA = getCategoryOrder(a);
+            const orderB = getCategoryOrder(b);
+            if (orderA !== orderB) {
+                return orderA - orderB;
+            }
+            return getCategoryLabel(a).localeCompare(getCategoryLabel(b), 'fr', { sensitivity: 'base' });
+        }
+
+        function renderCategoryChips() {
+            const container = document.getElementById('category-chips');
+            if (!container) return;
+
+            const summary = products.reduce((acc, product) => {
+                const key = product.category || 'autre';
+                if (!acc[key]) {
+                    acc[key] = 0;
+                }
+                acc[key] += 1;
+                return acc;
+            }, {});
+
+            const categories = Object.keys(summary).sort(sortCategories);
+            container.innerHTML = '';
+
+            if (categories.length === 0) {
+                container.style.display = 'none';
+                return;
+            }
+
+            container.style.display = 'flex';
+
+            categories.forEach(key => {
+                const chip = document.createElement('button');
+                chip.type = 'button';
+                chip.className = 'sempa-chip';
+                chip.dataset.category = key;
+                chip.innerHTML = `${getCategoryLabel(key)} <span class="sempa-chip-counter">${summary[key]}</span>`;
+                chip.addEventListener('click', () => {
+                    const categorySelect = document.getElementById('filter-category');
+                    if (categorySelect) {
+                        const isActive = categorySelect.value === key;
+                        categorySelect.value = isActive ? '' : key;
+                    }
+                    filterProducts();
+                });
+                container.appendChild(chip);
+            });
+
+            const categorySelect = document.getElementById('filter-category');
+            const activeCategory = categorySelect ? categorySelect.value : '';
+            setActiveCategoryChip(activeCategory);
+        }
+
+        function setActiveCategoryChip(categoryKey) {
+            const chips = document.querySelectorAll('.sempa-chip');
+            chips.forEach(chip => {
+                const isActive = Boolean(categoryKey) && chip.dataset.category === categoryKey;
+                chip.classList.toggle('active', isActive);
+                chip.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+            });
+        }
+
+        function renderProductGroups() {
+            const container = document.getElementById('product-groups');
+            if (!container) return;
+
+            container.innerHTML = '';
+
+            if (!products.length) {
+                const empty = document.createElement('div');
+                empty.className = 'sempa-empty-state';
+                empty.textContent = 'Aucun produit enregistré.';
+                container.appendChild(empty);
+                return;
+            }
+
+            const grouped = products.reduce((acc, product) => {
+                const key = product.category || 'autre';
+                if (!acc[key]) {
+                    acc[key] = [];
+                }
+                acc[key].push(product);
+                return acc;
+            }, {});
+
+            const categories = Object.keys(grouped).sort(sortCategories);
+
+            categories.forEach(key => {
+                const groupCard = document.createElement('div');
+                groupCard.className = 'sempa-product-group';
+
+                const header = document.createElement('h3');
+                header.innerHTML = `${getCategoryLabel(key)} <span class="sempa-chip-counter">${grouped[key].length}</span>`;
+                groupCard.appendChild(header);
+
+                const pillContainer = document.createElement('div');
+                pillContainer.className = 'sempa-product-pill-container';
+
+                grouped[key]
+                    .slice()
+                    .sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }))
+                    .forEach(product => {
+                        const pill = document.createElement('button');
+                        pill.type = 'button';
+                        pill.className = 'sempa-product-pill';
+                        pill.dataset.productId = product.id;
+                        pill.textContent = product.name;
+                        pill.addEventListener('click', () => {
+                            const searchInput = document.getElementById('product-search');
+                            if (searchInput) {
+                                searchInput.value = product.name;
+                                searchInput.focus();
+                            }
+
+                            const categorySelect = document.getElementById('filter-category');
+                            if (categorySelect) {
+                                categorySelect.value = key;
+                            }
+
+                            filterProducts();
+                            highlightProductRow(product.id);
+                        });
+                        pillContainer.appendChild(pill);
+                    });
+
+                groupCard.appendChild(pillContainer);
+                container.appendChild(groupCard);
+            });
         }
 
         function loadMovements() {
@@ -1169,9 +1728,7 @@
                 return acc;
             }, {});
 
-            const categories = Object.keys(summary).sort((a, b) => {
-                return getCategoryLabel(a).localeCompare(getCategoryLabel(b), 'fr', { sensitivity: 'base' });
-            });
+            const categories = Object.keys(summary).sort(sortCategories);
 
             const table = document.createElement('table');
             table.className = 'sempa-mini-table';
@@ -1303,18 +1860,8 @@
 
                 row.style.display = matchesSearch && matchesCategory && matchesStatus ? '' : 'none';
             }
-        }
 
-        function resetFilters() {
-            const searchInput = document.getElementById('product-search');
-            const categorySelect = document.getElementById('filter-category');
-            const statusSelect = document.getElementById('filter-status');
-
-            if (searchInput) searchInput.value = '';
-            if (categorySelect) categorySelect.value = '';
-            if (statusSelect) statusSelect.value = '';
-
-            filterProducts();
+            setActiveCategoryChip(selectedCategory);
         }
 
         function openModal(action, productId = null) {
@@ -1331,7 +1878,7 @@
                 document.getElementById('product-stock').value = '0';
                 document.getElementById('product-minstock').value = '20';
                 document.getElementById('product-price').value = '0';
-                document.getElementById('product-category').value = 'bouteille';
+                document.getElementById('product-category').value = 'capot';
                 document.getElementById('product-desc').value = '';
             } else if (action === 'edit' && productId) {
                 title.textContent = 'Modifier le Produit';
@@ -1416,7 +1963,7 @@
                     movements = movements.map(movement => movement.productId === currentProductId ? { ...movement, productName: name } : movement);
                 }
             } else {
-                const newId = Date.now().toString();
+                const newId = generateProductId();
                 products.push({
                     id: newId,
                     name,
@@ -1671,6 +2218,25 @@
                 return `Il y a ${diffDays} jours`;
             }
             return date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+        }
+
+        function highlightProductRow(productId) {
+            const table = document.getElementById('products-table');
+            if (!table) return;
+
+            const rows = Array.from(table.getElementsByTagName('tr'));
+            rows.forEach(row => row.classList.remove('sempa-highlight'));
+
+            if (!productId) {
+                return;
+            }
+
+            const targetRow = rows.find(row => row.dataset.id === productId);
+            if (targetRow) {
+                targetRow.classList.add('sempa-highlight');
+                targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => targetRow.classList.remove('sempa-highlight'), 1600);
+            }
         }
 
         window.onclick = function(event) {
