@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#F2F4F8">
     <title>Gestion des Stocks SEMPA</title>
     <style>
         :root {
@@ -29,6 +30,10 @@
             --radius-lg: 22px;
             --transition: 0.25s ease;
             font-synthesis: none;
+        }
+
+        :root[data-theme="dark"] {
+            color-scheme: dark;
         }
 
         body {
@@ -1378,10 +1383,47 @@
                 localStorage.setItem(STORAGE_KEYS.movements, JSON.stringify(state.movements));
             }
 
-            function applyTheme(theme) {
-                const nextTheme = theme === 'dark' ? 'dark' : 'light';
+            function normalizeTheme(value) {
+                if (value == null) return null;
+                const normalized = String(value).replace(/["']/g, '').trim().toLowerCase();
+                if (normalized === 'dark' || normalized === 'light') {
+                    return normalized;
+                }
+                return null;
+            }
+
+            function getSystemTheme() {
+                if (window.matchMedia) {
+                    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+                }
+                return 'light';
+            }
+
+            function readStoredTheme() {
+                try {
+                    return localStorage.getItem(STORAGE_KEYS.theme);
+                } catch (error) {
+                    console.warn("Lecture du thème impossible depuis le stockage local.", error);
+                    return null;
+                }
+            }
+
+            function writeStoredTheme(theme) {
+                try {
+                    localStorage.setItem(STORAGE_KEYS.theme, theme);
+                } catch (error) {
+                    console.warn("Impossible d'enregistrer le thème préféré.", error);
+                }
+            }
+
+            function applyTheme(theme, persist = true) {
+                const nextTheme = normalizeTheme(theme) || 'light';
                 document.body.classList.toggle('dark-theme', nextTheme === 'dark');
-                localStorage.setItem(STORAGE_KEYS.theme, nextTheme);
+                document.documentElement.setAttribute('data-theme', nextTheme);
+
+                if (persist) {
+                    writeStoredTheme(nextTheme);
+                }
 
                 const icon = document.querySelector('#theme-toggle svg');
                 if (icon) {
@@ -1389,11 +1431,35 @@
                         ? '<path d="M21 12.79A9 9 0 0 1 11.21 3 7 7 0 0 0 12 19a7 7 0 0 0 9-6.21Z" />'
                         : '<path d="M12 3v2" /><path d="M12 19v2" /><path d="M5.22 5.22l1.42 1.42" /><path d="M17.36 17.36l1.42 1.42" /><path d="M3 12h2" /><path d="M19 12h2" /><path d="M5.22 18.78l1.42-1.42" /><path d="M17.36 6.64l1.42-1.42" /><circle cx="12" cy="12" r="4" />';
                 }
+
+                const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+                if (themeColorMeta) {
+                    themeColorMeta.setAttribute('content', nextTheme === 'dark' ? '#020617' : '#F2F4F8');
+                }
             }
 
             function initTheme() {
-                const saved = localStorage.getItem(STORAGE_KEYS.theme) || 'light';
-                applyTheme(saved);
+                const stored = normalizeTheme(readStoredTheme());
+                if (stored) {
+                    applyTheme(stored);
+                } else {
+                    applyTheme(getSystemTheme(), false);
+
+                    const mediaQuery = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+                    if (mediaQuery) {
+                        const syncSystemTheme = event => {
+                            if (!normalizeTheme(readStoredTheme())) {
+                                applyTheme(event.matches ? 'dark' : 'light', false);
+                            }
+                        };
+
+                        if (typeof mediaQuery.addEventListener === 'function') {
+                            mediaQuery.addEventListener('change', syncSystemTheme);
+                        } else if (typeof mediaQuery.addListener === 'function') {
+                            mediaQuery.addListener(syncSystemTheme);
+                        }
+                    }
+                }
             }
 
             function bindEvents() {
