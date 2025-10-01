@@ -568,6 +568,12 @@
             color: var(--text-secondary);
         }
 
+        .platform-tag.sold {
+            border: 1px solid var(--success);
+            background-color: var(--secondary-light);
+            color: var(--success);
+        }
+
         .platform-tag.vinted {
             background-color: #f5f5f5;
             color: #4a90e2;
@@ -614,6 +620,10 @@
             margin-bottom: 0;
         }
 
+        .platform-form .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
         .platform-list-modal {
             display: flex;
             flex-direction: column;
@@ -639,6 +649,12 @@
             gap: 0.25rem;
         }
 
+        .platform-item-status {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--success);
+        }
+
         .platform-item-name {
             font-weight: 600;
             display: flex;
@@ -662,6 +678,12 @@
             width: auto;
             height: auto;
             border-radius: var(--radius-sm);
+        }
+
+        .sale-details {
+            margin-top: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
         }
 
         @media (max-width: 768px) {
@@ -845,6 +867,7 @@
             <h3 id="platformModalTitle">Gérer les plateformes de vente</h3>
             <form id="platformForm">
                 <input type="hidden" id="platformItemId">
+                <input type="hidden" id="platformEditIndex">
                 <div class="platform-form">
                     <div class="form-group">
                         <label for="platformSelect">Plateforme</label>
@@ -855,6 +878,10 @@
                             <option value="ebay">eBay</option>
                             <option value="autre">Autre</option>
                         </select>
+                    </div>
+                    <div class="form-group full-width" id="customPlatformGroup" style="display: none;">
+                        <label for="platformCustomName">Nom de la plateforme</label>
+                        <input type="text" id="platformCustomName" placeholder="Nom de la plateforme">
                     </div>
                     <div class="form-group">
                         <label for="platformPrice">Prix de vente (€)</label>
@@ -897,6 +924,7 @@
 
         // Gestion de l'inventaire
         let inventory = JSON.parse(localStorage.getItem('inventory')) || [];
+        normalizeInventory();
         let editMode = false;
         let currentEditId = null;
 
@@ -934,6 +962,253 @@
         const shippingFeesGroup = document.getElementById('shippingFeesGroup');
         const platformListModal = document.getElementById('platformListModal');
         const platformItemId = document.getElementById('platformItemId');
+        const platformEditIndex = document.getElementById('platformEditIndex');
+        const customPlatformGroup = document.getElementById('customPlatformGroup');
+        const platformCustomName = document.getElementById('platformCustomName');
+        const platformSubmitBtn = platformForm.querySelector('button[type="submit"]');
+
+        const KNOWN_PLATFORMS = ['vinted', 'leboncoin', 'ebay'];
+
+        function safeNumber(value, fallback = 0) {
+            const parsed = Number.parseFloat(value);
+            return Number.isFinite(parsed) ? parsed : fallback;
+        }
+
+        function formatCurrency(value) {
+            const number = safeNumber(value);
+            return `${number.toFixed(2)} €`;
+        }
+
+        function generatePlatformId() {
+            return `plt-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+        }
+
+        function getPlatformLabel(type) {
+            switch (type) {
+                case 'vinted':
+                    return 'Vinted';
+                case 'leboncoin':
+                    return 'Leboncoin';
+                case 'ebay':
+                    return 'eBay';
+                default:
+                    return 'Autre';
+            }
+        }
+
+        function normalizePlatform(platform) {
+            if (!platform) return null;
+
+            if (!platform.id) {
+                platform.id = generatePlatformId();
+            }
+
+            if (!platform.type) {
+                const rawName = (platform.nom || '').toString().toLowerCase();
+                if (KNOWN_PLATFORMS.includes(rawName)) {
+                    platform.type = rawName;
+                    platform.nom = getPlatformLabel(rawName);
+                } else {
+                    platform.type = platform.type || 'autre';
+                    platform.nom = platform.nom || 'Autre';
+                }
+            } else if (platform.type !== 'autre') {
+                platform.nom = getPlatformLabel(platform.type);
+            } else {
+                platform.nom = platform.nom || 'Autre';
+            }
+
+            platform.prix = safeNumber(platform.prix);
+            platform.frais = safeNumber(platform.frais);
+            platform.livraison = safeNumber(platform.livraison);
+
+            return platform;
+        }
+
+        function normalizeItem(item) {
+            if (!item) return item;
+            item.prixAchat = safeNumber(item.prixAchat);
+            item.plateformes = (item.plateformes || []).map(platform => normalizePlatform(platform)).filter(Boolean);
+
+            if (item.vente) {
+                item.vente.prix = safeNumber(item.vente.prix);
+                item.vente.frais = safeNumber(item.vente.frais);
+                item.vente.livraison = safeNumber(item.vente.livraison);
+                if (!item.vente.platformId && item.vente.id) {
+                    item.vente.platformId = item.vente.id;
+                }
+            }
+
+            return item;
+        }
+
+        function normalizeInventory() {
+            inventory = inventory.map(item => normalizeItem(item));
+        }
+
+        function isPlatformSold(item, platform) {
+            if (!item || !platform) return false;
+            if (item.vente && item.vente.platformId) {
+                return item.vente.platformId === platform.id;
+            }
+            if (item.vente) {
+                return item.vente.type === platform.type && Math.abs(safeNumber(item.vente.prix) - safeNumber(platform.prix)) < 0.01;
+            }
+            return false;
+        }
+
+        function getPlatformClass(platform) {
+            const base = platform?.type || platform?.nom || 'autre';
+            return base.toString().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        }
+
+        function escapeHtml(value) {
+            if (value === undefined || value === null) return '';
+            return value.toString()
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function escapeCsvValue(value) {
+            const stringValue = value === undefined || value === null ? '' : value.toString();
+            return `"${stringValue.replace(/"/g, '""')}"`;
+        }
+
+        function getSaleInfo(item) {
+            if (!item) return null;
+
+            if (item.vente) {
+                return {
+                    prix: safeNumber(item.vente.prix),
+                    frais: safeNumber(item.vente.frais),
+                    livraison: safeNumber(item.vente.livraison),
+                    nom: item.vente.nom || getPlatformLabel(item.vente.type),
+                    type: item.vente.type || 'autre',
+                };
+            }
+
+            if (item.statut === 'vendu' && item.plateformes && item.plateformes.length > 0) {
+                const bestPlatform = item.plateformes.reduce((best, platform) => {
+                    normalizePlatform(platform);
+                    if (!best || platform.prix > best.prix) {
+                        return platform;
+                    }
+                    return best;
+                }, null);
+
+                if (bestPlatform) {
+                    return {
+                        prix: safeNumber(bestPlatform.prix),
+                        frais: safeNumber(bestPlatform.frais),
+                        livraison: safeNumber(bestPlatform.livraison),
+                        nom: bestPlatform.nom,
+                        type: bestPlatform.type,
+                    };
+                }
+            }
+
+            return null;
+        }
+
+        function resetPlatformForm() {
+            platformForm.reset();
+            platformEditIndex.value = '';
+            updatePlatformFieldsVisibility();
+            platformSubmitBtn.textContent = 'Ajouter';
+        }
+
+        function updatePlatformFieldsVisibility() {
+            const selectedType = platformSelect.value;
+            const isEbay = selectedType === 'ebay';
+            const isCustom = selectedType === 'autre';
+
+            ebayFeesGroup.style.display = isEbay ? 'block' : 'none';
+            shippingFeesGroup.style.display = isEbay ? 'block' : 'none';
+            customPlatformGroup.style.display = isCustom ? 'block' : 'none';
+
+            if (!isCustom) {
+                platformCustomName.value = '';
+            }
+        }
+
+        function populatePlatformForm(platform, index) {
+            if (!platform) return;
+            normalizePlatform(platform);
+
+            platformSelect.value = platform.type;
+            updatePlatformFieldsVisibility();
+            platformPrice.value = platform.prix;
+            ebayFees.value = platform.frais || '';
+            shippingFees.value = platform.livraison || '';
+
+            if (platform.type === 'autre') {
+                platformCustomName.value = platform.nom;
+            }
+
+            platformEditIndex.value = index;
+            platformSubmitBtn.textContent = 'Mettre à jour';
+        }
+
+        function markPlatformAsSold(itemId, platformIndex) {
+            const item = inventory.find(entry => entry.id === itemId);
+            if (!item || !item.plateformes) return;
+
+            const platform = item.plateformes[platformIndex];
+            if (!platform) return;
+
+            normalizePlatform(platform);
+
+            if (item.statut === 'vendu' && item.vente && item.vente.platformId !== platform.id) {
+                const confirmReplace = confirm(`Une vente est déjà enregistrée sur ${item.vente.nom}. Voulez-vous la remplacer ?`);
+                if (!confirmReplace) {
+                    return;
+                }
+            }
+
+            item.statut = 'vendu';
+            item.vente = {
+                platformId: platform.id,
+                type: platform.type,
+                nom: platform.nom,
+                prix: platform.prix,
+                frais: platform.frais || 0,
+                livraison: platform.livraison || 0,
+                date: new Date().toISOString(),
+            };
+
+            saveInventory();
+            updatePlatformListModal(item);
+            updateInventoryTable();
+            updateStats();
+            resetPlatformForm();
+            platformItemId.value = itemId;
+
+            showNotification(`Vente enregistrée sur ${platform.nom} !`, 'success');
+        }
+
+        function cancelSale(itemId, options = {}) {
+            const item = inventory.find(entry => entry.id === itemId);
+            if (!item) return;
+
+            if (item.vente) {
+                delete item.vente;
+            }
+            item.statut = 'en-stock';
+
+            saveInventory();
+            updatePlatformListModal(item);
+            updateInventoryTable();
+            updateStats();
+            resetPlatformForm();
+            platformItemId.value = itemId;
+
+            if (!options.silent) {
+                showNotification('La vente a été annulée.', 'success');
+            }
+        }
 
         // Initialisation
         document.addEventListener('DOMContentLoaded', function() {
@@ -966,20 +1241,23 @@
             
             // Gestionnaire d'événements pour le formulaire des plateformes
             platformForm.addEventListener('submit', handlePlatformSubmit);
-            
+
             // Gestionnaire d'événements pour le changement de plateforme
-            platformSelect.addEventListener('change', toggleEbayFields);
-            
+            platformSelect.addEventListener('change', updatePlatformFieldsVisibility);
+            updatePlatformFieldsVisibility();
+
             // Gestionnaire d'événements pour fermer les modales
             document.querySelectorAll('.close-modal').forEach(button => {
                 button.addEventListener('click', () => {
+                    resetPlatformForm();
                     platformModal.classList.remove('visible');
                 });
             });
-            
+
             // Fermer les modales en cliquant à l'extérieur
             window.addEventListener('click', (e) => {
                 if (e.target === platformModal) {
+                    resetPlatformForm();
                     platformModal.classList.remove('visible');
                 }
             });
@@ -988,20 +1266,23 @@
         // Gestion de la soumission du formulaire
         function handleFormSubmit(e) {
             e.preventDefault();
-            
-            const formData = new FormData(e.target);
+
+            const existingItem = editMode ? inventory.find(item => item.id === currentEditId) : null;
             const itemData = {
-                id: editMode ? currentEditId : Date.now().toString(),
-                titre: document.getElementById('titre').value,
-                casier: document.getElementById('casier').value,
-                prixAchat: parseFloat(document.getElementById('prixAchat').value),
+                id: existingItem ? existingItem.id : Date.now().toString(),
+                titre: document.getElementById('titre').value.trim(),
+                casier: document.getElementById('casier').value.trim(),
+                prixAchat: safeNumber(document.getElementById('prixAchat').value),
                 dateAchat: document.getElementById('dateAchat').value,
-                notes: document.getElementById('notes').value,
+                notes: document.getElementById('notes').value.trim(),
                 photo: photoPreview.src || '',
-                statut: 'en-stock',
-                plateformes: editMode ? inventory.find(item => item.id === currentEditId)?.plateformes || [] : []
+                statut: existingItem ? existingItem.statut : 'en-stock',
+                plateformes: existingItem ? existingItem.plateformes : [],
+                vente: existingItem && existingItem.vente ? existingItem.vente : null,
             };
-            
+
+            normalizeItem(itemData);
+
             if (editMode) {
                 // Mettre à jour l'élément existant
                 const index = inventory.findIndex(item => item.id === currentEditId);
@@ -1014,7 +1295,7 @@
                 inventory.push(itemData);
                 showNotification('Objet ajouté à l\'inventaire!', 'success');
             }
-            
+
             // Sauvegarder et mettre à jour l'interface
             saveInventory();
             resetForm();
@@ -1098,36 +1379,64 @@
                 inventoryTableBody.innerHTML = filteredInventory.map(item => {
                     const isSold = item.statut === 'vendu';
                     const statusClass = isSold ? 'sold' : 'on-sale';
-                    const statusText = isSold ? 'Vendu' : 'En vente';
-                    
-                    // Générer les tags des plateformes
-                    const platformTags = item.plateformes && item.plateformes.length > 0 
-                        ? item.plateformes.map(platform => `
-                            <div class="platform-tag ${platform.nom}">
-                                ${platform.nom === 'vinted' ? 'Vinted' : 
-                                  platform.nom === 'leboncoin' ? 'LBC' : 
-                                  platform.nom === 'ebay' ? 'eBay' : 'Autre'}
-                                <span class="platform-price">${platform.prix}€</span>
-                                ${platform.nom === 'ebay' && platform.frais ? 
-                                  `<div class="platform-fees">Frais: ${platform.frais}€</div>` : ''}
+                    const photoHtml = item.photo
+                        ? `<img src="${item.photo}" alt="${escapeHtml(item.titre)}" class="thumbnail">`
+                        : '—';
+                    const notesHtml = item.notes
+                        ? `<div style="margin-top: 0.25rem;"><strong>Notes:</strong> ${escapeHtml(item.notes)}</div>`
+                        : '';
+
+                    const platformTags = item.plateformes && item.plateformes.length > 0
+                        ? item.plateformes.map(platform => {
+                            normalizePlatform(platform);
+                            const platformClass = getPlatformClass(platform);
+                            const soldClass = isPlatformSold(item, platform) ? ' sold' : '';
+                            const feesParts = [];
+                            if (platform.frais) {
+                                feesParts.push(`Frais: ${formatCurrency(platform.frais)}`);
+                            }
+                            if (platform.livraison) {
+                                feesParts.push(`Livraison: ${formatCurrency(platform.livraison)}`);
+                            }
+                            const feesHtml = feesParts.length ? `<div class="platform-fees">${feesParts.join(' • ')}</div>` : '';
+                            return `
+                            <div class="platform-tag ${platformClass}${soldClass}">
+                                ${escapeHtml(platform.nom)}
+                                <span class="platform-price">${formatCurrency(platform.prix)}</span>
+                                ${feesHtml}
                             </div>
-                        `).join('')
+                        `;
+                        }).join('')
                         : '<div class="platform-tag autre">Aucune</div>';
-                    
+
+                    const saleInfo = getSaleInfo(item);
+                    const totalSaleFees = saleInfo ? safeNumber(saleInfo.frais) + safeNumber(saleInfo.livraison) : 0;
+                    const marginValue = saleInfo ? safeNumber(saleInfo.prix) - totalSaleFees - safeNumber(item.prixAchat) : 0;
+                    const saleDetails = saleInfo ? `
+                        <div class="sale-details">
+                            Vendu sur ${escapeHtml(saleInfo.nom)} • ${formatCurrency(saleInfo.prix)}
+                            ${totalSaleFees ? ` • Frais: ${formatCurrency(totalSaleFees)}` : ''}
+                            • Marge: ${formatCurrency(marginValue)}
+                        </div>
+                    ` : '';
+                    const statusLabel = isSold
+                        ? `✓ Vendu${saleInfo ? ` (${escapeHtml(saleInfo.nom)})` : ''}`
+                        : '↻ En vente';
+
                     return `
                         <tr>
                             <td>
-                                ${item.photo ? `<img src="${item.photo}" alt="${item.titre}" class="thumbnail">` : '—'}
+                                ${photoHtml}
                             </td>
                             <td>
-                                <strong>${item.titre}</strong>
+                                <strong>${escapeHtml(item.titre)}</strong>
                                 <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">
-                                    Acheté: ${formatDate(item.dateAchat)} | ${item.prixAchat}€
+                                    Acheté: ${formatDate(item.dateAchat)} | ${formatCurrency(item.prixAchat)}
                                 </div>
                             </td>
                             <td>
-                                <div><strong>Casier:</strong> ${item.casier}</div>
-                                ${item.notes ? `<div style="margin-top: 0.25rem;"><strong>Notes:</strong> ${item.notes}</div>` : ''}
+                                <div><strong>Casier:</strong> ${escapeHtml(item.casier)}</div>
+                                ${notesHtml}
                             </td>
                             <td>
                                 <div class="platform-list">
@@ -1136,8 +1445,9 @@
                             </td>
                             <td>
                                 <span class="status ${statusClass}">
-                                    ${isSold ? '✓' : '↻'} ${statusText}
+                                    ${statusLabel}
                                 </span>
+                                ${saleDetails}
                             </td>
                             <td class="actions-cell">
                                 <button class="platform-btn" title="Gérer les plateformes" data-id="${item.id}">
@@ -1188,15 +1498,17 @@
         function openPlatformModal(itemId) {
             const item = inventory.find(item => item.id === itemId);
             if (!item) return;
-            
+
+            resetPlatformForm();
             platformItemId.value = itemId;
-            platformForm.reset();
-            toggleEbayFields();
-            
+
             // Afficher les plateformes existantes
             updatePlatformListModal(item);
-            
+
             platformModal.classList.add('visible');
+            setTimeout(() => {
+                platformSelect.focus();
+            }, 0);
         }
 
         // Mettre à jour la liste des plateformes dans la modale
@@ -1205,42 +1517,84 @@
                 platformListModal.innerHTML = '<p style="text-align: center; color: var(--text-muted);">Aucune plateforme ajoutée</p>';
                 return;
             }
-            
+
             platformListModal.innerHTML = item.plateformes.map((platform, index) => {
-                const platformName = platform.nom === 'vinted' ? 'Vinted' : 
-                                   platform.nom === 'leboncoin' ? 'Leboncoin' : 
-                                   platform.nom === 'ebay' ? 'eBay' : 'Autre';
-                
-                let details = `Prix: ${platform.prix}€`;
-                if (platform.nom === 'ebay') {
-                    details += ` | Frais: ${platform.frais || 0}€`;
-                    if (platform.livraison) {
-                        details += ` | Livraison: ${platform.livraison}€`;
-                    }
+                normalizePlatform(platform);
+                const isSold = isPlatformSold(item, platform);
+                const detailParts = [`Prix: ${formatCurrency(platform.prix)}`];
+
+                if (platform.frais) {
+                    detailParts.push(`Frais: ${formatCurrency(platform.frais)}`);
                 }
-                
+                if (platform.livraison) {
+                    detailParts.push(`Livraison: ${formatCurrency(platform.livraison)}`);
+                }
+
+                const saleStatus = isSold
+                    ? `<div class="platform-item-status">Vente enregistrée${item.vente?.date ? ` le ${new Date(item.vente.date).toLocaleDateString('fr-FR')}` : ''}</div>`
+                    : '';
+
+                const actionButtons = `
+                    <div class="platform-item-actions">
+                        <button class="secondary edit-platform" data-index="${index}">Modifier</button>
+                        <button class="secondary remove-platform" data-index="${index}">Supprimer</button>
+                        ${isSold
+                            ? `<button class="secondary cancel-sale" data-index="${index}">Annuler la vente</button>`
+                            : `<button class="primary mark-sold" data-index="${index}">Marquer vendu</button>`}
+                    </div>
+                `;
+
                 return `
                     <div class="platform-item">
                         <div class="platform-item-info">
                             <div class="platform-item-name">
-                                ${platformName}
+                                ${escapeHtml(platform.nom)}
                             </div>
+                            ${saleStatus}
                             <div class="platform-item-details">
-                                ${details}
+                                ${detailParts.join(' | ')}
                             </div>
                         </div>
-                        <div class="platform-item-actions">
-                            <button class="secondary remove-platform" data-index="${index}">Supprimer</button>
-                        </div>
+                        ${actionButtons}
                     </div>
                 `;
             }).join('');
-            
-            // Ajouter les gestionnaires d'événements pour les boutons de suppression
-            document.querySelectorAll('.remove-platform').forEach(button => {
+
+            const modalItemId = platformItemId.value;
+
+            platformListModal.querySelectorAll('.remove-platform').forEach(button => {
                 button.addEventListener('click', (e) => {
                     const index = parseInt(e.currentTarget.getAttribute('data-index'));
-                    removePlatform(item.id, index);
+                    removePlatform(modalItemId, index);
+                });
+            });
+
+            platformListModal.querySelectorAll('.edit-platform').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const index = parseInt(e.currentTarget.getAttribute('data-index'));
+                    const currentItem = inventory.find(entry => entry.id === modalItemId);
+                    if (!currentItem) return;
+                    const platform = currentItem.plateformes[index];
+                    if (!platform) return;
+                    populatePlatformForm(platform, index);
+                });
+            });
+
+            platformListModal.querySelectorAll('.mark-sold').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const index = parseInt(e.currentTarget.getAttribute('data-index'));
+                    markPlatformAsSold(modalItemId, index);
+                });
+            });
+
+            platformListModal.querySelectorAll('.cancel-sale').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const currentItem = inventory.find(entry => entry.id === modalItemId);
+                    if (!currentItem) return;
+                    const index = parseInt(e.currentTarget.getAttribute('data-index'));
+                    const platform = currentItem.plateformes[index];
+                    if (!platform) return;
+                    cancelSale(modalItemId);
                 });
             });
         }
@@ -1249,65 +1603,116 @@
         function removePlatform(itemId, platformIndex) {
             const item = inventory.find(item => item.id === itemId);
             if (!item || !item.plateformes) return;
-            
+
+            const platform = item.plateformes[platformIndex];
+            if (!platform) return;
+
+            normalizePlatform(platform);
+            const wasSalePlatform = isPlatformSold(item, platform);
+
             item.plateformes.splice(platformIndex, 1);
+
+            let message = 'Plateforme supprimée.';
+            if (wasSalePlatform) {
+                if (item.vente) {
+                    delete item.vente;
+                }
+                item.statut = 'en-stock';
+                message = 'Plateforme supprimée et vente annulée.';
+            }
+
             saveInventory();
             updatePlatformListModal(item);
             updateInventoryTable();
             updateStats();
+            resetPlatformForm();
+            platformItemId.value = itemId;
+            showNotification(message, 'success');
         }
 
         // Gérer la soumission du formulaire de plateforme
         function handlePlatformSubmit(e) {
             e.preventDefault();
-            
+
             const itemId = platformItemId.value;
             const item = inventory.find(item => item.id === itemId);
-            if (!item) return;
-            
-            const platformData = {
-                nom: platformSelect.value,
-                prix: parseFloat(platformPrice.value)
-            };
-            
-            // Ajouter les frais spécifiques à eBay
-            if (platformSelect.value === 'ebay') {
-                platformData.frais = parseFloat(ebayFees.value) || 0;
-                platformData.livraison = parseFloat(shippingFees.value) || 0;
+            if (!item) {
+                showNotification('Aucun objet sélectionné.', 'error');
+                return;
             }
-            
-            // Initialiser le tableau des plateformes si nécessaire
+
+            const selectedType = platformSelect.value;
+            if (!selectedType) {
+                showNotification('Veuillez sélectionner une plateforme.', 'error');
+                return;
+            }
+
+            const priceValue = Number.parseFloat(platformPrice.value);
+            if (!Number.isFinite(priceValue)) {
+                showNotification('Veuillez indiquer un prix de vente valide.', 'error');
+                platformPrice.focus();
+                return;
+            }
+
+            if (priceValue < 0) {
+                showNotification('Le prix de vente doit être positif.', 'error');
+                platformPrice.focus();
+                return;
+            }
+
+            const platformData = {
+                type: selectedType,
+                nom: selectedType === 'autre' ? platformCustomName.value.trim() : getPlatformLabel(selectedType),
+                prix: Math.max(0, safeNumber(priceValue)),
+                frais: 0,
+                livraison: 0,
+            };
+
+            if (selectedType === 'autre' && !platformData.nom) {
+                showNotification('Veuillez indiquer le nom de la plateforme.', 'error');
+                platformCustomName.focus();
+                return;
+            }
+
+            if (selectedType === 'ebay') {
+                platformData.frais = Math.max(0, safeNumber(ebayFees.value));
+                platformData.livraison = Math.max(0, safeNumber(shippingFees.value));
+            }
+
             if (!item.plateformes) {
                 item.plateformes = [];
             }
-            
-            // Vérifier si cette plateforme existe déjà
-            const existingIndex = item.plateformes.findIndex(p => p.nom === platformData.nom);
-            if (existingIndex !== -1) {
-                // Mettre à jour la plateforme existante
-                item.plateformes[existingIndex] = platformData;
+
+            const editIndexValue = platformEditIndex.value;
+            let message = 'Plateforme ajoutée avec succès!';
+
+            if (editIndexValue !== '') {
+                const index = parseInt(editIndexValue, 10);
+                const existingPlatform = item.plateformes[index];
+                const platformId = existingPlatform?.id || generatePlatformId();
+                item.plateformes[index] = { ...existingPlatform, ...platformData, id: platformId };
+                normalizePlatform(item.plateformes[index]);
+
+                if (item.vente && item.vente.platformId === platformId) {
+                    item.vente = { ...item.vente, ...platformData, platformId };
+                }
+
+                message = 'Plateforme mise à jour avec succès!';
             } else {
-                // Ajouter une nouvelle plateforme
+                platformData.id = generatePlatformId();
                 item.plateformes.push(platformData);
+                normalizePlatform(item.plateformes[item.plateformes.length - 1]);
             }
-            
+
             saveInventory();
             updatePlatformListModal(item);
             updateInventoryTable();
             updateStats();
-            
-            // Réinitialiser le formulaire
-            platformForm.reset();
-            toggleEbayFields();
-            
-            showNotification('Plateforme ajoutée avec succès!', 'success');
-        }
 
-        // Afficher/masquer les champs spécifiques à eBay
-        function toggleEbayFields() {
-            const isEbay = platformSelect.value === 'ebay';
-            ebayFeesGroup.style.display = isEbay ? 'block' : 'none';
-            shippingFeesGroup.style.display = isEbay ? 'block' : 'none';
+            resetPlatformForm();
+            platformItemId.value = itemId;
+
+            showNotification(message, 'success');
         }
 
         // Modifier un élément
@@ -1384,32 +1789,38 @@
         function updateStats() {
             const enStock = inventory.filter(item => item.statut === 'en-stock').length;
             const vendus = inventory.filter(item => item.statut === 'vendu').length;
-            
+
             // Calculer le chiffre d'affaires et la marge
             let ca = 0;
             let marge = 0;
-            
+
             inventory.forEach(item => {
-                if (item.statut === 'vendu' && item.plateformes && item.plateformes.length > 0) {
-                    // Prendre le prix de vente le plus élevé
-                    const maxPrice = Math.max(...item.plateformes.map(p => p.prix));
-                    ca += maxPrice;
-                    marge += maxPrice - item.prixAchat;
+                if (item.statut === 'vendu') {
+                    const saleInfo = getSaleInfo(item);
+                    if (saleInfo) {
+                        const salePrice = safeNumber(saleInfo.prix);
+                        const totalFees = safeNumber(saleInfo.frais) + safeNumber(saleInfo.livraison);
+                        ca += salePrice;
+                        marge += salePrice - totalFees - safeNumber(item.prixAchat);
+                    }
                 }
             });
-            
+
             statEnStock.textContent = enStock;
             statVendus.textContent = vendus;
-            statCA.textContent = ca.toFixed(2) + ' €';
-            statMarge.textContent = marge.toFixed(2) + ' €';
+            statCA.textContent = formatCurrency(ca);
+            statMarge.textContent = formatCurrency(marge);
         }
 
         // Mettre à jour les filtres
         function updateFilters() {
             // Mettre à jour le filtre des casiers
-            const casiers = [...new Set(inventory.map(item => item.casier))].sort();
+            const casiers = [...new Set(inventory.map(item => item.casier).filter(Boolean))].sort();
             filterCasier.innerHTML = '<option value="all">Tous les casiers</option>' +
-                casiers.map(casier => `<option value="${casier}">${casier}</option>`).join('');
+                casiers.map(casier => {
+                    const safeValue = escapeHtml(casier);
+                    return `<option value="${safeValue}">${safeValue}</option>`;
+                }).join('');
             
             // Mettre à jour le filtre des statuts
             filterStatus.innerHTML = `
@@ -1426,22 +1837,56 @@
                 return;
             }
             
-            const headers = ['Titre', 'Casier', 'Prix d\'achat', 'Date d\'achat', 'Notes', 'Statut', 'Plateformes'];
+            const headers = [
+                'Titre',
+                'Casier',
+                'Prix d\'achat',
+                'Date d\'achat',
+                'Notes',
+                'Statut',
+                'Plateformes',
+                'Plateforme vente',
+                'Prix vente',
+                'Frais vente',
+                'Marge',
+            ];
             const csvContent = [
                 headers.join(','),
                 ...inventory.map(item => {
-                    const platforms = item.plateformes && item.plateformes.length > 0 
-                        ? item.plateformes.map(p => `${p.nom}:${p.prix}€`).join('; ')
+                    const platforms = item.plateformes && item.plateformes.length > 0
+                        ? item.plateformes.map(platform => {
+                            normalizePlatform(platform);
+                            const parts = [`${platform.nom}:${safeNumber(platform.prix).toFixed(2)}€`];
+                            const extras = [];
+                            if (platform.frais) {
+                                extras.push(`Frais:${safeNumber(platform.frais).toFixed(2)}€`);
+                            }
+                            if (platform.livraison) {
+                                extras.push(`Livraison:${safeNumber(platform.livraison).toFixed(2)}€`);
+                            }
+                            if (extras.length) {
+                                parts.push(`(${extras.join(' | ')})`);
+                            }
+                            return parts.join(' ');
+                        }).join('; ')
                         : 'Aucune';
-                    
+
+                    const saleInfo = getSaleInfo(item);
+                    const totalFees = saleInfo ? safeNumber(saleInfo.frais) + safeNumber(saleInfo.livraison) : 0;
+                    const marginValue = saleInfo ? safeNumber(saleInfo.prix) - totalFees - safeNumber(item.prixAchat) : 0;
+
                     return [
-                        `"${item.titre.replace(/"/g, '""')}"`,
-                        `"${item.casier}"`,
-                        item.prixAchat,
-                        `"${item.dateAchat}"`,
-                        `"${(item.notes || '').replace(/"/g, '""')}"`,
-                        `"${item.statut === 'en-stock' ? 'En stock' : 'Vendu'}"`,
-                        `"${platforms}"`
+                        escapeCsvValue(item.titre),
+                        escapeCsvValue(item.casier),
+                        safeNumber(item.prixAchat).toFixed(2),
+                        escapeCsvValue(item.dateAchat),
+                        escapeCsvValue(item.notes || ''),
+                        escapeCsvValue(item.statut === 'en-stock' ? 'En stock' : 'Vendu'),
+                        escapeCsvValue(platforms),
+                        escapeCsvValue(saleInfo ? saleInfo.nom : ''),
+                        saleInfo ? safeNumber(saleInfo.prix).toFixed(2) : '',
+                        saleInfo ? totalFees.toFixed(2) : '',
+                        saleInfo ? marginValue.toFixed(2) : '',
                     ].join(',');
                 })
             ].join('\n');
