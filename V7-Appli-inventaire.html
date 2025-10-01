@@ -252,14 +252,44 @@
             margin-top: 1rem;
             border-radius: var(--radius);
             overflow: hidden;
-            max-width: 180px;
+            max-width: 260px;
             display: none;
             box-shadow: var(--shadow-md);
+            position: relative;
+            background: var(--surface);
+            border: 1px dashed var(--border);
+            padding: 0.75rem;
         }
-        .photo-preview img { 
-            display: block; 
-            width: 100%; 
+        .photo-preview img {
+            display: block;
+            width: 100%;
             height: auto;
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 0.75rem;
+        }
+
+        .clear-photo-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: rgba(229, 107, 107, 0.9);
+            color: white;
+            border: none;
+            border-radius: 999px;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .clear-photo-btn:hover {
+            background: var(--danger);
+            transform: translateY(-1px);
         }
         
         .form-actions { 
@@ -742,6 +772,12 @@
                         </div>
                         <div class="photo-preview" id="photoPreviewContainer">
                             <img id="photoPreview" alt="Prévisualisation">
+                            <button type="button" class="clear-photo-btn" id="clearPhoto" aria-label="Supprimer la photo">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" width="14" height="14">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.536-10.536a.75.75 0 00-1.06-1.06L10 8.94 7.525 6.464a.75.75 0 10-1.06 1.06L8.94 10l-2.475 2.475a.75.75 0 101.06 1.06L10 11.06l2.475 2.475a.75.75 0 101.06-1.06L11.06 10l2.475-2.475z" clip-rule="evenodd" />
+                                </svg>
+                                Supprimer
+                            </button>
                         </div>
                     </div>
                     <div class="form-group">
@@ -942,6 +978,7 @@
         const photoInput = document.getElementById('photo');
         const photoPreview = document.getElementById('photoPreview');
         const photoPreviewContainer = document.getElementById('photoPreviewContainer');
+        const photoClearBtn = document.getElementById('clearPhoto');
         const aiProcessing = document.getElementById('aiProcessing');
         const notification = document.getElementById('notification');
 
@@ -1238,6 +1275,10 @@
             
             // Gestionnaire d'événements pour la photo
             photoInput.addEventListener('change', handlePhotoUpload);
+            photoClearBtn.addEventListener('click', () => {
+                clearPhotoPreview();
+                showNotification('La photo a été retirée.', 'success');
+            });
             
             // Gestionnaire d'événements pour le formulaire des plateformes
             platformForm.addEventListener('submit', handlePlatformSubmit);
@@ -1312,12 +1353,21 @@
                 reader.onload = function(event) {
                     photoPreview.src = event.target.result;
                     photoPreviewContainer.style.display = 'block';
-                    
+
                     // Simuler l'analyse IA pour générer un titre
                     simulateAIAnalysis(file);
                 };
                 reader.readAsDataURL(file);
+            } else {
+                clearPhotoPreview();
             }
+        }
+
+        function clearPhotoPreview() {
+            photoPreview.src = '';
+            photoInput.value = '';
+            photoPreviewContainer.style.display = 'none';
+            aiProcessing.classList.add('hidden');
         }
 
         // Simulation de l'analyse IA
@@ -1728,11 +1778,13 @@
             document.getElementById('dateAchat').value = item.dateAchat;
             document.getElementById('notes').value = item.notes || '';
             
+            photoInput.value = '';
             if (item.photo) {
                 photoPreview.src = item.photo;
                 photoPreviewContainer.style.display = 'block';
+                aiProcessing.classList.add('hidden');
             } else {
-                photoPreviewContainer.style.display = 'none';
+                clearPhotoPreview();
             }
             
             // Passer en mode édition
@@ -1772,7 +1824,7 @@
         function resetForm() {
             itemForm.reset();
             document.getElementById('dateAchat').valueAsDate = new Date();
-            photoPreviewContainer.style.display = 'none';
+            clearPhotoPreview();
             editMode = false;
             currentEditId = null;
             formTitle.innerHTML = `
