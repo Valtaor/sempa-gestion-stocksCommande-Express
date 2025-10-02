@@ -180,7 +180,7 @@
 </div>
 <script>
         const App = (() => {
-        const API_BASE = 'api/stocks.php';
+        const API_BASE = new URL('/api/stocks.php', window.location.origin).toString();
         const API_ENDPOINTS = {
             products: () => `${API_BASE}?resource=products`,
             product: (id) => `${API_BASE}?resource=products&id=${encodeURIComponent(id)}`,
@@ -220,6 +220,13 @@
         ];
         const STATUS_LABELS = { low: 'Critique', medium: 'À surveiller', good: 'Stable' };
         const STORAGE_KEYS = { products: 'sempa_products', movements: 'sempa_movements_v2', theme: 'sempa_theme' };
+        const LEGACY_STORAGE_KEYS = { products: 'sempa_products_v2', movements: 'sempa_movements' };
+        const WATCHED_STORAGE_KEYS = new Set([
+            STORAGE_KEYS.products,
+            STORAGE_KEYS.movements,
+            LEGACY_STORAGE_KEYS.products,
+            LEGACY_STORAGE_KEYS.movements,
+        ]);
         const DEFAULT_PRODUCTS = (() => {
             const now = new Date('2025-09-17T12:00:00Z').toISOString();
             let counter = 1;
@@ -231,20 +238,47 @@
                 { id: `default-${counter++}`, name: 'Capot OL61 Neuf', stock: 20, minStock: 5, price: 378, category: 'capot', lastUpdated: new Date('2025-10-01T12:00:00Z').toISOString() },
             ];
         })();
-        const ENABLE_API_SYNC = false;
+        const DEFAULT_SYNC_ENABLED = typeof window !== 'undefined' ? window.location.protocol !== 'file:' : false;
+        let enableApiSync = DEFAULT_SYNC_ENABLED;
+        if (typeof window !== 'undefined') {
+            if (window.SEMPA_ENABLE_SYNC === true) {
+                enableApiSync = true;
+            } else if (window.SEMPA_ENABLE_SYNC === false || window.SEMPA_DISABLE_SYNC === true) {
+                enableApiSync = false;
+            }
+        }
+        let syncIntervalId = null;
+        let syncInProgress = false;
+        let syncErrorNotified = false;
         let myStockChart = null;
         let state = { products: [], movements: [], currentProductId: null };
 
+        function disableApiSync(error) {
+            if (!enableApiSync) {
+                return;
+            }
+            enableApiSync = false;
+            if (syncIntervalId) {
+                clearInterval(syncIntervalId);
+                syncIntervalId = null;
+            }
+            if (!syncErrorNotified && error) {
+                const reason = error.message || 'Synchronisation indisponible.';
+                console.warn(`${reason} Passage en mode local uniquement.`);
+                syncErrorNotified = true;
+            }
+        }
+
         function loadFromLocalStorage() {
             try {
-                const storedProducts = localStorage.getItem(STORAGE_KEYS.products) ?? localStorage.getItem('sempa_products_v2');
+                const storedProducts = localStorage.getItem(STORAGE_KEYS.products) ?? localStorage.getItem(LEGACY_STORAGE_KEYS.products);
                 state.products = JSON.parse(storedProducts || '[]');
             } catch (error) {
                 console.warn('Impossible de lire les produits du stockage local :', error);
                 state.products = [];
             }
             try {
-                const storedMovements = localStorage.getItem(STORAGE_KEYS.movements) ?? localStorage.getItem('sempa_movements');
+                const storedMovements = localStorage.getItem(STORAGE_KEYS.movements) ?? localStorage.getItem(LEGACY_STORAGE_KEYS.movements);
                 state.movements = JSON.parse(storedMovements || '[]');
             } catch (error) {
                 console.warn('Impossible de lire les mouvements du stockage local :', error);
@@ -281,7 +315,10 @@
                 response = await fetch(url, options);
             } catch (networkError) {
                 console.error('Requête API échouée :', networkError);
-                throw new Error(fallbackMessage);
+                const error = new Error(fallbackMessage);
+                error.cause = networkError;
+                error.isNetworkError = true;
+                throw error;
             }
 
             let payload = {};
@@ -298,17 +335,17 @@
                 const message = payload && typeof payload.error === 'string' && payload.error.trim()
                     ? payload.error
                     : fallbackMessage;
-                throw new Error(message);
+                const error = new Error(message);
+                error.status = response.status;
+                error.payload = payload;
+                throw error;
             }
 
             return payload;
         }
 
-        async function loadDataFromServer() {
-            loadFromLocalStorage();
-            ensureDefaults();
-
-            if (!ENABLE_API_SYNC) {
+        async function fetchRemoteData() {
+            if (!enableApiSync) {
                 return;
             }
 
@@ -322,6 +359,10 @@
                 }
             } catch (error) {
                 console.error('Impossible de charger les produits :', error);
+                if (error && error.isNetworkError) {
+                    disableApiSync(error);
+                    return;
+                }
                 firstError = error instanceof Error ? error : new Error('Impossible de charger les produits.');
             }
 
@@ -333,6 +374,10 @@
                 }
             } catch (error) {
                 console.error('Impossible de charger les mouvements :', error);
+                if (error && error.isNetworkError) {
+                    disableApiSync(error);
+                    return;
+                }
                 if (!firstError) {
                     firstError = error instanceof Error ? error : new Error('Impossible de charger les mouvements.');
                 }
@@ -343,8 +388,15 @@
             }
         }
 
+        async function loadDataFromServer() {
+            loadFromLocalStorage();
+            ensureDefaults();
+
+            await fetchRemoteData();
+        }
+
         async function refreshMovementsFromServer() {
-            if (!ENABLE_API_SYNC) {
+            if (!enableApiSync) {
                 persistMovements();
                 loadMovements();
                 return;
@@ -359,7 +411,37 @@
                 loadMovements();
             } catch (error) {
                 console.error('Impossible de rafraîchir les mouvements :', error);
+                if (error && error.isNetworkError) {
+                    disableApiSync(error);
+                }
             }
+        }
+
+        async function runAutoSync() {
+            if (!enableApiSync || syncInProgress) {
+                return;
+            }
+
+            syncInProgress = true;
+            try {
+                await fetchRemoteData();
+                if (!enableApiSync) {
+                    return;
+                }
+                loadProducts();
+                loadMovements();
+                renderDashboard();
+                filterProducts();
+            } finally {
+                syncInProgress = false;
+            }
+        }
+
+        function startAutoSync() {
+            if (!enableApiSync || syncIntervalId) {
+                return;
+            }
+            syncIntervalId = window.setInterval(runAutoSync, 20000);
         }
 
         function applyTheme(theme) {
@@ -368,7 +450,9 @@
             if (wrapper) {
                 wrapper.classList.toggle('dark-theme', nextTheme === 'dark');
             }
-            localStorage.setItem(STORAGE_KEYS.theme, nextTheme);
+            if (localStorage.getItem(STORAGE_KEYS.theme) !== nextTheme) {
+                localStorage.setItem(STORAGE_KEYS.theme, nextTheme);
+            }
             const icon = document.querySelector('#theme-toggle svg');
             if (icon) {
                 icon.innerHTML = nextTheme === 'dark'
@@ -418,6 +502,26 @@
                     closeModal();
                 }
             });
+
+            window.addEventListener('storage', handleStorageChange);
+        }
+
+        function handleStorageChange(event) {
+            if (!event || event.storageArea !== localStorage) {
+                return;
+            }
+
+            if (!event.key || WATCHED_STORAGE_KEYS.has(event.key)) {
+                loadFromLocalStorage();
+                loadProducts();
+                loadMovements();
+                renderDashboard();
+                filterProducts();
+            }
+
+            if (event.key === STORAGE_KEYS.theme || event.key === null) {
+                applyTheme(event.newValue || 'light');
+            }
         }
 
         function loadProducts() {
@@ -900,7 +1004,7 @@
 
             persistProducts();
 
-            if (ENABLE_API_SYNC) {
+            if (enableApiSync) {
                 try {
                     if (isUpdate && targetId) {
                         await fetchJson(
@@ -932,10 +1036,14 @@
                     }
                 } catch (error) {
                     console.warn('Synchronisation du produit impossible :', error);
+                    if (error && error.isNetworkError) {
+                        disableApiSync(error);
+                    }
                 }
             }
 
             loadProducts();
+            filterProducts();
             renderDashboard();
             closeModal();
             alert('Produit enregistré.');
@@ -999,7 +1107,7 @@
             persistProducts();
             persistMovements();
 
-            if (ENABLE_API_SYNC) {
+            if (enableApiSync) {
                 try {
                     const productPayload = {
                         name: updatedProduct.name,
@@ -1046,12 +1154,16 @@
                     }
                 } catch (error) {
                     console.warn("Synchronisation du mouvement impossible :", error);
+                    if (error && error.isNetworkError) {
+                        disableApiSync(error);
+                    }
                 }
             }
 
             loadProducts();
             loadMovements();
             renderDashboard();
+            filterProducts();
             document.getElementById('movement-quantity').value = '1';
             document.getElementById('movement-reason').value = '';
             alert('Mouvement enregistré.');
@@ -1089,7 +1201,7 @@
             state.products = state.products.filter((p) => p.id !== productId);
             persistProducts();
 
-            if (ENABLE_API_SYNC) {
+            if (enableApiSync) {
                 try {
                     await fetchJson(
                         API_ENDPOINTS.product(productId),
@@ -1098,12 +1210,16 @@
                     );
                 } catch (error) {
                     console.warn('Synchronisation de la suppression impossible :', error);
+                    if (error && error.isNetworkError) {
+                        disableApiSync(error);
+                    }
                 }
             }
 
             loadProducts();
             loadMovements();
             renderDashboard();
+            filterProducts();
             alert('Produit supprimé.');
         }
 
@@ -1222,6 +1338,8 @@
             loadProducts();
             loadMovements();
             renderDashboard();
+            filterProducts();
+            startAutoSync();
         }
 
         return {
