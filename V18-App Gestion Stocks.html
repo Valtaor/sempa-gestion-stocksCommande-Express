@@ -6,7 +6,7 @@
     <title>Gestion des Stocks SEMPA</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        :root{color-scheme:light;--bg:#f2f4f8;--bg-alt:#e6ebf5;--surface:#fff;--surface-alt:#f8faff;--border:rgba(15,23,42,.08);--border-strong:rgba(15,23,42,.16);--shadow-sm:0 8px 24px rgba(15,23,42,.12);--shadow-lg:0 28px 80px rgba(15,23,42,.18);--primary:#ff9f1c;--primary-dark:#e78f17;--primary-soft:rgba(255,159,28,.16);--text:#0f172a;--text-muted:#64748b;--text-subtle:#94a3b8;--success:#10b981;--warning:#f59e0b;--danger:#ef4444;--radius-sm:10px;--radius-md:16px;--radius-lg:22px;--transition:.25s ease;font-synthesis:none}#stock-app-wrapper{font-family:"Inter","SF Pro Text",system-ui,-apple-system,sans-serif;background:radial-gradient(circle at top right,var(--bg-alt) 0,var(--bg) 45%,#e0e6f2 100%);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased;transition:background var(--transition),color var(--transition)}#stock-app-wrapper.dark-theme{color-scheme:dark;--bg:#020617;--bg-alt:#0a1222;--surface:#0f172a;--surface-alt:#111c32;--border:rgba(148,163,184,.18);--border-strong:rgba(148,163,184,.32);--shadow-sm:0 10px 30px rgba(2,6,23,.6);--shadow-lg:0 40px 90px rgba(2,6,23,.75);--text:#e2e8f0;--text-muted:#a3b4d4;--text-subtle:#7c8cb2;--primary-soft:rgba(255,159,28,.2);background:radial-gradient(circle at top right,#0a1222 0,#040817 50%,#020415 100%)}#stock-app-wrapper.dark-theme,#stock-app-wrapper.dark-theme h1,#stock-app-wrapper.dark-theme h2,#stock-app-wrapper.dark-theme h3,#stock-app-wrapper.dark-theme h4,#stock-app-wrapper.dark-theme h5,#stock-app-wrapper.dark-theme p,#stock-app-wrapper.dark-theme th,#stock-app-wrapper.dark-theme td,#stock-app-wrapper.dark-theme label,#stock-app-wrapper.dark-theme .btn-secondary,#stock-app-wrapper.dark-theme .btn-outline{color:var(--text)!important}#stock-app-wrapper.dark-theme .text-muted,#stock-app-wrapper.dark-theme .metric-label,#stock-app-wrapper.dark-theme .brand p,#stock-app-wrapper.dark-theme thead th,#stock-app-wrapper.dark-theme .sempa-tab:not(.active){color:var(--text-muted)!important}#stock-app-wrapper.dark-theme input,#stock-app-wrapper.dark-theme select,#stock-app-wrapper.dark-theme textarea{color:var(--text)!important;background-color:var(--surface-alt)!important;border-color:var(--border)!important}#stock-app-wrapper .btn-danger{color:var(--danger)!important}#stock-app-wrapper *,#stock-app-wrapper :after,#stock-app-wrapper :before{box-sizing:border-box;font-family:inherit}#stock-app-wrapper a{color:inherit;text-decoration:none}.app-shell{min-height:100vh;display:flex;flex-direction:column}.app-header{position:sticky;top:46px;z-index:20;padding:clamp(18px,3vw,32px);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);background:linear-gradient(135deg,rgba(255,255,255,.86),rgba(255,255,255,.62));border-bottom:1px solid rgba(15,23,42,.05);box-shadow:var(--shadow-sm)}#stock-app-wrapper.dark-theme .app-header{background:linear-gradient(135deg,rgba(15,23,42,.92),rgba(15,23,42,.76));border-bottom-color:rgba(148,163,184,.2)}.header-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;max-width:1200px;margin:0 auto}.brand h1{font-size:clamp(1.5rem,2vw,2.2rem);letter-spacing:-.02em}.brand p{margin-top:4px}.header-actions{display:flex;gap:12px;align-items:center}.icon-button{width:44px;height:44px;border-radius:14px;border:1px solid var(--border);background:var(--surface);display:grid;place-items:center;cursor:pointer;transition:transform var(--transition),box-shadow var(--transition),border-color var(--transition)}.icon-button:focus-visible,.icon-button:hover{transform:translateY(-2px);border-color:var(--primary);box-shadow:0 10px 22px rgba(255,159,28,.24);outline:0}.btn-primary{border:none;border-radius:14px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff!important;padding:12px 18px;font-weight:600;font-size:.95rem;display:inline-flex;align-items:center;gap:10px;cursor:pointer;box-shadow:0 16px 30px rgba(255,159,28,.25);transition:transform var(--transition),filter var(--transition)}.btn-primary:focus-visible,.btn-primary:hover{transform:translateY(-1px);filter:brightness(1.05);outline:0}.btn-ghost{border-radius:12px;border:1px solid rgba(255,159,28,.38);background:0 0;color:var(--primary)!important;padding:10px 16px;font-weight:600;font-size:.9rem;cursor:pointer;transition:background var(--transition),transform var(--transition)}.btn-ghost:focus-visible,.btn-ghost:hover{background:var(--primary-soft);transform:translateY(-1px);outline:0}.main-content{flex:1;padding:clamp(22px,4vw,42px)}.content-max{max-width:1200px;margin:0 auto}.sempa-tabs{display:grid;grid-auto-flow:column;gap:12px;padding:6px;background:var(--surface);border-radius:var(--radius-lg);border:1px solid rgba(15,23,42,.06);box-shadow:var(--shadow-sm);overflow-x:auto;margin-bottom:clamp(20px,4vw,36px)}#stock-app-wrapper.dark-theme .sempa-tabs{background:rgba(15,23,42,.92);border-color:rgba(148,163,184,.24)}.sempa-tab{border:none;border-radius:var(--radius-md);background:0 0;font-weight:600;font-size:.95rem;padding:12px 20px;cursor:pointer;transition:background var(--transition),color var(--transition),transform var(--transition);white-space:nowrap}.sempa-tab.active{background:var(--primary);color:#fff!important;box-shadow:0 12px 28px rgba(255,159,28,.26)}.sempa-tab:not(.active):focus-visible,.sempa-tab:not(.active):hover{background:var(--primary-soft);color:var(--text)!important;outline:0}.sempa-content{display:none;animation:fade .3s ease}.sempa-content.active{display:block}@keyframes fade{0%{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}.section-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:clamp(16px,3vw,26px)}.metrics-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:clamp(20px,4vw,36px)}.metric-card{position:relative;border-radius:var(--radius-lg);padding:20px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-sm);overflow:hidden;transition:transform var(--transition),box-shadow var(--transition)}.metric-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}.metric-card:after{content:"";position:absolute;inset:auto -40% -40% -40%;height:60%;background:radial-gradient(circle,rgba(255,159,28,.18),transparent 65%);pointer-events:none}.dashboard-grid{display:grid;gap:24px}@media (min-width:980px){.dashboard-grid.cols-2{grid-template-columns:2.1fr 1.1fr;align-items:start}}.card{border-radius:var(--radius-lg);background:var(--surface);border:1px solid var(--border);padding:clamp(18px,3vw,26px);box-shadow:var(--shadow-sm);transition:transform var(--transition),box-shadow var(--transition)}.card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}.alert-list{display:grid;gap:12px}.alert-item{padding:14px 16px;border-radius:var(--radius-md);background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.22);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}.empty-state{padding:18px;border-radius:var(--radius-md);border:1px dashed var(--border);text-align:center}.list{list-style:none;margin:0;padding:0;display:grid;gap:12px}.list li{padding:14px 16px;border-radius:var(--radius-md);background:rgba(148,163,184,.1);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}#stock-app-wrapper.dark-theme .list li{background:rgba(148,163,184,.14)}.inventory-header{display:flex;flex-direction:column;gap:18px;margin-bottom:clamp(18px,3vw,28px)}.filter-bar{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}.search-field{position:relative}.search-input{width:100%;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface);padding:12px 16px 12px 44px;font-size:.95rem;transition:border-color var(--transition),box-shadow var(--transition)}.search-input:focus{outline:0;border-color:var(--primary);box-shadow:0 0 0 4px rgba(255,159,28,.18)}.search-field svg{position:absolute;top:50%;left:16px;transform:translateY(-50%);width:18px;height:18px;stroke:var(--text-muted)}.select{-webkit-appearance:none;appearance:none;width:100%;border-radius:var(--radius-md);border:1px solid var(--border);background-color:var(--surface);padding:12px 40px 12px 14px;font-size:.95rem;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;transition:border-color var(--transition),box-shadow var(--transition)}#stock-app-wrapper.dark-theme .select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23A3B4D4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")}.select:focus{outline:0;border-color:var(--primary);box-shadow:0 0 0 4px rgba(255,159,28,.18)}.table-wrapper{border-radius:var(--radius-lg);border:1px solid var(--border);overflow-x:auto;background:var(--surface);box-shadow:var(--shadow-sm)}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:14px 18px;font-size:.92rem;border-bottom:1px solid var(--border);white-space:nowrap}tbody tr:hover{background:rgba(148,163,184,.08)}.row-highlight{box-shadow:inset 0 0 0 2px var(--primary);background:rgba(255,159,28,.12)!important;transition:background .4s ease}.badge{border-radius:999px;padding:4px 10px;font-size:.78rem;font-weight:600;display:inline-flex;align-items:center;gap:8px}.badge:before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}.badge.low{color:var(--danger)}.badge.medium{color:var(--warning)}.badge.good{color:var(--success)}.table-actions{display:flex;flex-wrap:wrap;gap:8px}.btn-secondary,.btn-outline,.btn-danger{border-radius:10px;padding:8px 12px;font-size:.85rem;font-weight:600;border:1px solid transparent;cursor:pointer;background:rgba(148,163,184,.14);transition:background var(--transition),color var(--transition)}.btn-secondary:hover,.btn-outline:hover,.btn-danger:hover{background:rgba(148,163,184,.22)}.btn-outline{background:0 0;border-color:rgba(148,163,184,.38)}.btn-danger{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.2)}.btn-danger:hover{background:rgba(239,68,68,.18)}.movements-grid{display:grid;gap:24px}@media (min-width:960px){.movements-grid{grid-template-columns:1.1fr 1.2fr}}label{display:flex;flex-direction:column;gap:8px;font-size:.9rem}input[type=text],input[type=number],textarea{border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface);padding:12px 14px;font-size:.95rem;transition:border-color var(--transition),box-shadow var(--transition)}textarea{resize:vertical;min-height:120px}input:focus,textarea:focus,select:focus{outline:0;border-color:var(--primary);box-shadow:0 0 0 4px rgba(255,159,28,.18)}.modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.48);display:none;place-items:center;z-index:99999;padding:24px}.modal-backdrop.open{display:grid}.modal-panel{width:min(640px,100%);max-height:min(90vh,720px);border-radius:clamp(var(--radius-md),5vw,28px);background:var(--surface);border:1px solid var(--border-strong);box-shadow:var(--shadow-lg);overflow-y:auto;display:flex;flex-direction:column;animation:modal .28s ease}@keyframes modal{0%{opacity:0;transform:translateY(20px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}.modal-header{padding:22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px}.modal-body{padding:clamp(20px,4vw,28px);display:grid;gap:16px}.form-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}.modal-actions{display:flex;justify-content:flex-end;gap:12px;padding:0 clamp(20px,4vw,28px) clamp(20px,4vw,28px)}.modal-close{border:none;background:0 0;font-size:1.4rem;cursor:pointer;line-height:1}.floating-action{position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;font-size:1.6rem;box-shadow:0 20px 40px rgba(255,159,28,.35);display:none;place-items:center;cursor:pointer;z-index:9999}@media (max-width:780px){.app-header{border-radius:0 0 24px 24px}.header-actions .btn-primary{display:none}.floating-action{display:grid}thead{display:none}tbody tr{display:grid;grid-template-columns:1fr 1fr;gap:12px;border-bottom:none;padding:16px;margin-bottom:12px;border-radius:var(--radius-lg);background:rgba(148,163,184,.1)}#stock-app-wrapper.dark-theme tbody tr{background:rgba(148,163,184,.14)}tbody tr td{border-bottom:none;padding:0;display:flex;flex-direction:column;gap:4px;font-size:.9rem}tbody tr td:before{content:attr(data-label);font-size:.75rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase}td[data-label=Produit]{grid-column:1/-1;font-size:1.05rem;font-weight:600}.table-actions{grid-column:1/-1;margin-top:8px}}@media (max-width:560px){.brand{width:100%}.brand h1{font-size:1.4rem}.metrics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+        :root{color-scheme:light;--bg:#f2f4f8;--bg-alt:#e6ebf5;--surface:#fff;--surface-alt:#f8faff;--border:rgba(15,23,42,.08);--border-strong:rgba(15,23,42,.16);--shadow-sm:0 8px 24px rgba(15,23,42,.12);--shadow-lg:0 28px 80px rgba(15,23,42,.18);--primary:#ff9f1c;--primary-dark:#e78f17;--primary-soft:rgba(255,159,28,.16);--text:#0f172a;--text-muted:#64748b;--text-subtle:#94a3b8;--success:#10b981;--warning:#f59e0b;--danger:#ef4444;--radius-sm:10px;--radius-md:16px;--radius-lg:22px;--transition:.25s ease;font-synthesis:none}#stock-app-wrapper{font-family:"Inter","SF Pro Text",system-ui,-apple-system,sans-serif;background:radial-gradient(circle at top right,var(--bg-alt) 0,var(--bg) 45%,#e0e6f2 100%);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased;transition:background var(--transition),color var(--transition)}#stock-app-wrapper.dark-theme{color-scheme:dark;--bg:#020617;--bg-alt:#0a1222;--surface:#0f172a;--surface-alt:#111c32;--border:rgba(148,163,184,.18);--border-strong:rgba(148,163,184,.32);--shadow-sm:0 10px 30px rgba(2,6,23,.6);--shadow-lg:0 40px 90px rgba(2,6,23,.75);--text:#e2e8f0;--text-muted:#a3b4d4;--text-subtle:#7c8cb2;--primary-soft:rgba(255,159,28,.2);background:radial-gradient(circle at top right,#0a1222 0,#040817 50%,#020415 100%)}#stock-app-wrapper.dark-theme,#stock-app-wrapper.dark-theme h1,#stock-app-wrapper.dark-theme h2,#stock-app-wrapper.dark-theme h3,#stock-app-wrapper.dark-theme h4,#stock-app-wrapper.dark-theme h5,#stock-app-wrapper.dark-theme p,#stock-app-wrapper.dark-theme th,#stock-app-wrapper.dark-theme td,#stock-app-wrapper.dark-theme label,#stock-app-wrapper.dark-theme .btn-secondary,#stock-app-wrapper.dark-theme .btn-outline{color:var(--text)!important}#stock-app-wrapper.dark-theme .text-muted,#stock-app-wrapper.dark-theme .metric-label,#stock-app-wrapper.dark-theme .brand p,#stock-app-wrapper.dark-theme thead th,#stock-app-wrapper.dark-theme .sempa-tab:not(.active){color:var(--text-muted)!important}#stock-app-wrapper.dark-theme input,#stock-app-wrapper.dark-theme select,#stock-app-wrapper.dark-theme textarea{color:var(--text)!important;background-color:var(--surface-alt)!important;border-color:var(--border)!important}#stock-app-wrapper .btn-danger{border:none;border-radius:14px;background:linear-gradient(135deg,var(--danger),#b91c1c);color:#fff!important;padding:10px 16px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;box-shadow:0 14px 28px rgba(239,68,68,.25);transition:transform var(--transition),box-shadow var(--transition),filter var(--transition)}#stock-app-wrapper .btn-danger:focus-visible,#stock-app-wrapper .btn-danger:hover{transform:translateY(-1px);box-shadow:0 18px 32px rgba(239,68,68,.35);filter:brightness(1.02)}#stock-app-wrapper .btn-danger:active{transform:translateY(0);box-shadow:0 10px 20px rgba(239,68,68,.2);filter:none}#stock-app-wrapper .btn-danger[disabled]{opacity:.65;cursor:not-allowed;box-shadow:none}#stock-app-wrapper *,#stock-app-wrapper :after,#stock-app-wrapper :before{box-sizing:border-box;font-family:inherit}#stock-app-wrapper a{color:inherit;text-decoration:none}.app-shell{min-height:100vh;display:flex;flex-direction:column}.app-header{position:sticky;top:46px;z-index:20;padding:clamp(18px,3vw,32px);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);background:linear-gradient(135deg,rgba(255,255,255,.86),rgba(255,255,255,.62));border-bottom:1px solid rgba(15,23,42,.05);box-shadow:var(--shadow-sm)}#stock-app-wrapper.dark-theme .app-header{background:linear-gradient(135deg,rgba(15,23,42,.92),rgba(15,23,42,.76));border-bottom-color:rgba(148,163,184,.2)}.header-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;max-width:1200px;margin:0 auto}.brand h1{font-size:clamp(1.5rem,2vw,2.2rem);letter-spacing:-.02em}.brand p{margin-top:4px}.header-actions{display:flex;gap:12px;align-items:center}.icon-button{width:44px;height:44px;border-radius:14px;border:1px solid var(--border);background:var(--surface);display:grid;place-items:center;cursor:pointer;transition:transform var(--transition),box-shadow var(--transition),border-color var(--transition)}.icon-button:focus-visible,.icon-button:hover{transform:translateY(-2px);border-color:var(--primary);box-shadow:0 10px 22px rgba(255,159,28,.24);outline:0}.btn-primary{border:none;border-radius:14px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff!important;padding:12px 18px;font-weight:600;font-size:.95rem;display:inline-flex;align-items:center;gap:10px;cursor:pointer;box-shadow:0 16px 30px rgba(255,159,28,.25);transition:transform var(--transition),filter var(--transition)}.btn-primary:focus-visible,.btn-primary:hover{transform:translateY(-1px);filter:brightness(1.05);outline:0}.btn-ghost{border-radius:12px;border:1px solid rgba(255,159,28,.38);background:0 0;color:var(--primary)!important;padding:10px 16px;font-weight:600;font-size:.9rem;cursor:pointer;transition:background var(--transition),transform var(--transition)}.btn-ghost:focus-visible,.btn-ghost:hover{background:var(--primary-soft);transform:translateY(-1px);outline:0}.main-content{flex:1;padding:clamp(22px,4vw,42px)}.content-max{max-width:1200px;margin:0 auto}.sempa-tabs{display:grid;grid-auto-flow:column;gap:12px;padding:6px;background:var(--surface);border-radius:var(--radius-lg);border:1px solid rgba(15,23,42,.06);box-shadow:var(--shadow-sm);overflow-x:auto;margin-bottom:clamp(20px,4vw,36px)}#stock-app-wrapper.dark-theme .sempa-tabs{background:rgba(15,23,42,.92);border-color:rgba(148,163,184,.24)}.sempa-tab{border:none;border-radius:var(--radius-md);background:0 0;font-weight:600;font-size:.95rem;padding:12px 20px;cursor:pointer;transition:background var(--transition),color var(--transition),transform var(--transition);white-space:nowrap}.sempa-tab.active{background:var(--primary);color:#fff!important;box-shadow:0 12px 28px rgba(255,159,28,.26)}.sempa-tab:not(.active):focus-visible,.sempa-tab:not(.active):hover{background:var(--primary-soft);color:var(--text)!important;outline:0}.sempa-content{display:none;animation:fade .3s ease}.sempa-content.active{display:block}@keyframes fade{0%{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}.section-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:clamp(16px,3vw,26px)}.metrics-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:clamp(20px,4vw,36px)}.metric-card{position:relative;border-radius:var(--radius-lg);padding:20px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-sm);overflow:hidden;transition:transform var(--transition),box-shadow var(--transition)}.metric-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg)}.metric-card:after{content:"";position:absolute;inset:auto -40% -40% -40%;height:60%;background:radial-gradient(circle,rgba(255,159,28,.18),transparent 65%);pointer-events:none}.dashboard-grid{display:grid;gap:24px}@media (min-width:980px){.dashboard-grid.cols-2{grid-template-columns:2.1fr 1.1fr;align-items:start}}.card{border-radius:var(--radius-lg);background:var(--surface);border:1px solid var(--border);padding:clamp(18px,3vw,26px);box-shadow:var(--shadow-sm);transition:transform var(--transition),box-shadow var(--transition)}.card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}.alert-list{display:grid;gap:12px}.alert-item{padding:14px 16px;border-radius:var(--radius-md);background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.22);display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}.empty-state{padding:18px;border-radius:var(--radius-md);border:1px dashed var(--border);text-align:center}.list{list-style:none;margin:0;padding:0;display:grid;gap:12px}.list li{padding:14px 16px;border-radius:var(--radius-md);background:rgba(148,163,184,.1);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}#stock-app-wrapper.dark-theme .list li{background:rgba(148,163,184,.14)}.inventory-header{display:flex;flex-direction:column;gap:18px;margin-bottom:clamp(18px,3vw,28px)}.filter-bar{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}.search-field{position:relative}.search-input{width:100%;border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface);padding:12px 16px 12px 44px;font-size:.95rem;transition:border-color var(--transition),box-shadow var(--transition)}.search-input:focus{outline:0;border-color:var(--primary);box-shadow:0 0 0 4px rgba(255,159,28,.18)}.search-field svg{position:absolute;top:50%;left:16px;transform:translateY(-50%);width:18px;height:18px;stroke:var(--text-muted)}.select{-webkit-appearance:none;appearance:none;width:100%;border-radius:var(--radius-md);border:1px solid var(--border);background-color:var(--surface);padding:12px 40px 12px 14px;font-size:.95rem;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;transition:border-color var(--transition),box-shadow var(--transition)}#stock-app-wrapper.dark-theme .select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23A3B4D4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")}.select:focus{outline:0;border-color:var(--primary);box-shadow:0 0 0 4px rgba(255,159,28,.18)}.table-wrapper{border-radius:var(--radius-lg);border:1px solid var(--border);overflow-x:auto;background:var(--surface);box-shadow:var(--shadow-sm)}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:14px 18px;font-size:.92rem;border-bottom:1px solid var(--border);white-space:nowrap}tbody tr:hover{background:rgba(148,163,184,.08)}.row-highlight{box-shadow:inset 0 0 0 2px var(--primary);background:rgba(255,159,28,.12)!important;transition:background .4s ease}.badge{border-radius:999px;padding:4px 10px;font-size:.78rem;font-weight:600;display:inline-flex;align-items:center;gap:8px}.badge:before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}.badge.low{color:var(--danger)}.badge.medium{color:var(--warning)}.badge.good{color:var(--success)}.table-actions{display:flex;flex-wrap:wrap;gap:8px}.btn-secondary,.btn-outline,.btn-danger{border-radius:10px;padding:8px 12px;font-size:.85rem;font-weight:600;border:1px solid transparent;cursor:pointer;background:rgba(148,163,184,.14);transition:background var(--transition),color var(--transition)}.btn-secondary:hover,.btn-outline:hover,.btn-danger:hover{background:rgba(148,163,184,.22)}.btn-outline{background:0 0;border-color:rgba(148,163,184,.38)}.btn-danger{background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.2)}.btn-danger:hover{background:rgba(239,68,68,.18)}.movements-grid{display:grid;gap:24px}@media (min-width:960px){.movements-grid{grid-template-columns:1.1fr 1.2fr}}label{display:flex;flex-direction:column;gap:8px;font-size:.9rem}input[type=text],input[type=number],textarea{border-radius:var(--radius-md);border:1px solid var(--border);background:var(--surface);padding:12px 14px;font-size:.95rem;transition:border-color var(--transition),box-shadow var(--transition)}textarea{resize:vertical;min-height:120px}input:focus,textarea:focus,select:focus{outline:0;border-color:var(--primary);box-shadow:0 0 0 4px rgba(255,159,28,.18)}.modal-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.48);display:none;place-items:center;z-index:99999;padding:24px}.modal-backdrop.open{display:grid}.modal-panel{width:min(640px,100%);max-height:min(90vh,720px);border-radius:clamp(var(--radius-md),5vw,28px);background:var(--surface);border:1px solid var(--border-strong);box-shadow:var(--shadow-lg);overflow-y:auto;display:flex;flex-direction:column;animation:modal .28s ease}@keyframes modal{0%{opacity:0;transform:translateY(20px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}.modal-header{padding:22px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px}.modal-body{padding:clamp(20px,4vw,28px);display:grid;gap:16px}.form-grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}.modal-actions{display:flex;justify-content:flex-end;gap:12px;padding:0 clamp(20px,4vw,28px) clamp(20px,4vw,28px)}.modal-close{border:none;background:0 0;font-size:1.4rem;cursor:pointer;line-height:1}.floating-action{position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;font-size:1.6rem;box-shadow:0 20px 40px rgba(255,159,28,.35);display:none;place-items:center;cursor:pointer;z-index:9999}@media (max-width:780px){.app-header{border-radius:0 0 24px 24px}.header-actions .btn-primary{display:none}.floating-action{display:grid}thead{display:none}tbody tr{display:grid;grid-template-columns:1fr 1fr;gap:12px;border-bottom:none;padding:16px;margin-bottom:12px;border-radius:var(--radius-lg);background:rgba(148,163,184,.1)}#stock-app-wrapper.dark-theme tbody tr{background:rgba(148,163,184,.14)}tbody tr td{border-bottom:none;padding:0;display:flex;flex-direction:column;gap:4px;font-size:.9rem}tbody tr td:before{content:attr(data-label);font-size:.75rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase}td[data-label=Produit]{grid-column:1/-1;font-size:1.05rem;font-weight:600}.table-actions{grid-column:1/-1;margin-top:8px}}@media (max-width:560px){.brand{width:100%}.brand h1{font-size:1.4rem}.metrics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
     </style>
 </head>
 <body>
@@ -219,8 +219,61 @@
             'autre',
         ];
         const STATUS_LABELS = { low: 'Critique', medium: 'À surveiller', good: 'Stable' };
+        const STORAGE_KEYS = { products: 'sempa_products', movements: 'sempa_movements_v2', theme: 'sempa_theme' };
+        const DEFAULT_PRODUCTS = (() => {
+            const now = new Date('2025-09-17T12:00:00Z').toISOString();
+            let counter = 1;
+            return [
+                { id: `default-${counter++}`, name: 'Bouteille 0.33L PET', stock: 8, minStock: 15, price: 0.1, category: 'bouteille', lastUpdated: now },
+                { id: `default-${counter++}`, name: 'Bouteille 0.5L PET', stock: 120, minStock: 30, price: 0.09, category: 'bouteille', lastUpdated: now },
+                { id: `default-${counter++}`, name: 'Bouteille 0.75L PET', stock: 0, minStock: 20, price: 0.1, category: 'bouteille', lastUpdated: new Date('2025-09-30T12:00:00Z').toISOString() },
+                { id: `default-${counter++}`, name: 'Bouteille 1L PET', stock: 45, minStock: 20, price: 0.12, category: 'bouteille', lastUpdated: now },
+                { id: `default-${counter++}`, name: 'Capot OL61 Neuf', stock: 20, minStock: 5, price: 378, category: 'capot', lastUpdated: new Date('2025-10-01T12:00:00Z').toISOString() },
+            ];
+        })();
+        const ENABLE_API_SYNC = false;
         let myStockChart = null;
         let state = { products: [], movements: [], currentProductId: null };
+
+        function loadFromLocalStorage() {
+            try {
+                const storedProducts = localStorage.getItem(STORAGE_KEYS.products) ?? localStorage.getItem('sempa_products_v2');
+                state.products = JSON.parse(storedProducts || '[]');
+            } catch (error) {
+                console.warn('Impossible de lire les produits du stockage local :', error);
+                state.products = [];
+            }
+            try {
+                const storedMovements = localStorage.getItem(STORAGE_KEYS.movements) ?? localStorage.getItem('sempa_movements');
+                state.movements = JSON.parse(storedMovements || '[]');
+            } catch (error) {
+                console.warn('Impossible de lire les mouvements du stockage local :', error);
+                state.movements = [];
+            }
+        }
+
+        function persistProducts() {
+            try {
+                localStorage.setItem(STORAGE_KEYS.products, JSON.stringify(state.products));
+            } catch (error) {
+                console.warn('Impossible de sauvegarder les produits localement :', error);
+            }
+        }
+
+        function persistMovements() {
+            try {
+                localStorage.setItem(STORAGE_KEYS.movements, JSON.stringify(state.movements));
+            } catch (error) {
+                console.warn('Impossible de sauvegarder les mouvements localement :', error);
+            }
+        }
+
+        function ensureDefaults() {
+            if (!state.products.length) {
+                state.products = DEFAULT_PRODUCTS.map((product) => ({ ...product }));
+                persistProducts();
+            }
+        }
 
         async function fetchJson(url, options = {}, fallbackMessage = 'Erreur de communication avec le serveur.') {
             let response;
@@ -252,37 +305,58 @@
         }
 
         async function loadDataFromServer() {
+            loadFromLocalStorage();
+            ensureDefaults();
+
+            if (!ENABLE_API_SYNC) {
+                return;
+            }
+
             let firstError = null;
 
             try {
                 const data = await fetchJson(API_ENDPOINTS.products(), {}, 'Impossible de charger les produits.');
-                state.products = Array.isArray(data.products) ? data.products : [];
+                if (data && Array.isArray(data.products)) {
+                    state.products = data.products;
+                    persistProducts();
+                }
             } catch (error) {
                 console.error('Impossible de charger les produits :', error);
-                state.products = [];
                 firstError = error instanceof Error ? error : new Error('Impossible de charger les produits.');
             }
 
             try {
                 const data = await fetchJson(API_ENDPOINTS.movements(), {}, 'Impossible de charger les mouvements.');
-                state.movements = Array.isArray(data.movements) ? data.movements : [];
+                if (data && Array.isArray(data.movements)) {
+                    state.movements = data.movements;
+                    persistMovements();
+                }
             } catch (error) {
                 console.error('Impossible de charger les mouvements :', error);
-                state.movements = [];
                 if (!firstError) {
                     firstError = error instanceof Error ? error : new Error('Impossible de charger les mouvements.');
                 }
             }
 
             if (firstError) {
-                alert(firstError.message || 'Erreur lors de la récupération des données.');
+                console.warn(firstError.message || 'Erreur lors de la récupération des données.');
             }
         }
 
         async function refreshMovementsFromServer() {
+            if (!ENABLE_API_SYNC) {
+                persistMovements();
+                loadMovements();
+                return;
+            }
+
             try {
                 const data = await fetchJson(API_ENDPOINTS.movements(), {}, 'Impossible de charger les mouvements.');
-                state.movements = Array.isArray(data.movements) ? data.movements : [];
+                if (data && Array.isArray(data.movements)) {
+                    state.movements = data.movements;
+                    persistMovements();
+                }
+                loadMovements();
             } catch (error) {
                 console.error('Impossible de rafraîchir les mouvements :', error);
             }
@@ -294,7 +368,7 @@
             if (wrapper) {
                 wrapper.classList.toggle('dark-theme', nextTheme === 'dark');
             }
-            localStorage.setItem('sempa_theme', nextTheme);
+            localStorage.setItem(STORAGE_KEYS.theme, nextTheme);
             const icon = document.querySelector('#theme-toggle svg');
             if (icon) {
                 icon.innerHTML = nextTheme === 'dark'
@@ -305,7 +379,7 @@
         }
 
         function initTheme() {
-            applyTheme(localStorage.getItem('sempa_theme') || 'light');
+            applyTheme(localStorage.getItem(STORAGE_KEYS.theme) || 'light');
         }
 
         function bindEvents() {
@@ -806,42 +880,65 @@
                 lastUpdated: new Date().toISOString(),
             };
 
-            try {
-                if (state.currentProductId) {
-                    const id = state.currentProductId;
-                    const response = await fetchJson(
-                        API_ENDPOINTS.product(id),
-                        {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload),
-                        },
-                        'Impossible de mettre à jour le produit.'
-                    );
-                    const updatedProduct = response && response.product ? response.product : { ...payload, id };
-                    state.products = state.products.map((product) => (product.id === id ? { ...product, ...updatedProduct } : product));
-                } else {
-                    const response = await fetchJson(
-                        API_ENDPOINTS.products(),
-                        {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload),
-                        },
-                        'Impossible de créer le produit.'
-                    );
-                    const createdProduct = response && response.product ? response.product : { ...payload };
-                    state.products.push(createdProduct);
-                }
+            const isUpdate = Boolean(state.currentProductId);
+            let targetId = state.currentProductId;
 
-                loadProducts();
-                renderDashboard();
-                closeModal();
-                alert('Produit enregistré.');
-            } catch (error) {
-                console.error("Erreur lors de l'enregistrement du produit :", error);
-                alert(error.message || "Erreur lors de l'enregistrement du produit.");
+            if (isUpdate) {
+                const index = state.products.findIndex((product) => product.id === state.currentProductId);
+                if (index !== -1) {
+                    const updatedProduct = { ...state.products[index], ...payload, id: state.currentProductId };
+                    state.products[index] = updatedProduct;
+                } else {
+                    const fallbackProduct = { ...payload, id: state.currentProductId };
+                    state.products.push(fallbackProduct);
+                }
+            } else {
+                const newId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `local-${Date.now()}`;
+                targetId = newId;
+                state.products.push({ ...payload, id: newId });
             }
+
+            persistProducts();
+
+            if (ENABLE_API_SYNC) {
+                try {
+                    if (isUpdate && targetId) {
+                        await fetchJson(
+                            API_ENDPOINTS.product(targetId),
+                            {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(payload),
+                            },
+                            'Impossible de mettre à jour le produit.'
+                        );
+                    } else if (!isUpdate) {
+                        const response = await fetchJson(
+                            API_ENDPOINTS.products(),
+                            {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(payload),
+                            },
+                            'Impossible de créer le produit.'
+                        );
+                        if (response && response.product) {
+                            const index = state.products.findIndex((product) => product.id === targetId);
+                            if (index !== -1) {
+                                state.products[index] = { ...state.products[index], ...response.product };
+                                persistProducts();
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.warn('Synchronisation du produit impossible :', error);
+                }
+            }
+
+            loadProducts();
+            renderDashboard();
+            closeModal();
+            alert('Produit enregistré.');
         }
 
         async function addStockMovement() {
@@ -884,63 +981,80 @@
                 newStock = quantityValue;
             }
 
-            const productPayload = {
-                name: existingProduct.name,
-                stock: newStock,
-                minStock: existingProduct.minStock,
-                price: existingProduct.price,
-                category: existingProduct.category || 'autre',
-                description: existingProduct.description || '',
-                lastUpdated: new Date().toISOString(),
-            };
+            const lastUpdated = new Date().toISOString();
+            const updatedProduct = { ...existingProduct, stock: newStock, lastUpdated };
+            state.products[index] = updatedProduct;
 
-            const movementPayload = {
+            const movementEntry = {
+                id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `local-move-${Date.now()}`,
                 productId,
-                productName: existingProduct.name,
+                productName: updatedProduct.name,
                 type,
                 quantity: quantityValue,
                 reason,
-                date: new Date().toISOString(),
+                date: lastUpdated,
             };
+            state.movements.push(movementEntry);
 
-            try {
-                const productResponse = await fetchJson(
-                    API_ENDPOINTS.product(productId),
-                    {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(productPayload),
-                    },
-                    "Impossible de mettre à jour le stock du produit."
-                );
-                const updatedProduct = productResponse && productResponse.product ? productResponse.product : { ...existingProduct, ...productPayload, id: productId };
-                state.products[index] = { ...state.products[index], ...updatedProduct };
+            persistProducts();
+            persistMovements();
 
-                const movementResponse = await fetchJson(
-                    API_ENDPOINTS.movements(),
-                    {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(movementPayload),
-                    },
-                    "Impossible d'enregistrer le mouvement."
-                );
-                if (movementResponse && movementResponse.movement) {
-                    state.movements.push(movementResponse.movement);
-                } else {
-                    await refreshMovementsFromServer();
+            if (ENABLE_API_SYNC) {
+                try {
+                    const productPayload = {
+                        name: updatedProduct.name,
+                        stock: updatedProduct.stock,
+                        minStock: updatedProduct.minStock,
+                        price: updatedProduct.price,
+                        category: updatedProduct.category || 'autre',
+                        description: updatedProduct.description || '',
+                        lastUpdated: lastUpdated,
+                    };
+                    await fetchJson(
+                        API_ENDPOINTS.product(productId),
+                        {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(productPayload),
+                        },
+                        "Impossible de mettre à jour le stock du produit."
+                    );
+
+                    const movementPayload = {
+                        productId,
+                        productName: updatedProduct.name,
+                        type,
+                        quantity: quantityValue,
+                        reason,
+                        date: lastUpdated,
+                    };
+                    const response = await fetchJson(
+                        API_ENDPOINTS.movements(),
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(movementPayload),
+                        },
+                        "Impossible d'enregistrer le mouvement."
+                    );
+                    if (response && response.movement) {
+                        const movementIndex = state.movements.findIndex((movement) => movement.id === movementEntry.id);
+                        if (movementIndex !== -1) {
+                            state.movements[movementIndex] = { ...movementEntry, ...response.movement };
+                            persistMovements();
+                        }
+                    }
+                } catch (error) {
+                    console.warn("Synchronisation du mouvement impossible :", error);
                 }
-
-                loadProducts();
-                loadMovements();
-                renderDashboard();
-                document.getElementById('movement-quantity').value = '1';
-                document.getElementById('movement-reason').value = '';
-                alert('Mouvement enregistré.');
-            } catch (error) {
-                console.error("Erreur lors de l'enregistrement du mouvement :", error);
-                alert(error.message || "Erreur lors de l'enregistrement du mouvement.");
             }
+
+            loadProducts();
+            loadMovements();
+            renderDashboard();
+            document.getElementById('movement-quantity').value = '1';
+            document.getElementById('movement-reason').value = '';
+            alert('Mouvement enregistré.');
         }
 
         function openQuickMovement(productId, type = 'in') {
@@ -972,22 +1086,25 @@
                 return;
             }
 
-            try {
-                await fetchJson(
-                    API_ENDPOINTS.product(productId),
-                    { method: 'DELETE' },
-                    'Impossible de supprimer le produit.'
-                );
-                state.products = state.products.filter((p) => p.id !== productId);
-                await refreshMovementsFromServer();
-                loadProducts();
-                loadMovements();
-                renderDashboard();
-                alert('Produit supprimé.');
-            } catch (error) {
-                console.error('Erreur lors de la suppression du produit :', error);
-                alert(error.message || 'Erreur lors de la suppression du produit.');
+            state.products = state.products.filter((p) => p.id !== productId);
+            persistProducts();
+
+            if (ENABLE_API_SYNC) {
+                try {
+                    await fetchJson(
+                        API_ENDPOINTS.product(productId),
+                        { method: 'DELETE' },
+                        'Impossible de supprimer le produit.'
+                    );
+                } catch (error) {
+                    console.warn('Synchronisation de la suppression impossible :', error);
+                }
             }
+
+            loadProducts();
+            loadMovements();
+            renderDashboard();
+            alert('Produit supprimé.');
         }
 
         function exportInventory() {
@@ -1020,8 +1137,7 @@
         function wrapCsvValue(value) {
             const text = String(value ?? '');
             const escaped = text.replace(/"/g, '""');
-            return /[";
-    ]/.test(escaped) ? `"${escaped}"` : escaped;
+            return /[";,\n]/.test(escaped) ? `"${escaped}"` : escaped;
         }
 
         function setText(id, value) {
