@@ -179,162 +179,949 @@
     </div>
 </div>
 <script>
-    const App = (() => {
-        const API_URL = 'https://sempa.fr/wp-json/stock-manager/v1/data';
-        const CATEGORY_LABELS = { capot: 'Capot', presse: 'Presse', rotor: 'Rotor', extracteur: 'Extracteur', coutau: 'Couteau', raclette_support: 'Raclette / Support Raclette', languette_presse: 'Languette Presse', tete_robinet: 'Tête de Robinet', vis_capot: 'Vis Capot', piece: 'Autre Pièce détachée', bouteille: 'Bouteille PET', gobelet: 'Gobelet', nettoyant: 'Nettoyant', autre: 'Autre' };
-        const CATEGORY_ORDER = [ 'capot', 'presse', 'rotor', 'extracteur', 'coutau', 'raclette_support', 'languette_presse', 'tete_robinet', 'vis_capot', 'piece', 'bouteille', 'gobelet', 'nettoyant', 'autre' ];
+        const App = (() => {
+        const API_BASE = 'api/stocks.php';
+        const API_ENDPOINTS = {
+            products: () => `${API_BASE}?resource=products`,
+            product: (id) => `${API_BASE}?resource=products&id=${encodeURIComponent(id)}`,
+            movements: () => `${API_BASE}?resource=movements`,
+        };
+        const CATEGORY_LABELS = {
+            capot: 'Capot',
+            presse: 'Presse',
+            rotor: 'Rotor',
+            extracteur: 'Extracteur',
+            coutau: 'Couteau',
+            raclette_support: 'Raclette / Support Raclette',
+            languette_presse: 'Languette Presse',
+            tete_robinet: 'Tête de Robinet',
+            vis_capot: 'Vis Capot',
+            piece: 'Autre Pièce détachée',
+            bouteille: 'Bouteille PET',
+            gobelet: 'Gobelet',
+            nettoyant: 'Nettoyant',
+            autre: 'Autre',
+        };
+        const CATEGORY_ORDER = [
+            'capot',
+            'presse',
+            'rotor',
+            'extracteur',
+            'coutau',
+            'raclette_support',
+            'languette_presse',
+            'tete_robinet',
+            'vis_capot',
+            'piece',
+            'bouteille',
+            'gobelet',
+            'nettoyant',
+            'autre',
+        ];
         const STATUS_LABELS = { low: 'Critique', medium: 'À surveiller', good: 'Stable' };
         let myStockChart = null;
         let state = { products: [], movements: [], currentProductId: null };
 
-        async function saveDataToServer() {
+        async function fetchJson(url, options = {}, fallbackMessage = 'Erreur de communication avec le serveur.') {
+            let response;
             try {
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ products: state.products })
-                });
-                if (!response.ok) throw new Error('La sauvegarde sur le serveur a échoué.');
-            } catch (error) {
-                console.error("Erreur de sauvegarde:", error);
-                alert("Erreur: Impossible de synchroniser les données avec le serveur.");
+                response = await fetch(url, options);
+            } catch (networkError) {
+                console.error('Requête API échouée :', networkError);
+                throw new Error(fallbackMessage);
             }
+
+            let payload = {};
+            const text = await response.text();
+            if (text) {
+                try {
+                    payload = JSON.parse(text);
+                } catch (parseError) {
+                    console.error('Réponse JSON invalide reçue depuis', url, parseError);
+                }
+            }
+
+            if (!response.ok) {
+                const message = payload && typeof payload.error === 'string' && payload.error.trim()
+                    ? payload.error
+                    : fallbackMessage;
+                throw new Error(message);
+            }
+
+            return payload;
         }
 
         async function loadDataFromServer() {
+            let firstError = null;
+
             try {
-                const response = await fetch(API_URL);
-                if (!response.ok) {
-                    if (response.status === 403) throw new Error('Accès non autorisé. Veuillez vous connecter à WordPress.');
-                    throw new Error('Erreur réseau lors de la récupération des données.');
-                }
-                const data = await response.json();
-                state.products = (data && Array.isArray(data.products)) ? data.products : [];
-                state.movements = JSON.parse(localStorage.getItem('sempa_movements_v2') || '[]');
+                const data = await fetchJson(API_ENDPOINTS.products(), {}, 'Impossible de charger les produits.');
+                state.products = Array.isArray(data.products) ? data.products : [];
             } catch (error) {
-                console.error("Impossible de charger les données du serveur:", error);
-                alert(error.message);
+                console.error('Impossible de charger les produits :', error);
                 state.products = [];
+                firstError = error instanceof Error ? error : new Error('Impossible de charger les produits.');
+            }
+
+            try {
+                const data = await fetchJson(API_ENDPOINTS.movements(), {}, 'Impossible de charger les mouvements.');
+                state.movements = Array.isArray(data.movements) ? data.movements : [];
+            } catch (error) {
+                console.error('Impossible de charger les mouvements :', error);
+                state.movements = [];
+                if (!firstError) {
+                    firstError = error instanceof Error ? error : new Error('Impossible de charger les mouvements.');
+                }
+            }
+
+            if (firstError) {
+                alert(firstError.message || 'Erreur lors de la récupération des données.');
             }
         }
-        
-        function persistMovements() { localStorage.setItem('sempa_movements_v2', JSON.stringify(state.movements)); }
-        
+
+        async function refreshMovementsFromServer() {
+            try {
+                const data = await fetchJson(API_ENDPOINTS.movements(), {}, 'Impossible de charger les mouvements.');
+                state.movements = Array.isArray(data.movements) ? data.movements : [];
+            } catch (error) {
+                console.error('Impossible de rafraîchir les mouvements :', error);
+            }
+        }
+
         function applyTheme(theme) {
             const nextTheme = theme === 'dark' ? 'dark' : 'light';
             const wrapper = document.getElementById('stock-app-wrapper');
-            if (wrapper) wrapper.classList.toggle('dark-theme', nextTheme === 'dark');
+            if (wrapper) {
+                wrapper.classList.toggle('dark-theme', nextTheme === 'dark');
+            }
             localStorage.setItem('sempa_theme', nextTheme);
             const icon = document.querySelector('#theme-toggle svg');
-            if(icon)icon.innerHTML=nextTheme==='dark'?'<path d="M21 12.79A9 9 0 0 1 11.21 3 7 7 0 0 0 12 19a7 7 0 0 0 9-6.21Z"/>':'<path d="M12 3v2"/><path d="M12 19v2"/><path d="M5.22 5.22l1.42 1.42"/><path d="M17.36 17.36l1.42 1.42"/><path d="M3 12h2"/><path d="M19 12h2"/><path d="M5.22 18.78l1.42-1.42"/><path d="M17.36 6.64l1.42-1.42"/><circle cx="12" cy="12" r="4"/>';
+            if (icon) {
+                icon.innerHTML = nextTheme === 'dark'
+                    ? '<path d="M21 12.79A9 9 0 0 1 11.21 3 7 7 0 0 0 12 19a7 7 0 0 0 9-6.21Z" />'
+                    : '<path d="M12 3v2" /><path d="M12 19v2" /><path d="M5.22 5.22l1.42 1.42" /><path d="M17.36 17.36l1.42 1.42" /><path d="M3 12h2" /><path d="M19 12h2" /><path d="M5.22 18.78l1.42-1.42" /><path d="M17.36 6.64l1.42-1.42" />';
+            }
             renderStockChart();
         }
-        function initTheme() { applyTheme(localStorage.getItem('sempa_theme') || 'light'); }
-        
+
+        function initTheme() {
+            applyTheme(localStorage.getItem('sempa_theme') || 'light');
+        }
+
         function bindEvents() {
             const themeToggle = document.getElementById('theme-toggle');
-            if (themeToggle) themeToggle.addEventListener('click', () => { const wrapper = document.getElementById('stock-app-wrapper'); applyTheme(wrapper && wrapper.classList.contains('dark-theme') ? 'light' : 'dark'); });
-            ['input', 'search'].forEach(evt => document.getElementById('product-search')?.addEventListener(evt, filterProducts));
+            if (themeToggle) {
+                themeToggle.addEventListener('click', () => {
+                    const wrapper = document.getElementById('stock-app-wrapper');
+                    const nextTheme = wrapper && wrapper.classList.contains('dark-theme') ? 'light' : 'dark';
+                    applyTheme(nextTheme);
+                });
+            }
+
+            const searchInput = document.getElementById('product-search');
+            if (searchInput) {
+                ['input', 'search'].forEach((eventName) => searchInput.addEventListener(eventName, filterProducts));
+            }
+
             document.getElementById('filter-category')?.addEventListener('change', filterProducts);
             document.getElementById('filter-status')?.addEventListener('change', filterProducts);
-            document.querySelectorAll('.sempa-tab').forEach(tab => tab.addEventListener('click', () => switchToTab(tab.dataset.tab)));
+
+            document.querySelectorAll('.sempa-tab').forEach((tab) => {
+                tab.addEventListener('click', () => switchToTab(tab.dataset.tab));
+            });
+
             const modal = document.getElementById('product-modal');
-            if (modal) modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
-            window.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+            if (modal) {
+                modal.addEventListener('click', (event) => {
+                    if (event.target === modal) {
+                        closeModal();
+                    }
+                });
+            }
+
+            window.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape') {
+                    closeModal();
+                }
+            });
         }
-        
+
         function loadProducts() {
             const tableBody = document.getElementById('products-table');
-            if (!tableBody) return;
+            if (!tableBody) {
+                return;
+            }
+
             tableBody.innerHTML = '';
-            const sorted = [...state.products].sort((a,b)=>(a.name||'').localeCompare(b.name||'','fr',{sensitivity:'base'}));
-            sorted.forEach(p => {
-                const status = getStockStatus(p.stock, p.minStock);
+            const sortedProducts = [...state.products].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'fr', { sensitivity: 'base' }));
+
+            sortedProducts.forEach((product) => {
+                const status = getStockStatus(product.stock, product.minStock);
                 const row = document.createElement('tr');
-                row.dataset.category=p.category||'autre'; row.dataset.status=status; row.dataset.name=(p.name||'').toLowerCase(); row.dataset.id=p.id;
-                row.innerHTML = `<td data-label="Produit">${p.name}</td><td data-label="Stock">${formatNumber(p.stock)}</td><td data-label="Seuil">${formatNumber(p.minStock)}</td><td data-label="Statut"><span class="badge ${status}">${STATUS_LABELS[status]||status}</span></td><td data-label="Mise à jour">${formatDate(p.lastUpdated)}</td><td data-label="Actions"><div class="table-actions"><button class="btn-secondary" type="button" onclick="App.openModal('edit','${p.id}')">Modifier</button><button class="btn-primary" type="button" onclick="App.openQuickMovement('${p.id}','in')">Entrée</button><button class="btn-outline" type="button" onclick="App.openQuickMovement('${p.id}','out')">Sortie</button><button class="btn-danger" type="button" onclick="App.deleteProduct('${p.id}')">Supprimer</button></div></td>`;
+                row.dataset.category = product.category || 'autre';
+                row.dataset.status = status;
+                row.dataset.name = (product.name || '').toLowerCase();
+                row.dataset.id = product.id;
+                row.innerHTML = `
+                    <td data-label="Produit">${product.name}</td>
+                    <td data-label="Stock">${formatNumber(product.stock)}</td>
+                    <td data-label="Seuil">${formatNumber(product.minStock)}</td>
+                    <td data-label="Statut">${STATUS_LABELS[status]}</td>
+                    <td data-label="Valeur">${formatCurrency((Number(product.price) || 0) * (Number(product.stock) || 0))}</td>
+                    <td class="table-actions">
+                        <button class="btn-secondary" type="button" onclick="App.openModal('edit','${product.id}')">Modifier</button>
+                        <button class="btn-secondary" type="button" onclick="App.openQuickMovement('${product.id}','in')">Entrée</button>
+                        <button class="btn-secondary" type="button" onclick="App.openQuickMovement('${product.id}','out')">Sortie</button>
+                        <button class="btn-danger" type="button" onclick="App.deleteProduct('${product.id}')">Supprimer</button>
+                    </td>
+                `;
                 tableBody.appendChild(row);
             });
-            const movementSelect=document.getElementById('movement-product');if(movementSelect){const prev=movementSelect.value;movementSelect.innerHTML='<option value="">Sélectionner un produit</option>';sorted.forEach(p=>{const opt=document.createElement('option');opt.value=p.id;opt.textContent=p.name;movementSelect.appendChild(opt)});if(prev)movementSelect.value=prev}
+
+            const movementSelect = document.getElementById('movement-product');
+            if (movementSelect) {
+                const previousValue = movementSelect.value;
+                movementSelect.innerHTML = '<option value="">Sélectionner un produit</option>';
+                sortedProducts.forEach((product) => {
+                    const option = document.createElement('option');
+                    option.value = product.id;
+                    option.textContent = product.name;
+                    movementSelect.appendChild(option);
+                });
+                if (previousValue) {
+                    movementSelect.value = previousValue;
+                }
+            }
+
             populateCategoryFilter();
             filterProducts();
         }
-        
+
         function loadMovements() {
             const tableBody = document.getElementById('movements-table');
-            if (!tableBody) return;
+            if (!tableBody) {
+                return;
+            }
+
             tableBody.innerHTML = '';
             const sorted = [...state.movements].sort((a, b) => new Date(b.date) - new Date(a.date));
-            sorted.forEach(m => {
-                const product = state.products.find(p => p.id === m.productId);
-                const productName = product ? product.name : (m.productName || 'Produit archivé');
-                const date = new Date(m.date); const formattedDate = Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('fr-FR');
-                const typeLabel=m.type==='in'?'Entrée':m.type==='out'?'Sortie':'Ajustement';
-                const qDisplay=m.type==='in'?`+${m.quantity}`:m.type==='out'?`-${m.quantity}`:`=${m.quantity}`;
-                const row = document.createElement('tr'); row.innerHTML = `<td>${formattedDate}</td><td>${productName}</td><td>${typeLabel}</td><td>${qDisplay}</td><td>${m.reason||'-'}</td>`;
+            sorted.forEach((movement) => {
+                const product = state.products.find((p) => p.id === movement.productId);
+                const productName = product ? product.name : (movement.productName || 'Produit archivé');
+                const date = new Date(movement.date);
+                const formattedDate = Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('fr-FR');
+                const typeLabel = movement.type === 'in' ? 'Entrée' : movement.type === 'out' ? 'Sortie' : 'Ajustement';
+                const quantityDisplay = movement.type === 'in' ? `+${movement.quantity}` : movement.type === 'out' ? `-${movement.quantity}` : `=${movement.quantity}`;
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${formattedDate}</td>
+                    <td>${productName}</td>
+                    <td>${typeLabel}</td>
+                    <td>${quantityDisplay}</td>
+                    <td>${movement.reason || '-'}</td>
+                `;
                 tableBody.appendChild(row);
             });
         }
-        
+
         function populateCategoryFilter() {
             const select = document.getElementById('filter-category');
-            if (!select) return;
-            const summary = state.products.reduce((acc, p) => { const key = p.category || 'autre'; acc[key] = (acc[key] || 0) + 1; return acc; }, {});
+            if (!select) {
+                return;
+            }
+
+            const summary = state.products.reduce((acc, product) => {
+                const key = product.category || 'autre';
+                acc[key] = (acc[key] || 0) + 1;
+                return acc;
+            }, {});
+
             const categories = Object.keys(summary).sort(sortCategories);
             const current = select.value;
             select.innerHTML = '<option value="">Toutes les catégories</option>';
-            categories.forEach(key => { const option = document.createElement('option'); option.value = key; option.textContent = `${getCategoryLabel(key)} (${summary[key]})`; select.appendChild(option); });
-            if (current && summary[current]) select.value = current;
+            categories.forEach((key) => {
+                const option = document.createElement('option');
+                option.value = key;
+                option.textContent = `${getCategoryLabel(key)} (${summary[key]})`;
+                select.appendChild(option);
+            });
+            if (current && summary[current]) {
+                select.value = current;
+            }
         }
-        
+
         function renderDashboard() {
-            const {products}=state;const lowStock=products.filter(p=>getStockStatus(p.stock,p.minStock)==='low');const mediumStock=products.filter(p=>getStockStatus(p.stock,p.minStock)==='medium');const totalUnits=products.reduce((sum,p)=>sum+(Number(p.stock)||0),0);const totalValue=products.reduce((sum,p)=>sum+((Number(p.stock)||0)*(Number(p.price)||0)),0);
-            setText('total-products',products.length);setText('alerts-count',lowStock.length);setText('total-cartons',formatNumber(totalUnits));setText('total-value',formatCurrency(totalValue));
-            renderAlerts(lowStock);renderCategorySummary();renderRecommendations(lowStock,mediumStock);renderRecentUpdates();renderStockChart();
+            const { products } = state;
+            const lowStock = products.filter((product) => getStockStatus(product.stock, product.minStock) === 'low');
+            const mediumStock = products.filter((product) => getStockStatus(product.stock, product.minStock) === 'medium');
+
+            const totalUnits = products.reduce((acc, product) => acc + (Number(product.stock) || 0), 0);
+            const totalValue = products.reduce((acc, product) => acc + ((Number(product.price) || 0) * (Number(product.stock) || 0)), 0);
+
+            setText('total-products', products.length);
+            setText('alerts-count', lowStock.length);
+            setText('total-cartons', formatNumber(totalUnits));
+            setText('total-value', formatCurrency(totalValue));
+
+            renderAlerts(lowStock);
+            renderCategorySummary();
+            renderRecommendations(lowStock, mediumStock);
+            renderRecentUpdates();
+            renderStockChart();
         }
-        
-        function renderAlerts(lowStock){const cont=document.getElementById('alerts-container');if(!cont)return;cont.innerHTML='<h3>Alertes prioritaires</h3>';if(!lowStock.length){cont.innerHTML+='<div class="empty-state">Aucune alerte pour le moment.</div>';return}const list=document.createElement('div');list.className='alert-list';lowStock.sort((a,b)=>(a.stock||0)-(b.stock||0)).forEach(p=>{const i=document.createElement('div');i.className='alert-item';i.innerHTML=`<span>${p.name}</span><span>${formatNumber(p.stock)} unités · seuil ${formatNumber(p.minStock)}</span>`;list.appendChild(i)});cont.appendChild(list)}
-        function renderCategorySummary(){const cont=document.getElementById('category-summary');if(!cont)return;if(!state.products.length){cont.className='empty-state';cont.textContent='Aucun produit enregistré.';return}const summary=state.products.reduce((acc,p)=>{const key=p.category||'autre';if(!acc[key])acc[key]={products:0,units:0};acc[key].products++;acc[key].units+=Number(p.stock)||0;return acc},{});const categories=Object.keys(summary).sort(sortCategories);const table=document.createElement('table');table.innerHTML=`<tbody>${categories.map(key=>`<tr><td>${getCategoryLabel(key)} (${summary[key].products})</td><td>${formatNumber(summary[key].units)} unités</td></tr>`).join('')}</tbody>`;cont.className='';cont.innerHTML='';cont.appendChild(table)}
-        function renderRecommendations(lowStock,mediumStock){const list=document.getElementById('recommended-actions');if(!list)return;list.innerHTML='';if(!lowStock.length&&!mediumStock.length){list.innerHTML='<li class="empty-state">Stock sous contrôle.</li>';return}lowStock.sort((a,b)=>(a.stock/Math.max(a.minStock||1,1))-(b.stock/Math.max(b.minStock||1,1))).slice(0,4).forEach(p=>{const stock=Number(p.stock)||0;const min=Number(p.minStock)||0;const target=Math.max(min*1.5,min+10);const qty=Math.ceil(target-stock);const li=document.createElement('li');li.innerHTML=`<span>${p.name}</span><span class="text-muted">Commander ${formatNumber(qty)} unités</span>`;list.appendChild(li)});if(mediumStock.length>0&&lowStock.length<4){const p=[...mediumStock].sort((a,b)=>a.stock-b.stock)[0];const li=document.createElement('li');li.innerHTML=`<span>${p.name}</span><span class="text-muted">Surveiller (${formatNumber(p.stock)}/${formatNumber(p.minStock)})</span>`;list.appendChild(li)}}
-        function renderRecentUpdates(){const list=document.getElementById('recent-updates');if(!list)return;list.innerHTML='';const updated=state.products.filter(p=>p.lastUpdated).sort((a,b)=>new Date(b.lastUpdated)-new Date(a.lastUpdated)).slice(0,5);if(!updated.length){list.innerHTML='<li class="empty-state">Aucune mise à jour récente.</li>';return}updated.forEach(p=>{const li=document.createElement('li');li.innerHTML=`<span>${p.name}</span><span class="text-muted">${formatRelativeDate(p.lastUpdated)}</span>`;list.appendChild(li)})}
-        
-        function renderStockChart(){const ctx=document.getElementById('stockChart')?.getContext('2d');if(!ctx)return;const summary=state.products.reduce((acc,p)=>{const key=p.category||'autre';const value=(Number(p.stock)||0)*(Number(p.price)||0);acc[key]=(acc[key]||0)+value;return acc},{});const sortedKeys=Object.keys(summary).sort(sortCategories);const labels=sortedKeys.map(key=>getCategoryLabel(key));const data=sortedKeys.map(key=>summary[key]);const isDark=document.getElementById('stock-app-wrapper')?.classList.contains('dark-theme');const gridColor=isDark?'rgba(163,180,212,.1)':'rgba(15,23,42,.08)';const labelColor=isDark?'rgba(163,180,212,.7)':'rgba(100,116,139,1)';if(myStockChart)myStockChart.destroy();myStockChart=new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'Valeur du stock (€)',data,backgroundColor:'rgba(255,159,28,.4)',borderColor:'rgba(255,159,28,1)',borderWidth:2}]},options:{responsive:!0,maintainAspectRatio:!1,indexAxis:'y',scales:{x:{beginAtZero:!0,grid:{color:gridColor},ticks:{color:labelColor,callback:value=>new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',minimumFractionDigits:0,maximumFractionDigits:0}).format(value)}},y:{grid:{display:!1},ticks:{color:labelColor}}},plugins:{legend:{display:!1}}}})}
-        
-        function getStockStatus(stock,min){const s=Number(stock)||0,m=Number(min)||0;if(m<=0)return 'good';if(s<=m)return 'low';if(s<=m*1.5)return 'medium';return 'good'}
-        function filterProducts(){const searchText=document.getElementById('product-search')?.value.trim().toLowerCase()||'';const selectedCategory=document.getElementById('filter-category')?.value||'';const selectedStatus=document.getElementById('filter-status')?.value||'';const table=document.getElementById('products-table');if(!table)return;Array.from(table.rows).forEach(row=>{const matchesSearch=!searchText||row.dataset.name.includes(searchText);const matchesCategory=!selectedCategory||row.dataset.category===selectedCategory;const matchesStatus=!selectedStatus||row.dataset.status===selectedStatus;row.style.display=matchesSearch&&matchesCategory&&matchesStatus?'':'none'})}
-        function resetFilters(){document.getElementById('product-search').value='';document.getElementById('filter-category').value='';document.getElementById('filter-status').value='';highlightProductRow(null);filterProducts()}
-        function highlightProductRow(productId){const table=document.getElementById('products-table');if(!table)return;Array.from(table.rows).forEach(r=>r.classList.remove('row-highlight'));if(!productId)return;const target=Array.from(table.rows).find(r=>r.dataset.id===productId);if(target){target.classList.add('row-highlight');target.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>target.classList.remove('row-highlight'),1600)}}
-        function openModal(action,productId=null){state.currentProductId=productId;const modal=document.getElementById('product-modal');if(!modal)return;if(action==='new'){document.getElementById('modal-title').textContent='Nouveau produit';document.getElementById('product-name').value='';document.getElementById('product-condition').value='';document.getElementById('product-stock').value='0';document.getElementById('product-minstock').value='20';document.getElementById('product-price').value='0';document.getElementById('product-category').value='capot';document.getElementById('product-desc').value=''}else if(action==='edit'&&productId){document.getElementById('modal-title').textContent='Modifier le produit';const product=state.products.find(p=>p.id===productId);if(product){const categoryLabel=getCategoryLabel(product.category);let baseName=product.name;if(baseName.toLowerCase().startsWith(categoryLabel.toLowerCase()+' '))baseName=baseName.substring(categoryLabel.length+1).trim();let condition='';if(baseName.endsWith(' Reconditionné')){baseName=baseName.slice(0,-14).trim();condition='Reconditionné'}else if(baseName.endsWith(' Neuf')){baseName=baseName.slice(0,-5).trim();condition='Neuf'}
-        document.getElementById('product-name').value=baseName;document.getElementById('product-condition').value=condition;document.getElementById('product-stock').value=product.stock;document.getElementById('product-minstock').value=product.minStock;document.getElementById('product-price').value=product.price;document.getElementById('product-category').value=product.category||'autre';document.getElementById('product-desc').value=product.description||''}}
-        modal.classList.add('open');document.getElementById('product-name').focus()}
-        function closeModal(){document.getElementById('product-modal').classList.remove('open');state.currentProductId=null}
-        async function saveProduct(){const baseName=document.getElementById('product-name').value.trim();const condition=document.getElementById('product-condition').value;const category=document.getElementById('product-category').value||'autre';const categoryLabel=getCategoryLabel(category);let name;if(baseName.toLowerCase().startsWith(categoryLabel.toLowerCase())){name=baseName}else{name=`${categoryLabel} ${baseName}`}if(condition){name+=` ${condition}`}
-        const stockValue=parseInt(document.getElementById('product-stock').value,10);const minStockValue=parseInt(document.getElementById('product-minstock').value,10);let priceValue=parseFloat(document.getElementById('product-price').value);const description=document.getElementById('product-desc').value.trim();if(!baseName){alert('Veuillez saisir un nom de base.');return}
-        if(!Number.isFinite(stockValue)||stockValue<0){alert('Stock invalide.');return}if(!Number.isFinite(minStockValue)||minStockValue<=0){alert("Seuil d'alerte invalide.");return}if(!Number.isFinite(priceValue)||priceValue<0){priceValue=0}
-        if(state.currentProductId){const index=state.products.findIndex(p=>p.id===state.currentProductId);if(index!==-1){state.products[index]={...state.products[index],name,stock:stockValue,minStock:minStockValue,price:Math.round(priceValue*100)/100,category,description,lastUpdated:new Date().toISOString()}}}else{state.products.push({id:Date.now().toString(),name,stock:stockValue,minStock:minStockValue,price:Math.round(priceValue*100)/100,category,description,lastUpdated:new Date().toISOString()})}
-        await saveDataToServer();loadProducts();renderDashboard();closeModal();alert('Produit enregistré.')}
-        async function addStockMovement(){const productId=document.getElementById('movement-product').value;const type=document.getElementById('movement-type').value;const quantityValue=parseInt(document.getElementById('movement-quantity').value,10);const reason=document.getElementById('movement-reason').value.trim();if(!productId){alert('Veuillez sélectionner un produit.');return}
-        const qInvalid=!Number.isFinite(quantityValue)||(type==='adjust'?quantityValue<0:quantityValue<=0);if(qInvalid){alert('Veuillez saisir une quantité valide.');return}if(!reason){alert('Veuillez indiquer une raison.');return}
-        const index=state.products.findIndex(p=>p.id===productId);if(index===-1){alert('Produit introuvable.');return}
-        let newStock=state.products[index].stock;if(type==='in')newStock+=quantityValue;else if(type==='out'){if(quantityValue>newStock){alert('Stock insuffisant.');return}newStock-=quantityValue}else if(type==='adjust')newStock=quantityValue;
-        state.products[index]={...state.products[index],stock:newStock,lastUpdated:new Date().toISOString()};state.movements.push({id:Date.now().toString(),productId,productName:state.products[index].name,type,quantity:quantityValue,reason,date:new Date().toISOString()});
-        persistMovements();await saveDataToServer();loadProducts();loadMovements();renderDashboard();document.getElementById('movement-quantity').value='1';document.getElementById('movement-reason').value='';alert('Mouvement enregistré.')}
-        function openQuickMovement(productId,type='in'){const product=state.products.find(p=>p.id===productId);if(!product)return;switchToTab('movements');document.getElementById('movement-product').value=productId;document.getElementById('movement-type').value=type;const qInput=document.getElementById('movement-quantity');qInput.value='1';qInput.focus();const rInput=document.getElementById('movement-reason');if(!rInput.value){const base=product.name?` ${product.name}`:'';rInput.value=type==='in'?`Réception${base}`.trim():type==='out'?`Sortie${base}`.trim():`Ajustement${base}`.trim()}}
-        function switchToTab(tabId){document.querySelectorAll('.sempa-tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tabId));document.querySelectorAll('.sempa-content').forEach(s=>s.classList.toggle('active',s.id===tabId))}
-        async function deleteProduct(productId){const product=state.products.find(p=>p.id===productId);if(!product||!confirm(`Voulez-vous vraiment supprimer "${product.name}" ?`))return;state.products=state.products.filter(p=>p.id!==productId);await saveDataToServer();loadProducts();loadMovements();renderDashboard();alert('Produit supprimé.')}
-        function exportInventory(){if(!state.products.length){alert('Aucun produit à exporter.');return}const headers=['Nom du produit','Catégorie','Stock (unités)','Seuil','Prix unitaire (€)','Valeur stock (€)','Dernière mise à jour'];const rows=state.products.map(p=>[p.name,getCategoryLabel(p.category||'autre'),formatNumber(p.stock),formatNumber(p.minStock),p.price,(Number(p.price)||0)*(Number(p.stock)||0),formatDate(p.lastUpdated)]);const csv=[headers,...rows].map(c=>c.map(wrapCsvValue).join(';')).join('\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=`inventaire-sempa-${new Date().toISOString().slice(0,10)}.csv`;document.body.appendChild(link);link.click();document.body.removeChild(link);URL.revokeObjectURL(url)}
-        function wrapCsvValue(value){const text=String(value??'');const escaped=text.replace(/"/g,'""');return /[";\n]/.test(escaped)?`"${escaped}"`:escaped}
-        function setText(id,value){const el=document.getElementById(id);if(el)el.textContent=value}
-        function getCategoryLabel(key){return CATEGORY_LABELS[key]||(key?key.charAt(0).toUpperCase()+key.slice(1):'Non classé')}
-        function getCategoryOrder(key){const i=CATEGORY_ORDER.indexOf(key);return i===-1?Number.MAX_SAFE_INTEGER:i}
-        function sortCategories(a,b){const oA=getCategoryOrder(a),oB=getCategoryOrder(b);return oA!==oB?oA-oB:getCategoryLabel(a).localeCompare(getCategoryLabel(b),'fr')}
-        function formatNumber(v){const n=Number(v);return!Number.isFinite(n)?'0':new Intl.NumberFormat('fr-FR').format(n)}
-        function formatCurrency(v){const n=Number(v);return!Number.isFinite(n)?'0 €':new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(n)}
-        function formatDate(d){if(!d)return'';const date=new Date(d);return Number.isNaN(date.getTime())?'':date.toLocaleDateString('fr-FR')}
-        function formatRelativeDate(d){if(!d)return'';const date=new Date(d);if(Number.isNaN(date.getTime()))return'';const diff=new Date-date;const minutes=Math.floor(diff/60000);if(minutes<1)return"À l'instant";if(minutes<60)return`Il y a ${minutes} min`;const hours=Math.floor(minutes/60);if(hours<24)return`Il y a ${hours} h`;const days=Math.floor(hours/24);if(days===1)return'Hier';if(days<7)return`Il y a ${days} jours`;return date.toLocaleDateString('fr-FR')}
-        async function init(){initTheme();bindEvents();await loadDataFromServer();loadProducts();loadMovements();renderDashboard()}
-        return{init,openModal,closeModal,saveProduct,addStockMovement,resetFilters,openQuickMovement,switchToTab,deleteProduct,exportInventory}
+
+        function renderAlerts(lowStockProducts) {
+            const container = document.getElementById('alerts-container');
+            if (!container) {
+                return;
+            }
+
+            container.innerHTML = '<h3>Alertes prioritaires</h3>';
+            if (!lowStockProducts.length) {
+                container.innerHTML += '<div class="empty-state">Aucune alerte pour le moment.</div>';
+                return;
+            }
+
+            const list = document.createElement('div');
+            list.className = 'alert-list';
+            lowStockProducts
+                .sort((a, b) => (a.stock || 0) - (b.stock || 0))
+                .forEach((product) => {
+                    const item = document.createElement('div');
+                    item.className = 'alert-item';
+                    item.innerHTML = `<span>${product.name}</span><span>${formatNumber(product.stock)} unités · seuil ${formatNumber(product.minStock)}</span>`;
+                    list.appendChild(item);
+                });
+            container.appendChild(list);
+        }
+
+        function renderCategorySummary() {
+            const container = document.getElementById('category-summary');
+            if (!container) {
+                return;
+            }
+
+            if (!state.products.length) {
+                container.className = 'empty-state';
+                container.textContent = 'Aucun produit enregistré.';
+                return;
+            }
+
+            const summary = state.products.reduce((acc, product) => {
+                const key = product.category || 'autre';
+                if (!acc[key]) {
+                    acc[key] = { products: 0, units: 0 };
+                }
+                acc[key].products += 1;
+                acc[key].units += Number(product.stock) || 0;
+                return acc;
+            }, {});
+
+            const categories = Object.keys(summary).sort(sortCategories);
+            const table = document.createElement('table');
+            table.innerHTML = `
+                <tbody>
+                    ${categories.map((key) => `<tr><td>${getCategoryLabel(key)} (${summary[key].products})</td><td>${formatNumber(summary[key].units)} unités</td></tr>`).join('')}
+                </tbody>
+            `;
+            container.className = '';
+            container.innerHTML = '';
+            container.appendChild(table);
+        }
+
+        function renderRecommendations(lowStock, mediumStock) {
+            const list = document.getElementById('recommended-actions');
+            if (!list) {
+                return;
+            }
+
+            list.innerHTML = '';
+            if (!lowStock.length && !mediumStock.length) {
+                list.innerHTML = '<li class="empty-state">Stock sous contrôle.</li>';
+                return;
+            }
+
+            lowStock
+                .sort((a, b) => (a.stock / Math.max(a.minStock || 1, 1)) - (b.stock / Math.max(b.minStock || 1, 1)))
+                .slice(0, 4)
+                .forEach((product) => {
+                    const stock = Number(product.stock) || 0;
+                    const min = Number(product.minStock) || 0;
+                    const li = document.createElement('li');
+                    li.innerHTML = `<span>${product.name}</span><span class="text-muted">${stock} en stock · seuil ${min}</span>`;
+                    list.appendChild(li);
+                });
+
+            if (mediumStock.length > 0 && lowStock.length < 4) {
+                const product = [...mediumStock].sort((a, b) => a.stock - b.stock)[0];
+                const li = document.createElement('li');
+                li.innerHTML = `<span>${product.name}</span><span class="text-muted">${formatNumber(product.stock)} restants</span>`;
+                list.appendChild(li);
+            }
+        }
+
+        function renderRecentUpdates() {
+            const list = document.getElementById('recent-updates');
+            if (!list) {
+                return;
+            }
+
+            list.innerHTML = '';
+            const updated = state.products
+                .filter((product) => product.lastUpdated)
+                .sort((a, b) => new Date(b.lastUpdated) - new Date(a.lastUpdated))
+                .slice(0, 5);
+
+            if (!updated.length) {
+                list.innerHTML = '<li class="empty-state">Aucune mise à jour récente.</li>';
+                return;
+            }
+
+            updated.forEach((product) => {
+                const item = document.createElement('li');
+                item.innerHTML = `<span>${product.name}</span><span class="text-muted">${formatRelativeDate(product.lastUpdated)}</span>`;
+                list.appendChild(item);
+            });
+        }
+
+        function renderStockChart() {
+            const canvas = document.getElementById('stockChart');
+            const ctx = canvas?.getContext('2d');
+            if (!ctx) {
+                return;
+            }
+
+            const summary = state.products.reduce((acc, product) => {
+                const key = product.category || 'autre';
+                const value = (Number(product.stock) || 0) * (Number(product.price) || 0);
+                acc[key] = (acc[key] || 0) + value;
+                return acc;
+            }, {});
+
+            const sortedKeys = Object.keys(summary).sort(sortCategories);
+            const labels = sortedKeys.map((key) => getCategoryLabel(key));
+            const data = sortedKeys.map((key) => summary[key]);
+
+            const isDark = document.getElementById('stock-app-wrapper')?.classList.contains('dark-theme');
+            const gridColor = isDark ? 'rgba(163, 180, 212, 0.1)' : 'rgba(15, 23, 42, 0.08)';
+            const labelColor = isDark ? 'rgba(163, 180, 212, 0.7)' : 'rgba(100, 116, 139, 1)';
+
+            if (myStockChart) {
+                myStockChart.destroy();
+            }
+
+            myStockChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: 'Valeur du stock (€)',
+                            data,
+                            backgroundColor: 'rgba(255, 159, 28, 0.4)',
+                            borderColor: 'rgba(255, 159, 28, 1)',
+                            borderWidth: 2,
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            grid: { color: gridColor },
+                            ticks: {
+                                color: labelColor,
+                                callback: (value) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0 }).format(value),
+                            },
+                        },
+                        y: {
+                            grid: { display: false },
+                            ticks: { color: labelColor },
+                        },
+                    },
+                    plugins: {
+                        legend: { display: false },
+                    },
+                },
+            });
+        }
+
+        function getStockStatus(stock, min) {
+            const current = Number(stock) || 0;
+            const threshold = Number(min) || 0;
+            if (threshold <= 0) {
+                return 'good';
+            }
+            if (current <= threshold) {
+                return 'low';
+            }
+            if (current <= threshold * 1.5) {
+                return 'medium';
+            }
+            return 'good';
+        }
+
+        function filterProducts() {
+            const searchText = document.getElementById('product-search')?.value.trim().toLowerCase() || '';
+            const selectedCategory = document.getElementById('filter-category')?.value || '';
+            const selectedStatus = document.getElementById('filter-status')?.value || '';
+            const table = document.getElementById('products-table');
+            if (!table) {
+                return;
+            }
+
+            Array.from(table.rows).forEach((row) => {
+                const matchesSearch = !searchText || row.dataset.name.includes(searchText);
+                const matchesCategory = !selectedCategory || row.dataset.category === selectedCategory;
+                const matchesStatus = !selectedStatus || row.dataset.status === selectedStatus;
+                row.style.display = matchesSearch && matchesCategory && matchesStatus ? '' : 'none';
+            });
+        }
+
+        function resetFilters() {
+            document.getElementById('product-search').value = '';
+            document.getElementById('filter-category').value = '';
+            document.getElementById('filter-status').value = '';
+            highlightProductRow(null);
+            filterProducts();
+        }
+
+        function highlightProductRow(productId) {
+            const table = document.getElementById('products-table');
+            if (!table) {
+                return;
+            }
+            Array.from(table.rows).forEach((row) => row.classList.remove('row-highlight'));
+            if (!productId) {
+                return;
+            }
+            const target = Array.from(table.rows).find((row) => row.dataset.id === productId);
+            if (target) {
+                target.classList.add('row-highlight');
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => target.classList.remove('row-highlight'), 1600);
+            }
+        }
+
+        function openModal(action, productId = null) {
+            state.currentProductId = productId;
+            const modal = document.getElementById('product-modal');
+            if (!modal) {
+                return;
+            }
+
+            if (action === 'new') {
+                document.getElementById('modal-title').textContent = 'Nouveau produit';
+                document.getElementById('product-name').value = '';
+                document.getElementById('product-condition').value = '';
+                document.getElementById('product-stock').value = '0';
+                document.getElementById('product-minstock').value = '20';
+                document.getElementById('product-price').value = '0';
+                document.getElementById('product-category').value = 'capot';
+                document.getElementById('product-desc').value = '';
+            } else if (action === 'edit' && productId) {
+                document.getElementById('modal-title').textContent = 'Modifier le produit';
+                const product = state.products.find((p) => p.id === productId);
+                if (product) {
+                    const categoryLabel = getCategoryLabel(product.category);
+                    let baseName = product.name;
+                    if (baseName.toLowerCase().startsWith(`${categoryLabel.toLowerCase()} `)) {
+                        baseName = baseName.substring(categoryLabel.length + 1).trim();
+                    }
+                    let condition = '';
+                    if (baseName.endsWith(' Reconditionné')) {
+                        baseName = baseName.slice(0, -14).trim();
+                        condition = 'Reconditionné';
+                    } else if (baseName.endsWith(' Neuf')) {
+                        baseName = baseName.slice(0, -5).trim();
+                        condition = 'Neuf';
+                    }
+                    document.getElementById('product-name').value = baseName;
+                    document.getElementById('product-condition').value = condition;
+                    document.getElementById('product-stock').value = product.stock;
+                    document.getElementById('product-minstock').value = product.minStock;
+                    document.getElementById('product-price').value = product.price;
+                    document.getElementById('product-category').value = product.category || 'autre';
+                    document.getElementById('product-desc').value = product.description || '';
+                }
+            }
+
+            modal.classList.add('open');
+            document.getElementById('product-name').focus();
+        }
+
+        function closeModal() {
+            document.getElementById('product-modal').classList.remove('open');
+            state.currentProductId = null;
+        }
+
+        async function saveProduct() {
+            const baseName = document.getElementById('product-name').value.trim();
+            const condition = document.getElementById('product-condition').value;
+            const category = document.getElementById('product-category').value || 'autre';
+            const categoryLabel = getCategoryLabel(category);
+
+            let name;
+            if (baseName.toLowerCase().startsWith(categoryLabel.toLowerCase())) {
+                name = baseName;
+            } else {
+                name = `${categoryLabel} ${baseName}`;
+            }
+            if (condition) {
+                name += ` ${condition}`;
+            }
+
+            const stockValue = parseInt(document.getElementById('product-stock').value, 10);
+            const minStockValue = parseInt(document.getElementById('product-minstock').value, 10);
+            let priceValue = parseFloat(document.getElementById('product-price').value);
+            const description = document.getElementById('product-desc').value.trim();
+
+            if (!baseName) {
+                alert('Veuillez saisir un nom de base.');
+                return;
+            }
+            if (!Number.isFinite(stockValue) || stockValue < 0) {
+                alert('Stock invalide.');
+                return;
+            }
+            if (!Number.isFinite(minStockValue) || minStockValue <= 0) {
+                alert("Seuil d'alerte invalide.");
+                return;
+            }
+            if (!Number.isFinite(priceValue) || priceValue < 0) {
+                priceValue = 0;
+            }
+
+            const payload = {
+                name,
+                stock: stockValue,
+                minStock: minStockValue,
+                price: Math.round(priceValue * 100) / 100,
+                category,
+                description,
+                lastUpdated: new Date().toISOString(),
+            };
+
+            try {
+                if (state.currentProductId) {
+                    const id = state.currentProductId;
+                    const response = await fetchJson(
+                        API_ENDPOINTS.product(id),
+                        {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload),
+                        },
+                        'Impossible de mettre à jour le produit.'
+                    );
+                    const updatedProduct = response && response.product ? response.product : { ...payload, id };
+                    state.products = state.products.map((product) => (product.id === id ? { ...product, ...updatedProduct } : product));
+                } else {
+                    const response = await fetchJson(
+                        API_ENDPOINTS.products(),
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload),
+                        },
+                        'Impossible de créer le produit.'
+                    );
+                    const createdProduct = response && response.product ? response.product : { ...payload };
+                    state.products.push(createdProduct);
+                }
+
+                loadProducts();
+                renderDashboard();
+                closeModal();
+                alert('Produit enregistré.');
+            } catch (error) {
+                console.error("Erreur lors de l'enregistrement du produit :", error);
+                alert(error.message || "Erreur lors de l'enregistrement du produit.");
+            }
+        }
+
+        async function addStockMovement() {
+            const productId = document.getElementById('movement-product').value;
+            const type = document.getElementById('movement-type').value;
+            const quantityValue = parseInt(document.getElementById('movement-quantity').value, 10);
+            const reason = document.getElementById('movement-reason').value.trim();
+
+            if (!productId) {
+                alert('Veuillez sélectionner un produit.');
+                return;
+            }
+            const invalidQuantity = !Number.isFinite(quantityValue) || (type === 'adjust' ? quantityValue < 0 : quantityValue <= 0);
+            if (invalidQuantity) {
+                alert('Veuillez saisir une quantité valide.');
+                return;
+            }
+            if (!reason) {
+                alert('Veuillez indiquer une raison.');
+                return;
+            }
+
+            const index = state.products.findIndex((product) => product.id === productId);
+            if (index === -1) {
+                alert('Produit introuvable.');
+                return;
+            }
+
+            const existingProduct = state.products[index];
+            let newStock = existingProduct.stock;
+            if (type === 'in') {
+                newStock += quantityValue;
+            } else if (type === 'out') {
+                if (quantityValue > newStock) {
+                    alert('Stock insuffisant.');
+                    return;
+                }
+                newStock -= quantityValue;
+            } else if (type === 'adjust') {
+                newStock = quantityValue;
+            }
+
+            const productPayload = {
+                name: existingProduct.name,
+                stock: newStock,
+                minStock: existingProduct.minStock,
+                price: existingProduct.price,
+                category: existingProduct.category || 'autre',
+                description: existingProduct.description || '',
+                lastUpdated: new Date().toISOString(),
+            };
+
+            const movementPayload = {
+                productId,
+                productName: existingProduct.name,
+                type,
+                quantity: quantityValue,
+                reason,
+                date: new Date().toISOString(),
+            };
+
+            try {
+                const productResponse = await fetchJson(
+                    API_ENDPOINTS.product(productId),
+                    {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(productPayload),
+                    },
+                    "Impossible de mettre à jour le stock du produit."
+                );
+                const updatedProduct = productResponse && productResponse.product ? productResponse.product : { ...existingProduct, ...productPayload, id: productId };
+                state.products[index] = { ...state.products[index], ...updatedProduct };
+
+                const movementResponse = await fetchJson(
+                    API_ENDPOINTS.movements(),
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(movementPayload),
+                    },
+                    "Impossible d'enregistrer le mouvement."
+                );
+                if (movementResponse && movementResponse.movement) {
+                    state.movements.push(movementResponse.movement);
+                } else {
+                    await refreshMovementsFromServer();
+                }
+
+                loadProducts();
+                loadMovements();
+                renderDashboard();
+                document.getElementById('movement-quantity').value = '1';
+                document.getElementById('movement-reason').value = '';
+                alert('Mouvement enregistré.');
+            } catch (error) {
+                console.error("Erreur lors de l'enregistrement du mouvement :", error);
+                alert(error.message || "Erreur lors de l'enregistrement du mouvement.");
+            }
+        }
+
+        function openQuickMovement(productId, type = 'in') {
+            const product = state.products.find((p) => p.id === productId);
+            if (!product) {
+                return;
+            }
+            switchToTab('movements');
+            document.getElementById('movement-product').value = productId;
+            document.getElementById('movement-type').value = type;
+            const quantityInput = document.getElementById('movement-quantity');
+            quantityInput.value = '1';
+            quantityInput.focus();
+            const reasonInput = document.getElementById('movement-reason');
+            if (!reasonInput.value) {
+                const base = product.name ? ` ${product.name}` : '';
+                reasonInput.value = type === 'in' ? `Réception${base}`.trim() : type === 'out' ? `Sortie${base}`.trim() : `Ajustement${base}`.trim();
+            }
+        }
+
+        function switchToTab(tabId) {
+            document.querySelectorAll('.sempa-tab').forEach((tab) => tab.classList.toggle('active', tab.dataset.tab === tabId));
+            document.querySelectorAll('.sempa-content').forEach((section) => section.classList.toggle('active', section.id === tabId));
+        }
+
+        async function deleteProduct(productId) {
+            const product = state.products.find((p) => p.id === productId);
+            if (!product || !confirm(`Voulez-vous vraiment supprimer "${product.name}" ?`)) {
+                return;
+            }
+
+            try {
+                await fetchJson(
+                    API_ENDPOINTS.product(productId),
+                    { method: 'DELETE' },
+                    'Impossible de supprimer le produit.'
+                );
+                state.products = state.products.filter((p) => p.id !== productId);
+                await refreshMovementsFromServer();
+                loadProducts();
+                loadMovements();
+                renderDashboard();
+                alert('Produit supprimé.');
+            } catch (error) {
+                console.error('Erreur lors de la suppression du produit :', error);
+                alert(error.message || 'Erreur lors de la suppression du produit.');
+            }
+        }
+
+        function exportInventory() {
+            if (!state.products.length) {
+                alert('Aucun produit à exporter.');
+                return;
+            }
+            const headers = ['Nom du produit', 'Catégorie', 'Stock (unités)', 'Seuil', 'Prix unitaire (€)', 'Valeur stock (€)', 'Dernière mise à jour'];
+            const rows = state.products.map((product) => [
+                product.name,
+                getCategoryLabel(product.category || 'autre'),
+                formatNumber(product.stock),
+                formatNumber(product.minStock),
+                product.price,
+                (Number(product.price) || 0) * (Number(product.stock) || 0),
+                formatDate(product.lastUpdated),
+            ]);
+            const csv = [headers, ...rows].map((cells) => cells.map(wrapCsvValue).join(';')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `inventaire-sempa-${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function wrapCsvValue(value) {
+            const text = String(value ?? '');
+            const escaped = text.replace(/"/g, '""');
+            return /[";
+    ]/.test(escaped) ? `"${escaped}"` : escaped;
+        }
+
+        function setText(id, value) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value;
+            }
+        }
+
+        function getCategoryLabel(key) {
+            return CATEGORY_LABELS[key] || (key ? key.charAt(0).toUpperCase() + key.slice(1) : 'Non classé');
+        }
+
+        function getCategoryOrder(key) {
+            const index = CATEGORY_ORDER.indexOf(key);
+            return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+        }
+
+        function sortCategories(a, b) {
+            const orderA = getCategoryOrder(a);
+            const orderB = getCategoryOrder(b);
+            if (orderA !== orderB) {
+                return orderA - orderB;
+            }
+            return getCategoryLabel(a).localeCompare(getCategoryLabel(b), 'fr');
+        }
+
+        function formatNumber(value) {
+            const number = Number(value);
+            return !Number.isFinite(number) ? '0' : new Intl.NumberFormat('fr-FR').format(number);
+        }
+
+        function formatCurrency(value) {
+            const number = Number(value);
+            return !Number.isFinite(number)
+                ? '0 €'
+                : new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(number);
+        }
+
+        function formatDate(value) {
+            if (!value) {
+                return '';
+            }
+            const date = new Date(value);
+            return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('fr-FR');
+        }
+
+        function formatRelativeDate(value) {
+            if (!value) {
+                return '';
+            }
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) {
+                return '';
+            }
+            const diff = new Date() - date;
+            const minutes = Math.floor(diff / 60000);
+            if (minutes < 1) {
+                return "À l'instant";
+            }
+            if (minutes < 60) {
+                return `Il y a ${minutes} min`;
+            }
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) {
+                return `Il y a ${hours} h`;
+            }
+            const days = Math.floor(hours / 24);
+            if (days === 1) {
+                return 'Hier';
+            }
+            if (days < 7) {
+                return `Il y a ${days} jours`;
+            }
+            return date.toLocaleDateString('fr-FR');
+        }
+
+        async function init() {
+            initTheme();
+            bindEvents();
+            await loadDataFromServer();
+            loadProducts();
+            loadMovements();
+            renderDashboard();
+        }
+
+        return {
+            init,
+            openModal,
+            closeModal,
+            saveProduct,
+            addStockMovement,
+            resetFilters,
+            openQuickMovement,
+            switchToTab,
+            deleteProduct,
+            exportInventory,
+        };
     })();
+
 
     document.addEventListener('DOMContentLoaded', () => {
         if (!document.getElementById('stock-app-wrapper').hasAttribute('data-initialized')) {
