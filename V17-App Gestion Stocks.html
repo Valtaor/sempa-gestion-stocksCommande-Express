@@ -1,0 +1,1379 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Gestion des Stocks SEMPA</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            color-scheme: light;
+            --bg: #F2F4F8;
+            --bg-alt: #E6EBF5;
+            --surface: #FFFFFF;
+            --surface-alt: #F8FAFF;
+            --border: rgba(15, 23, 42, 0.08);
+            --border-strong: rgba(15, 23, 42, 0.16);
+            --shadow-sm: 0 8px 24px rgba(15, 23, 42, 0.12);
+            --shadow-lg: 0 28px 80px rgba(15, 23, 42, 0.18);
+            --primary: #FF9F1C;
+            --primary-dark: #E78F17;
+            --primary-soft: rgba(255, 159, 28, 0.16);
+            --text: #0F172A;
+            --text-muted: #64748B;
+            --text-subtle: #94A3B8;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+            --radius-sm: 10px;
+            --radius-md: 16px;
+            --radius-lg: 22px;
+            --transition: 0.25s ease;
+            font-synthesis: none;
+        }
+
+        #stock-app-wrapper {
+            font-family: "Inter", "SF Pro Text", system-ui, -apple-system, sans-serif;
+            background: radial-gradient(circle at top right, var(--bg-alt) 0%, var(--bg) 45%, #E0E6F2 100%);
+            color: var(--text);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            transition: background var(--transition), color var(--transition);
+        }
+
+        #stock-app-wrapper.dark-theme {
+            color-scheme: dark;
+            --bg: #020617;
+            --bg-alt: #0A1222;
+            --surface: #0F172A;
+            --surface-alt: #111C32;
+            --border: rgba(148, 163, 184, 0.18);
+            --border-strong: rgba(148, 163, 184, 0.32);
+            --shadow-sm: 0 10px 30px rgba(2, 6, 23, 0.6);
+            --shadow-lg: 0 40px 90px rgba(2, 6, 23, 0.75);
+            --text: #E2E8F0;
+            --text-muted: #A3B4D4;
+            --text-subtle: #7C8CB2;
+            --primary-soft: rgba(255, 159, 28, 0.2);
+            background: radial-gradient(circle at top right, #0A1222 0%, #040817 50%, #020415 100%);
+        }
+        
+        #stock-app-wrapper.dark-theme,
+        #stock-app-wrapper.dark-theme h1,
+        #stock-app-wrapper.dark-theme h2,
+        #stock-app-wrapper.dark-theme h3,
+        #stock-app-wrapper.dark-theme h4,
+        #stock-app-wrapper.dark-theme h5,
+        #stock-app-wrapper.dark-theme p,
+        #stock-app-wrapper.dark-theme th,
+        #stock-app-wrapper.dark-theme td,
+        #stock-app-wrapper.dark-theme label,
+        #stock-app-wrapper.dark-theme .btn-secondary,
+        #stock-app-wrapper.dark-theme .btn-outline {
+            color: var(--text) !important;
+        }
+
+        #stock-app-wrapper.dark-theme .text-muted,
+        #stock-app-wrapper.dark-theme .metric-label,
+        #stock-app-wrapper.dark-theme .brand p,
+        #stock-app-wrapper.dark-theme thead th,
+        #stock-app-wrapper.dark-theme .sempa-tab:not(.active) {
+             color: var(--text-muted) !important;
+        }
+
+        #stock-app-wrapper.dark-theme input,
+        #stock-app-wrapper.dark-theme select,
+        #stock-app-wrapper.dark-theme textarea {
+            color: var(--text) !important;
+            background-color: var(--surface-alt) !important;
+            border-color: var(--border) !important;
+        }
+
+        #stock-app-wrapper *,
+        #stock-app-wrapper *::before,
+        #stock-app-wrapper *::after {
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        #stock-app-wrapper a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .app-shell {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-header {
+            position: sticky;
+            top: 46px;
+            z-index: 20;
+            padding: clamp(18px, 3vw, 32px);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(255, 255, 255, 0.62));
+            border-bottom: 1px solid rgba(15, 23, 42, 0.05);
+            box-shadow: var(--shadow-sm);
+        }
+
+        #stock-app-wrapper.dark-theme .app-header {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(15, 23, 42, 0.76));
+            border-bottom-color: rgba(148, 163, 184, 0.2);
+        }
+
+        .header-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .brand h1 {
+            font-size: clamp(1.5rem, 2vw, 2.2rem);
+            letter-spacing: -0.02em;
+        }
+
+        .brand p {
+            margin-top: 4px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .icon-button {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+        }
+
+        .icon-button:hover,
+        .icon-button:focus-visible {
+            transform: translateY(-2px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 22px rgba(255, 159, 28, 0.24);
+            outline: none;
+        }
+
+        .btn-primary {
+            border: none;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: #fff !important;
+            padding: 12px 18px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            box-shadow: 0 16px 30px rgba(255, 159, 28, 0.25);
+            transition: transform var(--transition), filter var(--transition);
+        }
+
+        .btn-primary:hover,
+        .btn-primary:focus-visible {
+            transform: translateY(-1px);
+            filter: brightness(1.05);
+            outline: none;
+        }
+
+        .btn-ghost {
+            border-radius: 12px;
+            border: 1px solid rgba(255, 159, 28, 0.38);
+            background: transparent;
+            color: var(--primary) !important;
+            padding: 10px 16px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background var(--transition), transform var(--transition);
+        }
+
+        .btn-ghost:hover,
+        .btn-ghost:focus-visible {
+            background: var(--primary-soft);
+            transform: translateY(-1px);
+            outline: none;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: clamp(22px, 4vw, 42px);
+        }
+
+        .content-max {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .sempa-tabs {
+            display: grid;
+            grid-auto-flow: column;
+            gap: 12px;
+            padding: 6px;
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            border: 1px solid rgba(15, 23, 42, 0.06);
+            box-shadow: var(--shadow-sm);
+            overflow-x: auto;
+            margin-bottom: clamp(20px, 4vw, 36px);
+        }
+
+        #stock-app-wrapper.dark-theme .sempa-tabs {
+            background: rgba(15, 23, 42, 0.92);
+            border-color: rgba(148, 163, 184, 0.24);
+        }
+
+        .sempa-tab {
+            border: none;
+            border-radius: var(--radius-md);
+            background: transparent;
+            font-weight: 600;
+            font-size: 0.95rem;
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: background var(--transition), color var(--transition), transform var(--transition);
+            white-space: nowrap;
+        }
+
+        .sempa-tab.active {
+            background: var(--primary);
+            color: #fff !important;
+            box-shadow: 0 12px 28px rgba(255, 159, 28, 0.26);
+        }
+
+        .sempa-tab:not(.active):hover,
+        .sempa-tab:not(.active):focus-visible {
+            background: var(--primary-soft);
+            color: var(--text) !important;
+            outline: none;
+        }
+
+        .sempa-content {
+            display: none;
+            animation: fade 0.3s ease;
+        }
+
+        .sempa-content.active {
+            display: block;
+        }
+
+        @keyframes fade {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: clamp(16px, 3vw, 26px);
+        }
+
+        .metrics-grid {
+            display: grid;
+            gap: 16px;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            margin-bottom: clamp(20px, 4vw, 36px);
+        }
+
+        .metric-card {
+            position: relative;
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+            transition: transform var(--transition), box-shadow var(--transition);
+        }
+
+        .metric-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .dashboard-grid {
+            display: grid;
+            gap: 24px;
+        }
+
+        @media (min-width: 980px) {
+            .dashboard-grid.cols-2 {
+                grid-template-columns: 2.1fr 1.1fr;
+                align-items: start;
+            }
+        }
+
+        .card {
+            border-radius: var(--radius-lg);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: clamp(18px, 3vw, 26px);
+            box-shadow: var(--shadow-sm);
+            transition: transform var(--transition), box-shadow var(--transition);
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .alert-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .alert-item {
+            padding: 14px 16px;
+            border-radius: var(--radius-md);
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.22);
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .empty-state {
+            padding: 18px;
+            border-radius: var(--radius-md);
+            border: 1px dashed var(--border);
+            text-align: center;
+        }
+
+        .list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: grid;
+            gap: 12px;
+        }
+
+        .list li {
+            padding: 14px 16px;
+            border-radius: var(--radius-md);
+            background: rgba(148, 163, 184, 0.1);
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        #stock-app-wrapper.dark-theme .list li {
+            background: rgba(148, 163, 184, 0.14);
+        }
+
+        .inventory-header {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            margin-bottom: clamp(18px, 3vw, 28px);
+        }
+
+        .filter-bar {
+            display: grid;
+            gap: 12px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        }
+
+        .search-field {
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            background: var(--surface);
+            padding: 12px 16px 12px 44px;
+            font-size: 0.95rem;
+            transition: border-color var(--transition), box-shadow var(--transition);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(255, 159, 28, 0.18);
+        }
+
+        .search-field svg {
+            position: absolute;
+            top: 50%;
+            left: 16px;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            stroke: var(--text-muted);
+        }
+        
+        .select {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            background-color: var(--surface);
+            padding: 12px 40px 12px 14px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            transition: border-color var(--transition), box-shadow var(--transition);
+        }
+        
+        #stock-app-wrapper.dark-theme .select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23A3B4D4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+        }
+
+        .select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(255, 159, 28, 0.18);
+        }
+
+        .table-wrapper {
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--border);
+            overflow-x: auto;
+            background: var(--surface);
+            box-shadow: var(--shadow-sm);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            text-align: left;
+            padding: 14px 18px;
+            font-size: 0.92rem;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        tbody tr:hover {
+            background: rgba(148, 163, 184, 0.08);
+        }
+
+        .row-highlight {
+            box-shadow: inset 0 0 0 2px var(--primary);
+            background: rgba(255, 159, 28, 0.12) !important;
+            transition: background 0.4s ease;
+        }
+
+        .badge {
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .badge::before {
+            content: "";
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .badge.low { color: var(--danger); }
+        .badge.medium { color: var(--warning); }
+        .badge.good { color: var(--success); }
+
+        .table-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .btn-secondary,
+        .btn-outline,
+        .btn-danger {
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: 1px solid transparent;
+            cursor: pointer;
+            background: rgba(148, 163, 184, 0.14);
+            transition: background var(--transition), color var(--transition);
+        }
+
+        .btn-secondary:hover,
+        .btn-outline:hover,
+        .btn-danger:hover {
+            background: rgba(148, 163, 184, 0.22);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border-color: rgba(148, 163, 184, 0.38);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f97373, #ef4444);
+            border-color: transparent;
+            color: #fff !important;
+            box-shadow: 0 12px 24px rgba(239, 68, 68, 0.28);
+            transition: background var(--transition), color var(--transition), transform var(--transition), filter var(--transition), box-shadow var(--transition);
+        }
+
+        .btn-danger:hover {
+            background: linear-gradient(135deg, #fb7b7b, #f05252);
+            transform: translateY(-1px);
+            filter: brightness(1.05);
+            box-shadow: 0 18px 32px rgba(239, 68, 68, 0.32);
+        }
+
+        .btn-danger:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(248, 113, 113, 0.32), 0 12px 24px rgba(239, 68, 68, 0.28);
+        }
+        
+        .movements-grid {
+            display: grid;
+            gap: 24px;
+        }
+
+        @media (min-width: 960px) {
+            .movements-grid {
+                grid-template-columns: 1.1fr 1.2fr;
+            }
+        }
+
+        label {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        textarea {
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border);
+            background: var(--surface);
+            padding: 12px 14px;
+            font-size: 0.95rem;
+            transition: border-color var(--transition), box-shadow var(--transition);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(255, 159, 28, 0.18);
+        }
+
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.48);
+            display: none;
+            place-items: center;
+            z-index: 99999;
+            padding: 24px;
+        }
+
+        .modal-backdrop.open {
+            display: grid;
+        }
+
+        .modal-panel {
+            width: min(640px, 100%);
+            max-height: min(90vh, 720px);
+            border-radius: clamp(var(--radius-md), 5vw, 28px);
+            background: var(--surface);
+            border: 1px solid var(--border-strong);
+            box-shadow: var(--shadow-lg);
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            animation: modal 0.28s ease;
+        }
+
+        @keyframes modal {
+            from { opacity: 0; transform: translateY(20px) scale(0.96); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .modal-header {
+            padding: 22px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .modal-body {
+            padding: clamp(20px, 4vw, 28px);
+            display: grid;
+            gap: 16px;
+        }
+
+        .form-grid {
+            display: grid;
+            gap: 16px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            padding: 0 clamp(20px, 4vw, 28px) clamp(20px, 4vw, 28px);
+        }
+
+        .modal-close {
+            border: none;
+            background: transparent;
+            font-size: 1.4rem;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .floating-action {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: #fff;
+            font-size: 1.6rem;
+            box-shadow: 0 20px 40px rgba(255, 159, 28, 0.35);
+            display: none;
+            place-items: center;
+            cursor: pointer;
+            z-index: 9999;
+        }
+        
+        @media (max-width: 780px) {
+            .app-header {
+                border-radius: 0 0 24px 24px;
+            }
+
+            .header-actions .btn-primary {
+                display: none;
+            }
+
+            .floating-action {
+                display: grid;
+            }
+
+            thead {
+                display: none;
+            }
+
+            tbody tr {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+                border-bottom: none;
+                padding: 16px;
+                margin-bottom: 12px;
+                border-radius: var(--radius-lg);
+                background: rgba(148, 163, 184, 0.1);
+            }
+             #stock-app-wrapper.dark-theme tbody tr {
+                background: rgba(148, 163, 184, 0.14);
+             }
+
+            tbody tr td {
+                border-bottom: none;
+                padding: 0;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                font-size: 0.9rem;
+            }
+
+            tbody tr td::before {
+                content: attr(data-label);
+                font-size: 0.75rem;
+                font-weight: 600;
+                letter-spacing: 0.04em;
+                text-transform: uppercase;
+            }
+            
+            td[data-label="Produit"] {
+                grid-column: 1 / -1;
+                font-size: 1.05rem;
+                font-weight: 600;
+            }
+
+            .table-actions {
+                grid-column: 1 / -1;
+                margin-top: 8px;
+            }
+        }
+
+        @media (max-width: 560px) {
+            .brand {
+                width: 100%;
+            }
+
+            .brand h1 {
+                font-size: 1.4rem;
+            }
+
+            .metrics-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+<div id="stock-app-wrapper">
+    <div class="app-shell">
+        <header class="app-header">
+            <div class="header-inner">
+                <div class="brand">
+                    <div>
+                        <h1>Gestion des Stocks</h1>
+                        <p>Visualisez et ajustez vos stocks instantanément.</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button id="theme-toggle" class="icon-button" type="button" aria-label="Basculer le thème">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8">
+                            <path d="M12 3v2" />
+                            <path d="M12 19v2" />
+                            <path d="M5.22 5.22l1.42 1.42" />
+                            <path d="M17.36 17.36l1.42 1.42" />
+                            <path d="M3 12h2" />
+                            <path d="M19 12h2" />
+                            <path d="M5.22 18.78l1.42-1.42" />
+                            <path d="M17.36 6.64l1.42-1.42" />
+                            <circle cx="12" cy="12" r="4" />
+                        </svg>
+                    </button>
+                    <button class="btn-primary" type="button" onclick="App.openModal('new')">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M12 5v14" />
+                            <path d="M5 12h14" />
+                        </svg>
+                        Nouveau produit
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div class="content-max">
+                <nav class="sempa-tabs" aria-label="Navigation principale">
+                    <button class="sempa-tab active" type="button" data-tab="overview">Vue globale</button>
+                    <button class="sempa-tab" type="button" data-tab="inventory">Inventaire</button>
+                    <button class="sempa-tab" type="button" data-tab="movements">Mouvements</button>
+                    <button class="sempa-tab" type="button" data-tab="reports">Rapports</button>
+                </nav>
+
+                <section class="sempa-content active" id="overview">
+                    <div class="section-heading">
+                        <h2>Pilotez votre stock d'un coup d'œil</h2>
+                        <button class="btn-ghost" type="button" onclick="App.exportInventory()">Exporter l'inventaire</button>
+                    </div>
+
+                    <div class="metrics-grid">
+                        <article class="metric-card">
+                            <div class="metric-label">Produits actifs</div>
+                            <div class="metric-value" id="total-products">0</div>
+                        </article>
+                        <article class="metric-card">
+                            <div class="metric-label">Alertes de stock</div>
+                            <div class="metric-value" id="alerts-count">0</div>
+                        </article>
+                        <article class="metric-card">
+                            <div class="metric-label">Unités disponibles</div>
+                            <div class="metric-value" id="total-cartons">0</div>
+                        </article>
+                        <article class="metric-card">
+                            <div class="metric-label">Valeur estimée</div>
+                            <div class="metric-value" id="total-value">0 €</div>
+                        </article>
+                    </div>
+
+                    <div class="dashboard-grid cols-2">
+                        <div class="card" id="alerts-container">
+                            <h3>Alertes prioritaires</h3>
+                            <div class="empty-state">Chargement des alertes…</div>
+                        </div>
+                        <div class="card">
+                            <h3>Répartition par catégorie</h3>
+                            <div id="category-summary" class="empty-state">Chargement…</div>
+                        </div>
+                    </div>
+
+                    <div class="dashboard-grid" style="margin-top: clamp(24px, 5vw, 40px);">
+                        <div class="card">
+                            <h3>Actions recommandées</h3>
+                            <ul class="list" id="recommended-actions"></ul>
+                        </div>
+                        <div class="card">
+                            <h3>Dernières mises à jour</h3>
+                            <ul class="list" id="recent-updates"></ul>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="sempa-content" id="inventory" aria-labelledby="inventory-title">
+                    <div class="inventory-header">
+                        <div class="section-heading">
+                            <h2 id="inventory-title">Inventaire détaillé</h2>
+                            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                                <button class="btn-ghost" type="button" onclick="App.resetFilters()">Effacer les filtres</button>
+                                <button class="btn-primary" type="button" onclick="App.openModal('new')">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path d="M12 5v14" />
+                                        <path d="M5 12h14" />
+                                    </svg>
+                                    Ajouter un produit
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="filter-bar">
+                            <div class="search-field">
+                                <input type="search" id="product-search" class="search-input" placeholder="Rechercher par nom" autocomplete="off">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                                    <path d="M21 21l-4.35-4.35" />
+                                    <circle cx="11" cy="11" r="7" />
+                                </svg>
+                            </div>
+                            <select id="filter-category" class="select">
+                                <option value="">Toutes les catégories</option>
+                            </select>
+                            <select id="filter-status" class="select">
+                                <option value="">Tous les statuts</option>
+                                <option value="low">Critique</option>
+                                <option value="medium">À surveiller</option>
+                                <option value="good">Stable</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="table-wrapper" role="region" aria-live="polite">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Produit</th>
+                                    <th>Stock</th>
+                                    <th>Seuil</th>
+                                    <th>Statut</th>
+                                    <th>Mise à jour</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="products-table"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="sempa-content" id="movements" aria-labelledby="movements-title">
+                    <div class="section-heading">
+                        <h2 id="movements-title">Suivi des mouvements</h2>
+                        <p class="text-muted">Consignez chaque entrée, sortie ou ajustement pour garder un historique complet.</p>
+                    </div>
+                    <div class="movements-grid">
+                        <div class="card">
+                            <h3>Enregistrer un mouvement</h3>
+                            <div class="form-grid">
+                                <label>Produit
+                                    <select id="movement-product" class="select">
+                                        <option value="">Sélectionner un produit</option>
+                                    </select>
+                                </label>
+                                <label>Type
+                                    <select id="movement-type" class="select">
+                                        <option value="in">Entrée</option>
+                                        <option value="out">Sortie</option>
+                                        <option value="adjust">Ajustement</option>
+                                    </select>
+                                </label>
+                                <label>Quantité
+                                    <input type="number" id="movement-quantity" min="1" value="1">
+                                </label>
+                                <label>Raison
+                                    <input type="text" id="movement-reason" placeholder="Réception, commande client, contrôle…">
+                                </label>
+                            </div>
+                            <button class="btn-primary" type="button" onclick="App.addStockMovement()">Valider le mouvement</button>
+                        </div>
+
+                        <div class="card">
+                            <h3>Historique récent</h3>
+                            <div class="table-wrapper" style="box-shadow:none;border-radius:var(--radius-md);">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Produit</th>
+                                            <th>Type</th>
+                                            <th>Quantité</th>
+                                            <th>Commentaire</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="movements-table"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="sempa-content" id="reports" aria-labelledby="reports-title">
+                    <div class="section-heading">
+                        <h2 id="reports-title">Rapports & Analyse</h2>
+                    </div>
+                    <div class="card" style="margin-bottom:24px;">
+                        <h3>Exporter les données</h3>
+                        <p class="text-muted" style="margin-bottom:18px;">Téléchargez un fichier CSV regroupant l'ensemble de l'inventaire pour l'analyser dans Excel, Google Sheets ou votre ERP.</p>
+                        <button class="btn-primary" type="button" onclick="App.exportInventory()">Exporter en CSV</button>
+                    </div>
+                    <div class="card">
+                        <h3>Valeur du stock par catégorie</h3>
+                        <div style="position: relative; height:400px; width: 100%;">
+                            <canvas id="stockChart"></canvas>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <button class="floating-action" type="button" onclick="App.openModal('new')" aria-label="Ajouter un produit">
+        +
+    </button>
+
+    <div class="modal-backdrop" id="product-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal-panel">
+            <div class="modal-header">
+                <h2 id="modal-title">Nouveau produit</h2>
+                <button class="modal-close" type="button" aria-label="Fermer" onclick="App.closeModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-grid">
+                    <label>Nom de base
+                        <input type="text" id="product-name" autocomplete="off" required placeholder="ex: OL61, Bouteille 0.75L...">
+                    </label>
+                    <label>État
+                        <select id="product-condition" class="select">
+                            <option value="">Aucun</option>
+                            <option value="Neuf">Neuf</option>
+                            <option value="Reconditionné">Reconditionné</option>
+                        </select>
+                    </label>
+                </div>
+                <div class="form-grid">
+                    <label>Stock actuel (unités)
+                        <input type="number" id="product-stock" min="0" value="0">
+                    </label>
+                    <label>Seuil d'alerte
+                        <input type="number" id="product-minstock" min="1" value="20">
+                    </label>
+                </div>
+                <div class="form-grid">
+                    <label>Prix unitaire (€)
+                        <input type="number" id="product-price" min="0" step="0.01" value="0">
+                    </label>
+                    <label>Catégorie
+                        <select id="product-category" class="select">
+                            <optgroup label="Pièces Principales">
+                                <option value="capot">Capot</option>
+                                <option value="presse">Presse</option>
+                                <option value="rotor">Rotor</option>
+                                <option value="extracteur">Extracteur</option>
+                                <option value="coutau">Couteau</option>
+                                <option value="raclette_support">Raclette / Support Raclette</option>
+                                <option value="languette_presse">Languette Presse</option>
+                                <option value="tete_robinet">Tête de Robinet</option>
+                            </optgroup>
+                            <optgroup label="Visserie & Petites Pièces">
+                                <option value="vis_capot">Vis Capot</option>
+                                <option value="piece">Autre Pièce détachée</option>
+                            </optgroup>
+                            <optgroup label="Consommables">
+                                <option value="bouteille">Bouteille PET</option>
+                                <option value="gobelet">Gobelet</option>
+                                <option value="nettoyant">Nettoyant</option>
+                            </optgroup>
+                            <optgroup label="Autres">
+                                <option value="autre">Autre</option>
+                            </optgroup>
+                        </select>
+                    </label>
+                </div>
+                <label>Description
+                    <textarea id="product-desc" rows="3" placeholder="Notes, compatibilité machine, emplacement…"></textarea>
+                </label>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-ghost" type="button" onclick="App.closeModal()">Annuler</button>
+                <button class="btn-primary" type="button" onclick="App.saveProduct()">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+</div>
+    <script>
+        const App = (() => {
+            const STORAGE_KEYS = { products: 'sempa_products', movements: 'sempa_movements', theme: 'sempa_theme' };
+            const CATEGORY_LABELS = { capot: 'Capot', presse: 'Presse', rotor: 'Rotor', extracteur: 'Extracteur', coutau: 'Couteau', raclette_support: 'Raclette / Support Raclette', languette_presse: 'Languette Presse', tete_robinet: 'Tête de Robinet', vis_capot: 'Vis Capot', piece: 'Autre Pièce détachée', bouteille: 'Bouteille PET', gobelet: 'Gobelet', nettoyant: 'Nettoyant', autre: 'Autre' };
+            const CATEGORY_ORDER = [ 'capot', 'presse', 'rotor', 'extracteur', 'coutau', 'raclette_support', 'languette_presse', 'tete_robinet', 'vis_capot', 'piece', 'bouteille', 'gobelet', 'nettoyant', 'autre' ];
+            const STATUS_LABELS = { low: 'Critique', medium: 'À surveiller', good: 'Stable' };
+            let myStockChart = null;
+            const DEFAULT_PRODUCTS = (() => {
+                 const now = new Date('2025-09-17T12:00:00Z').toISOString(); let counter = 1;
+                 return [
+                    { id: `default-${counter++}`, name: 'Bouteille 0.33L PET', stock: 8, minStock: 15, price: 0.1, category: 'bouteille', lastUpdated: now },
+                    { id: `default-${counter++}`, name: 'Bouteille 0.5L PET', stock: 120, minStock: 30, price: 0.09, category: 'bouteille', lastUpdated: now },
+                    { id: `default-${counter++}`, name: 'Bouteille 0.75L PET', stock: 0, minStock: 20, price: 0.1, category: 'bouteille', lastUpdated: new Date('2025-09-30T12:00:00Z').toISOString() },
+                    { id: `default-${counter++}`, name: 'Bouteille 1L PET', stock: 45, minStock: 20, price: 0.12, category: 'bouteille', lastUpdated: now },
+                    { id: `default-${counter++}`, name: 'Capot OL61 Neuf', stock: 20, minStock: 5, price: 378, category: 'capot', lastUpdated: new Date('2025-10-01T12:00:00Z').toISOString() },
+                 ];
+            })();
+            let state = { products: JSON.parse(localStorage.getItem(STORAGE_KEYS.products) || '[]'), movements: JSON.parse(localStorage.getItem(STORAGE_KEYS.movements) || '[]'), currentProductId: null };
+            function ensureDefaults() { if (localStorage.getItem(STORAGE_KEYS.products) === null) { state.products = DEFAULT_PRODUCTS.map(p => ({...p})); persistProducts(); } }
+            function persistProducts() { localStorage.setItem(STORAGE_KEYS.products, JSON.stringify(state.products)); }
+            function persistMovements() { localStorage.setItem(STORAGE_KEYS.movements, JSON.stringify(state.movements)); }
+            function applyTheme(theme) {
+                const nextTheme = theme === 'dark' ? 'dark' : 'light';
+                const wrapper = document.getElementById('stock-app-wrapper');
+                if (wrapper) wrapper.classList.toggle('dark-theme', nextTheme === 'dark');
+                localStorage.setItem(STORAGE_KEYS.theme, nextTheme);
+                const icon = document.querySelector('#theme-toggle svg');
+                if (icon) icon.innerHTML = nextTheme === 'dark' ? `<path d="M21 12.79A9 9 0 0 1 11.21 3 7 7 0 0 0 12 19a7 7 0 0 0 9-6.21Z" />` : `<path d="M12 3v2" /><path d="M12 19v2" /><path d="M5.22 5.22l1.42 1.42" /><path d="M17.36 17.36l1.42 1.42" /><path d="M3 12h2" /><path d="M19 12h2" /><path d="M5.22 18.78l1.42-1.42" /><path d="M17.36 6.64l1.42-1.42" /><circle cx="12" cy="12" r="4" />`;
+                renderStockChart();
+            }
+            function initTheme() { applyTheme(localStorage.getItem(STORAGE_KEYS.theme) || 'light'); }
+            function bindEvents() {
+                const themeToggle = document.getElementById('theme-toggle');
+                if (themeToggle) themeToggle.addEventListener('click', () => { const wrapper = document.getElementById('stock-app-wrapper'); applyTheme(wrapper && wrapper.classList.contains('dark-theme') ? 'light' : 'dark'); });
+                ['input', 'search'].forEach(evt => document.getElementById('product-search')?.addEventListener(evt, filterProducts));
+                document.getElementById('filter-category')?.addEventListener('change', filterProducts);
+                document.getElementById('filter-status')?.addEventListener('change', filterProducts);
+                document.querySelectorAll('.sempa-tab').forEach(tab => tab.addEventListener('click', () => switchToTab(tab.dataset.tab)));
+                const modal = document.getElementById('product-modal');
+                if (modal) modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+                window.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+            }
+            function loadProducts() {
+                const tableBody = document.getElementById('products-table');
+                const movementSelect = document.getElementById('movement-product');
+                if (!tableBody) return;
+                tableBody.innerHTML = '';
+                const sorted = [...state.products].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'fr', { sensitivity: 'base' }));
+                sorted.forEach(p => {
+                    const status = getStockStatus(p.stock, p.minStock);
+                    const row = document.createElement('tr');
+                    row.dataset.category = p.category || 'autre'; row.dataset.status = status; row.dataset.name = (p.name || '').toLowerCase(); row.dataset.id = p.id;
+                    row.innerHTML = `<td data-label="Produit">${p.name}</td><td data-label="Stock">${formatNumber(p.stock)}</td><td data-label="Seuil">${formatNumber(p.minStock)}</td><td data-label="Statut"><span class="badge ${status}">${STATUS_LABELS[status] || status}</span></td><td data-label="Mise à jour">${formatDate(p.lastUpdated)}</td><td data-label="Actions"><div class="table-actions"><button class="btn-secondary" type="button" onclick="App.openModal('edit', '${p.id}')">Modifier</button><button class="btn-primary" type="button" onclick="App.openQuickMovement('${p.id}', 'in')">Entrée</button><button class="btn-outline" type="button" onclick="App.openQuickMovement('${p.id}', 'out')">Sortie</button><button class="btn-danger" type="button" onclick="App.deleteProduct('${p.id}')">Supprimer</button></div></td>`;
+                    tableBody.appendChild(row);
+                });
+                if (movementSelect) {
+                    const previous = movementSelect.value;
+                    movementSelect.innerHTML = '<option value="">Sélectionner un produit</option>';
+                    sorted.forEach(p => { const option = document.createElement('option'); option.value = p.id; option.textContent = p.name; movementSelect.appendChild(option); });
+                    if (previous) movementSelect.value = previous;
+                }
+                populateCategoryFilter();
+                filterProducts();
+            }
+            function loadMovements() {
+                const tableBody = document.getElementById('movements-table');
+                if (!tableBody) return;
+                tableBody.innerHTML = '';
+                const sorted = [...state.movements].sort((a, b) => new Date(b.date) - new Date(a.date));
+                sorted.forEach(m => {
+                    const product = state.products.find(p => p.id === m.productId);
+                    const productName = product ? product.name : (m.productName || 'Produit archivé');
+                    const date = new Date(m.date);
+                    const formattedDate = Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('fr-FR');
+                    const typeLabel = m.type === 'in' ? 'Entrée' : m.type === 'out' ? 'Sortie' : 'Ajustement';
+                    const qDisplay = m.type === 'in' ? `+${m.quantity}` : m.type === 'out' ? `-${m.quantity}` : `=${m.quantity}`;
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td>${formattedDate}</td><td>${productName}</td><td>${typeLabel}</td><td>${qDisplay}</td><td>${m.reason || '-'}</td>`;
+                    tableBody.appendChild(row);
+                });
+            }
+            function populateCategoryFilter() {
+                const select = document.getElementById('filter-category');
+                if (!select) return;
+                const summary = state.products.reduce((acc, p) => { const key = p.category || 'autre'; acc[key] = (acc[key] || 0) + 1; return acc; }, {});
+                const categories = Object.keys(summary).sort(sortCategories);
+                const current = select.value;
+                select.innerHTML = '<option value="">Toutes les catégories</option>';
+                categories.forEach(key => { const option = document.createElement('option'); option.value = key; option.textContent = `${getCategoryLabel(key)} (${summary[key]})`; select.appendChild(option); });
+                if (current && summary[current]) select.value = current;
+            }
+            function renderDashboard() {
+                const { products } = state;
+                const lowStock = products.filter(p => getStockStatus(p.stock, p.minStock) === 'low');
+                const mediumStock = products.filter(p => getStockStatus(p.stock, p.minStock) === 'medium');
+                const totalUnits = products.reduce((sum, p) => sum + (Number(p.stock) || 0), 0);
+                const totalValue = products.reduce((sum, p) => sum + ((Number(p.stock) || 0) * (Number(p.price) || 0)), 0);
+                setText('total-products', products.length);
+                setText('alerts-count', lowStock.length);
+                setText('total-cartons', formatNumber(totalUnits));
+                setText('total-value', formatCurrency(totalValue));
+                renderAlerts(lowStock);
+                renderCategorySummary();
+                renderRecommendations(lowStock, mediumStock);
+                renderRecentUpdates();
+                renderStockChart();
+            }
+            function renderAlerts(lowStockProducts) {
+                const container = document.getElementById('alerts-container');
+                if (!container) return;
+                container.innerHTML = '<h3>Alertes prioritaires</h3>';
+                if (!lowStockProducts.length) { container.innerHTML += '<div class="empty-state">Aucune alerte pour le moment.</div>'; return; }
+                const list = document.createElement('div'); list.className = 'alert-list';
+                lowStockProducts.sort((a, b) => (a.stock || 0) - (b.stock || 0)).forEach(p => {
+                    const item = document.createElement('div'); item.className = 'alert-item';
+                    item.innerHTML = `<span>${p.name}</span><span>${formatNumber(p.stock)} unités · seuil ${formatNumber(p.minStock)}</span>`;
+                    list.appendChild(item);
+                });
+                container.appendChild(list);
+            }
+            function renderCategorySummary() {
+                const container = document.getElementById('category-summary');
+                if (!container) return;
+                if (!state.products.length) { container.className = 'empty-state'; container.textContent = 'Aucun produit enregistré.'; return; }
+                const summary = state.products.reduce((acc, p) => { const key = p.category || 'autre'; if (!acc[key]) acc[key] = { products: 0, units: 0 }; acc[key].products++; acc[key].units += Number(p.stock) || 0; return acc; }, {});
+                const categories = Object.keys(summary).sort(sortCategories);
+                const table = document.createElement('table');
+                table.innerHTML = `<tbody>${categories.map(key => `<tr><td>${getCategoryLabel(key)} (${summary[key].products})</td><td>${formatNumber(summary[key].units)} unités</td></tr>`).join('')}</tbody>`;
+                container.className = ''; container.innerHTML = ''; container.appendChild(table);
+            }
+            function renderRecommendations(lowStock, mediumStock) {
+                const list = document.getElementById('recommended-actions');
+                if (!list) return;
+                list.innerHTML = '';
+                if (!lowStock.length && !mediumStock.length) { list.innerHTML = '<li class="empty-state">Stock sous contrôle.</li>'; return; }
+                lowStock.sort((a,b)=>(a.stock/Math.max(a.minStock||1,1))-(b.stock/Math.max(b.minStock||1,1))).slice(0,4).forEach(p=>{const stock=Number(p.stock)||0;const min=Number(p.minStock)||0;const target=Math.max(min*1.5,min+10);const qty=Math.ceil(target-stock);const li=document.createElement('li');li.innerHTML=`<span>${p.name}</span><span class="text-muted">Commander ${formatNumber(qty)} unités</span>`;list.appendChild(li)});
+                if(mediumStock.length>0&&lowStock.length<4){const p=[...mediumStock].sort((a,b)=>a.stock-b.stock)[0];const li=document.createElement('li');li.innerHTML=`<span>${p.name}</span><span class="text-muted">Surveiller (${formatNumber(p.stock)}/${formatNumber(p.minStock)})</span>`;list.appendChild(li)}
+            }
+            function renderRecentUpdates() {
+                const list = document.getElementById('recent-updates');
+                if (!list) return;
+                list.innerHTML = '';
+                const updated = state.products.filter(p=>p.lastUpdated).sort((a,b)=>new Date(b.lastUpdated)-new Date(a.lastUpdated)).slice(0,5);
+                if (!updated.length) { list.innerHTML = '<li class="empty-state">Aucune mise à jour récente.</li>'; return; }
+                updated.forEach(p => { const li=document.createElement('li');li.innerHTML=`<span>${p.name}</span><span class="text-muted">${formatRelativeDate(p.lastUpdated)}</span>`;list.appendChild(li); });
+            }
+            function renderStockChart() {
+                const ctx = document.getElementById('stockChart')?.getContext('2d');
+                if (!ctx) return;
+                const summary = state.products.reduce((acc, p) => { const key = p.category || 'autre'; const value = (Number(p.stock) || 0) * (Number(p.price) || 0); acc[key] = (acc[key] || 0) + value; return acc; }, {});
+                const sortedKeys = Object.keys(summary).sort(sortCategories);
+                const labels = sortedKeys.map(key => getCategoryLabel(key));
+                const data = sortedKeys.map(key => summary[key]);
+                const isDark = document.getElementById('stock-app-wrapper')?.classList.contains('dark-theme');
+                const gridColor = isDark ? 'rgba(163, 180, 212, 0.1)' : 'rgba(15, 23, 42, 0.08)';
+                const labelColor = isDark ? 'rgba(163, 180, 212, 0.7)' : 'rgba(100, 116, 139, 1)';
+                if (myStockChart) myStockChart.destroy();
+                myStockChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels, datasets: [{ label: 'Valeur du stock (€)', data, backgroundColor: 'rgba(255, 159, 28, 0.4)', borderColor: 'rgba(255, 159, 28, 1)', borderWidth: 2 }] },
+                    options: {
+                        responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+                        scales: {
+                            x: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: labelColor, callback: value => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value) } },
+                            y: { grid: { display: false }, ticks: { color: labelColor } }
+                        },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }
+            function getStockStatus(stock, min) { const s=Number(stock)||0, m=Number(min)||0; if(m<=0)return 'good';if(s<=m)return 'low';if(s<=m*1.5)return 'medium';return 'good'; }
+            function filterProducts() {
+                const searchText = document.getElementById('product-search')?.value.trim().toLowerCase() || '';
+                const selectedCategory = document.getElementById('filter-category')?.value || '';
+                const selectedStatus = document.getElementById('filter-status')?.value || '';
+                const table = document.getElementById('products-table');
+                if (!table) return;
+                Array.from(table.rows).forEach(row => {
+                    const matchesSearch = !searchText || row.dataset.name.includes(searchText);
+                    const matchesCategory = !selectedCategory || row.dataset.category === selectedCategory;
+                    const matchesStatus = !selectedStatus || row.dataset.status === selectedStatus;
+                    row.style.display = matchesSearch && matchesCategory && matchesStatus ? '' : 'none';
+                });
+            }
+            function resetFilters() {
+                document.getElementById('product-search').value = '';
+                document.getElementById('filter-category').value = '';
+                document.getElementById('filter-status').value = '';
+                highlightProductRow(null);
+                filterProducts();
+            }
+            function highlightProductRow(productId) {
+                const table = document.getElementById('products-table');
+                if (!table) return;
+                Array.from(table.rows).forEach(r => r.classList.remove('row-highlight'));
+                if (!productId) return;
+                const target = Array.from(table.rows).find(r => r.dataset.id === productId);
+                if (target) { target.classList.add('row-highlight'); target.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => target.classList.remove('row-highlight'), 1600); }
+            }
+            function openModal(action, productId = null) {
+                state.currentProductId = productId;
+                const modal = document.getElementById('product-modal');
+                if (!modal) return;
+                if (action === 'new') {
+                    document.getElementById('modal-title').textContent = 'Nouveau produit';
+                    document.getElementById('product-name').value = '';
+                    document.getElementById('product-condition').value = '';
+                    document.getElementById('product-stock').value = '0';
+                    document.getElementById('product-minstock').value = '20';
+                    document.getElementById('product-price').value = '0';
+                    document.getElementById('product-category').value = 'capot';
+                    document.getElementById('product-desc').value = '';
+                } else if (action === 'edit' && productId) {
+                    document.getElementById('modal-title').textContent = 'Modifier le produit';
+                    const product = state.products.find(p => p.id === productId);
+                    if (product) {
+                        const categoryLabel = getCategoryLabel(product.category);
+                        let baseName = product.name;
+                        if (baseName.startsWith(categoryLabel + ' ')) baseName = baseName.substring(categoryLabel.length + 1);
+                        let condition = '';
+                        if (baseName.endsWith(' Reconditionné')) { baseName = baseName.slice(0, -14).trim(); condition = 'Reconditionné'; } 
+                        else if (baseName.endsWith(' Neuf')) { baseName = baseName.slice(0, -5).trim(); condition = 'Neuf'; }
+                        document.getElementById('product-name').value = baseName;
+                        document.getElementById('product-condition').value = condition;
+                        document.getElementById('product-stock').value = product.stock;
+                        document.getElementById('product-minstock').value = product.minStock;
+                        document.getElementById('product-price').value = product.price;
+                        document.getElementById('product-category').value = product.category || 'autre';
+                        document.getElementById('product-desc').value = product.description || '';
+                    }
+                }
+                modal.classList.add('open');
+                document.getElementById('product-name').focus();
+            }
+            function closeModal() { document.getElementById('product-modal').classList.remove('open'); state.currentProductId = null; }
+            function saveProduct() {
+                const baseName = document.getElementById('product-name').value.trim();
+                const condition = document.getElementById('product-condition').value;
+                const category = document.getElementById('product-category').value || 'autre';
+                let name = `${getCategoryLabel(category)} ${baseName}`;
+                if (condition) name += ` ${condition}`;
+                const stockValue = parseInt(document.getElementById('product-stock').value, 10);
+                const minStockValue = parseInt(document.getElementById('product-minstock').value, 10);
+                let priceValue = parseFloat(document.getElementById('product-price').value);
+                const description = document.getElementById('product-desc').value.trim();
+                if (!baseName) { alert('Veuillez saisir un nom de base.'); return; }
+                if (!Number.isFinite(stockValue)||stockValue<0){alert('Stock invalide.');return}
+                if (!Number.isFinite(minStockValue)||minStockValue<=0){alert('Seuil d\'alerte invalide.');return}
+                if(!Number.isFinite(priceValue)||priceValue<0){alert('Prix invalide.');return}
+                if (state.currentProductId) {
+                    const index = state.products.findIndex(p => p.id === state.currentProductId);
+                    if (index !== -1) { state.products[index] = { ...state.products[index], name, stock: stockValue, minStock: minStockValue, price: Math.round(priceValue * 100) / 100, category, description, lastUpdated: new Date().toISOString() }; state.movements = state.movements.map(m => m.productId === state.currentProductId ? { ...m, productName: name } : m); }
+                } else {
+                    state.products.push({ id: Date.now().toString(), name, stock: stockValue, minStock: minStockValue, price: Math.round(priceValue * 100) / 100, category, description, lastUpdated: new Date().toISOString() });
+                }
+                persistProducts(); persistMovements(); loadProducts(); renderDashboard(); closeModal(); alert('Produit enregistré.');
+            }
+            function addStockMovement() {
+                const productId = document.getElementById('movement-product').value;
+                const type = document.getElementById('movement-type').value;
+                const quantityValue = parseInt(document.getElementById('movement-quantity').value, 10);
+                const reason = document.getElementById('movement-reason').value.trim();
+                if (!productId) { alert('Veuillez sélectionner un produit.'); return; }
+                const qInvalid = !Number.isFinite(quantityValue) || (type==='adjust'?quantityValue<0:quantityValue<=0);
+                if (qInvalid) { alert('Veuillez saisir une quantité valide.'); return; }
+                if (!reason) { alert('Veuillez indiquer une raison.'); return; }
+                const index = state.products.findIndex(p => p.id === productId);
+                if (index === -1) { alert('Produit introuvable.'); return; }
+                let newStock = state.products[index].stock;
+                if (type === 'in') newStock += quantityValue;
+                else if (type === 'out') { if (quantityValue > newStock) { alert('Stock insuffisant.'); return; } newStock -= quantityValue; }
+                else if (type === 'adjust') newStock = quantityValue;
+                state.products[index] = { ...state.products[index], stock: newStock, lastUpdated: new Date().toISOString() };
+                state.movements.push({ id: Date.now().toString(), productId, productName: state.products[index].name, type, quantity: quantityValue, reason, date: new Date().toISOString() });
+                persistProducts(); persistMovements(); loadProducts(); loadMovements(); renderDashboard();
+                document.getElementById('movement-quantity').value = '1';
+                document.getElementById('movement-reason').value = '';
+                alert('Mouvement enregistré.');
+            }
+            function openQuickMovement(productId, type = 'in') {
+                const product = state.products.find(p => p.id === productId);
+                if (!product) return;
+                switchToTab('movements');
+                document.getElementById('movement-product').value = productId;
+                document.getElementById('movement-type').value = type;
+                const qInput = document.getElementById('movement-quantity'); qInput.value = '1'; qInput.focus();
+                const rInput = document.getElementById('movement-reason');
+                if (!rInput.value) { const base = product.name ? ` ${product.name}` : ''; rInput.value = type === 'in' ? `Réception${base}`.trim() : type === 'out' ? `Sortie${base}`.trim() : `Ajustement${base}`.trim(); }
+            }
+            function switchToTab(tabId) { document.querySelectorAll('.sempa-tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===tabId)); document.querySelectorAll('.sempa-content').forEach(s=>s.classList.toggle('active', s.id===tabId)); }
+            function deleteProduct(productId) {
+                const product = state.products.find(p => p.id === productId);
+                if (!product || !confirm(`Voulez-vous vraiment supprimer "${product.name}" ?`)) return;
+                state.products = state.products.filter(p => p.id !== productId);
+                state.movements = state.movements.map(m => m.productId === productId ? { ...m, productName: m.productName || product.name } : m);
+                persistProducts(); persistMovements(); loadProducts(); loadMovements(); renderDashboard(); alert('Produit supprimé.');
+            }
+            function exportInventory() {
+                if (!state.products.length) { alert('Aucun produit à exporter.'); return; }
+                const headers = ['Nom du produit', 'Catégorie', 'Stock (unités)', 'Seuil', 'Prix unitaire (€)', 'Valeur stock (€)', 'Dernière mise à jour'];
+                const rows = state.products.map(p => [p.name, getCategoryLabel(p.category||'autre'), formatNumber(p.stock), formatNumber(p.minStock), p.price, (Number(p.price)||0)*(Number(p.stock)||0), formatDate(p.lastUpdated)]);
+                const csv = [headers, ...rows].map(c => c.map(wrapCsvValue).join(';')).join('\n');
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url; link.download = `inventaire-sempa-${new Date().toISOString().slice(0, 10)}.csv`;
+                document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }
+            function wrapCsvValue(value) { const text = String(value ?? ''); const escaped = text.replace(/"/g, '""'); return /[";\n]/.test(escaped) ? `"${escaped}"` : escaped; }
+            function setText(id, value) { const el = document.getElementById(id); if (el) el.textContent = value; }
+            function getCategoryLabel(key) { return CATEGORY_LABELS[key] || (key ? key.charAt(0).toUpperCase() + key.slice(1) : 'Non classé'); }
+            function getCategoryOrder(key) { const i = CATEGORY_ORDER.indexOf(key); return i === -1 ? Number.MAX_SAFE_INTEGER : i; }
+            function sortCategories(a, b) { const oA=getCategoryOrder(a), oB=getCategoryOrder(b); return oA !== oB ? oA - oB : getCategoryLabel(a).localeCompare(getCategoryLabel(b),'fr'); }
+            function formatNumber(v) { const n=Number(v); return !Number.isFinite(n)?'0':new Intl.NumberFormat('fr-FR').format(n); }
+            function formatCurrency(v) { const n=Number(v); return !Number.isFinite(n)?'0 €':new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(n); }
+            function formatDate(d) { if (!d) return ''; const date=new Date(d); return Number.isNaN(date.getTime())?'':date.toLocaleDateString('fr-FR'); }
+            function formatRelativeDate(d) { if(!d)return'';const date=new Date(d);if(Number.isNaN(date.getTime()))return'';const diff=new Date()-date;const minutes=Math.floor(diff/60000);if(minutes<1)return"À l'instant";if(minutes<60)return`Il y a ${minutes} min`;const hours=Math.floor(minutes/60);if(hours<24)return`Il y a ${hours} h`;const days=Math.floor(hours/24);if(days===1)return'Hier';if(days<7)return`Il y a ${days} jours`;return date.toLocaleDateString('fr-FR'); }
+            function init() { initTheme(); ensureDefaults(); bindEvents(); loadProducts(); loadMovements(); renderDashboard(); }
+            return { init, openModal, closeModal, saveProduct, addStockMovement, resetFilters, openQuickMovement, switchToTab, deleteProduct, exportInventory };
+        })();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!document.getElementById('stock-app-wrapper').hasAttribute('data-initialized')) {
+                App.init();
+                document.getElementById('stock-app-wrapper').setAttribute('data-initialized', 'true');
+            }
+        });
+    </script>
+</body>
+</html>
