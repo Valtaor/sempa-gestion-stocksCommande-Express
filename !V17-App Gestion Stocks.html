@@ -222,6 +222,170 @@
         let myStockChart = null;
         let state = { products: [], movements: [], currentProductId: null };
 
+        const LEGACY_STORAGE_KEYS = {
+            products: 'sempa_products',
+            movements: 'sempa_movements',
+            migrationFlag: 'sempa_data_migrated',
+        };
+
+        const legacyStorageAvailable = (() => {
+            try {
+                const testKey = '__sempa_legacy_test__';
+                localStorage.setItem(testKey, '1');
+                localStorage.removeItem(testKey);
+                return true;
+            } catch (error) {
+                console.warn('Stockage local indisponible :', error);
+                return false;
+            }
+        })();
+
+        function safeParseLegacyArray(key) {
+            if (!legacyStorageAvailable) {
+                return [];
+            }
+            try {
+                const raw = localStorage.getItem(key);
+                if (!raw) {
+                    return [];
+                }
+                const parsed = JSON.parse(raw);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (error) {
+                console.warn(`Impossible d'analyser les données locales pour ${key}.`, error);
+                return [];
+            }
+        }
+
+        function loadLegacySnapshot() {
+            if (!legacyStorageAvailable) {
+                return null;
+            }
+            const products = safeParseLegacyArray(LEGACY_STORAGE_KEYS.products);
+            const movements = safeParseLegacyArray(LEGACY_STORAGE_KEYS.movements);
+            if (products.length || movements.length) {
+                return { products, movements };
+            }
+            return null;
+        }
+
+        function persistLegacySnapshot() {
+            if (!legacyStorageAvailable) {
+                return;
+            }
+            try {
+                localStorage.setItem(LEGACY_STORAGE_KEYS.products, JSON.stringify(state.products));
+                localStorage.setItem(LEGACY_STORAGE_KEYS.movements, JSON.stringify(state.movements));
+            } catch (error) {
+                console.warn('Impossible de sauvegarder les données localement.', error);
+            }
+        }
+
+        function hasLegacyMigrationCompleted() {
+            if (!legacyStorageAvailable) {
+                return true;
+            }
+            return localStorage.getItem(LEGACY_STORAGE_KEYS.migrationFlag) === 'true';
+        }
+
+        function markLegacyMigrationCompleted() {
+            if (!legacyStorageAvailable) {
+                return;
+            }
+            localStorage.setItem(LEGACY_STORAGE_KEYS.migrationFlag, 'true');
+        }
+
+        async function synchronizeLegacyDataWithServer(legacyData) {
+            if (!legacyData) {
+                return false;
+            }
+
+            let syncFailed = false;
+            const serverProductIds = new Set(state.products.map((product) => product.id));
+            const serverMovementIds = new Set(state.movements.map((movement) => movement.id));
+
+            const missingProducts = legacyData.products.filter((product) => !serverProductIds.has(product.id));
+            let remainingMissingProducts = missingProducts.length;
+            for (const product of missingProducts) {
+                try {
+                    const response = await fetchJson(
+                        API_ENDPOINTS.products(),
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(product),
+                        },
+                        'Impossible de créer le produit.'
+                    );
+                    const createdProduct = response && response.product ? response.product : product;
+                    state.products.push(createdProduct);
+                    serverProductIds.add(createdProduct.id);
+                    remainingMissingProducts -= 1;
+                } catch (error) {
+                    syncFailed = true;
+                    console.error('Impossible de synchroniser le produit local :', error);
+                }
+            }
+
+            const missingMovements = legacyData.movements.filter((movement) => !serverMovementIds.has(movement.id));
+            let remainingMissingMovements = missingMovements.length;
+            for (const movement of missingMovements) {
+                try {
+                    const response = await fetchJson(
+                        API_ENDPOINTS.movements(),
+                        {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(movement),
+                        },
+                        "Impossible d'enregistrer le mouvement."
+                    );
+                    const createdMovement = response && response.movement ? response.movement : movement;
+                    state.movements.push(createdMovement);
+                    serverMovementIds.add(createdMovement.id);
+                    remainingMissingMovements -= 1;
+                } catch (error) {
+                    syncFailed = true;
+                    console.error('Impossible de synchroniser le mouvement local :', error);
+                }
+            }
+
+            for (const product of legacyData.products) {
+                if (!serverProductIds.has(product.id)) {
+                    continue;
+                }
+                const index = state.products.findIndex((item) => item.id === product.id);
+                if (index === -1) {
+                    continue;
+                }
+                const serverProduct = state.products[index];
+                const localUpdated = Date.parse(product.lastUpdated || '');
+                const serverUpdated = Date.parse(serverProduct && serverProduct.lastUpdated ? serverProduct.lastUpdated : '');
+                const shouldUpdate = Number.isFinite(localUpdated) && (!Number.isFinite(serverUpdated) || localUpdated > serverUpdated);
+                if (!shouldUpdate) {
+                    continue;
+                }
+                try {
+                    const response = await fetchJson(
+                        API_ENDPOINTS.product(product.id),
+                        {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(product),
+                        },
+                        'Impossible de mettre à jour le produit.'
+                    );
+                    const updatedProduct = response && response.product ? response.product : product;
+                    state.products[index] = { ...state.products[index], ...updatedProduct };
+                } catch (error) {
+                    syncFailed = true;
+                    console.error('Impossible de mettre à jour le produit local :', error);
+                }
+            }
+
+            return !syncFailed && remainingMissingProducts === 0 && remainingMissingMovements === 0;
+        }
+
         async function fetchJson(url, options = {}, fallbackMessage = 'Erreur de communication avec le serveur.') {
             let response;
             try {
@@ -274,7 +438,43 @@
                 }
             }
 
-            if (firstError) {
+            const legacyData = loadLegacySnapshot();
+            const migrationCompleted = hasLegacyMigrationCompleted();
+            let syncCompleted = false;
+
+            if (!firstError && legacyData && !migrationCompleted) {
+                syncCompleted = await synchronizeLegacyDataWithServer(legacyData);
+                if (syncCompleted) {
+                    markLegacyMigrationCompleted();
+                }
+            }
+
+            const serverProductCount = state.products.length;
+            const serverMovementCount = state.movements.length;
+            const serverHasData = serverProductCount > 0 || serverMovementCount > 0;
+
+            let usingLegacyData = false;
+
+            if (legacyData) {
+                const localHasMoreProducts = legacyData.products.length > serverProductCount;
+                const localHasMoreMovements = legacyData.movements.length > serverMovementCount;
+
+                if (firstError || !serverHasData || (!migrationCompleted && (localHasMoreProducts || localHasMoreMovements))) {
+                    state.products = legacyData.products;
+                    state.movements = legacyData.movements;
+                    usingLegacyData = true;
+                } else if (!migrationCompleted && !syncCompleted && !firstError && !localHasMoreProducts && !localHasMoreMovements) {
+                    markLegacyMigrationCompleted();
+                }
+            } else if (serverHasData && !migrationCompleted) {
+                markLegacyMigrationCompleted();
+            }
+
+            if (usingLegacyData || serverHasData) {
+                persistLegacySnapshot();
+            }
+
+            if (firstError && !usingLegacyData) {
                 alert(firstError.message || 'Erreur lors de la récupération des données.');
             }
         }
@@ -283,6 +483,7 @@
             try {
                 const data = await fetchJson(API_ENDPOINTS.movements(), {}, 'Impossible de charger les mouvements.');
                 state.movements = Array.isArray(data.movements) ? data.movements : [];
+                persistLegacySnapshot();
             } catch (error) {
                 console.error('Impossible de rafraîchir les mouvements :', error);
             }
@@ -836,6 +1037,7 @@
 
                 loadProducts();
                 renderDashboard();
+                persistLegacySnapshot();
                 closeModal();
                 alert('Produit enregistré.');
             } catch (error) {
@@ -934,6 +1136,7 @@
                 loadProducts();
                 loadMovements();
                 renderDashboard();
+                persistLegacySnapshot();
                 document.getElementById('movement-quantity').value = '1';
                 document.getElementById('movement-reason').value = '';
                 alert('Mouvement enregistré.');
@@ -983,6 +1186,7 @@
                 loadProducts();
                 loadMovements();
                 renderDashboard();
+                persistLegacySnapshot();
                 alert('Produit supprimé.');
             } catch (error) {
                 console.error('Erreur lors de la suppression du produit :', error);
@@ -1121,6 +1325,10 @@
             exportInventory,
         };
     })();
+
+    if (typeof globalThis !== 'undefined') {
+        globalThis.App = App;
+    }
 
 
     document.addEventListener('DOMContentLoaded', () => {
