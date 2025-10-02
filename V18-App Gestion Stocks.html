@@ -1137,8 +1137,7 @@
         function wrapCsvValue(value) {
             const text = String(value ?? '');
             const escaped = text.replace(/"/g, '""');
-            return /[";
-    ]/.test(escaped) ? `"${escaped}"` : escaped;
+            return /[";,\n]/.test(escaped) ? `"${escaped}"` : escaped;
         }
 
         function setText(id, value) {
