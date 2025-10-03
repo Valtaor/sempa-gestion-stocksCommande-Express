@@ -89,7 +89,7 @@
                     </div>
                     <div class="table-wrapper" role="region" aria-live="polite">
                         <table>
-                            <thead><tr><th>Produit</th><th>Stock</th><th>Seuil</th><th>Statut</th><th>Mise à jour</th><th>Actions</th></tr></thead>
+                            <thead><tr><th>Produit</th><th>Référence</th><th>Stock</th><th>Seuil</th><th>Statut</th><th>Prix achat</th><th>Prix vente</th><th>Valeur</th><th>Actions</th></tr></thead>
                             <tbody id="products-table"></tbody>
                         </table>
                     </div>
@@ -151,23 +151,28 @@
             </div>
             <div class="modal-body">
                 <div class="form-grid">
-                    <label>Nom de base<input type="text" id="product-name" autocomplete="off" required placeholder="ex: OL61, 0.75L..."></label>
+                    <label>Nom de base<input type="text" id="product-name" autocomplete="off" required placeholder="ex: OL 61, 0.75L..."></label>
+                    <label>Référence<input type="text" id="product-reference" autocomplete="off" placeholder="ex: OL61 AS"></label>
+                </div>
+                <div class="form-grid">
                     <label>État<select id="product-condition" class="select"><option value="">Aucun</option><option value="Neuf">Neuf</option><option value="Reconditionné">Reconditionné</option></select></label>
+                    <label>Catégorie
+                        <select id="product-category" class="select">
+                            <optgroup label="Pièces Principales"><option value="capot">Capot</option><option value="presse">Presse</option><option value="rotor">Rotor</option><option value="extracteur">Extracteur</option><option value="coutau">Couteau</option><option value="raclette_support">Raclette / Support Raclette</option><option value="languette_presse">Languette Presse</option><option value="tete_robinet">Tête de Robinet</option></optgroup>
+                            <optgroup label="Visserie &amp; Petites Pièces"><option value="vis_capot">Vis Capot</option><option value="piece">Autre Pièce détachée</option></optgroup>
+                            <optgroup label="Consommables"><option value="bouteille">Bouteille PET</option><option value="gobelet">Gobelet</option><option value="nettoyant">Nettoyant</option></optgroup>
+                            <optgroup label="Machines" id="machine-category-options"></optgroup>
+                            <optgroup label="Autres"><option value="autre">Autre</option></optgroup>
+                        </select>
+                    </label>
                 </div>
                 <div class="form-grid">
                     <label>Stock actuel (unités)<input type="number" id="product-stock" min="0" value="0"></label>
                     <label>Seuil d'alerte<input type="number" id="product-minstock" min="1" value="20"></label>
                 </div>
                 <div class="form-grid">
-                    <label>Prix unitaire (€)<input type="number" id="product-price" min="0" step="0.01" value="0"></label>
-                    <label>Catégorie
-                        <select id="product-category" class="select">
-                            <optgroup label="Pièces Principales"><option value="capot">Capot</option><option value="presse">Presse</option><option value="rotor">Rotor</option><option value="extracteur">Extracteur</option><option value="coutau">Couteau</option><option value="raclette_support">Raclette / Support Raclette</option><option value="languette_presse">Languette Presse</option><option value="tete_robinet">Tête de Robinet</option></optgroup>
-                            <optgroup label="Visserie & Petites Pièces"><option value="vis_capot">Vis Capot</option><option value="piece">Autre Pièce détachée</option></optgroup>
-                            <optgroup label="Consommables"><option value="bouteille">Bouteille PET</option><option value="gobelet">Gobelet</option><option value="nettoyant">Nettoyant</option></optgroup>
-                            <optgroup label="Autres"><option value="autre">Autre</option></optgroup>
-                        </select>
-                    </label>
+                    <label>Prix d'achat (€ HT)<input type="number" id="product-purchase-price" min="0" step="0.01" value="0"></label>
+                    <label>Prix de vente (€ HT)<input type="number" id="product-sale-price" min="0" step="0.01" value="0"></label>
                 </div>
                 <label>Description<textarea id="product-desc" rows="3" placeholder="Notes, compatibilité machine, emplacement…"></textarea></label>
             </div>
@@ -186,7 +191,65 @@
             product: (id) => `${API_BASE}?resource=products&id=${encodeURIComponent(id)}`,
             movements: () => `${API_BASE}?resource=movements`,
         };
-        const CATEGORY_LABELS = {
+        const MACHINE_CATALOG = [
+            { slug: 'machine_compact_ol_41', family: 'Compact', reference: 'OL 41', salePrice: 3449, rental: '189 x 13' },
+            { slug: 'machine_compact_ol_41_panier', family: 'Compact', reference: 'OL 41 + Panier', salePrice: 3599, rental: '199 x 13' },
+            { slug: 'machine_compact_ol_41_robinet', family: 'Compact', reference: 'OL 41 + Robinet', salePrice: 3790, rental: '199 x 13' },
+            { slug: 'machine_compact_ol_101', family: 'Compact', reference: 'OL 101', salePrice: 2990, rental: '189 x 13' },
+            { slug: 'machine_compact_ol_101_panier', family: 'Compact', reference: 'OL 101 + Panier', salePrice: 3390, rental: '199 x 13' },
+            { slug: 'machine_compact_ol_101_robinet_panier', family: 'Compact', reference: 'OL 101 + Robinet + Panier', salePrice: 3555, rental: '209 x 13' },
+            { slug: 'machine_compact_ol_101_asf', family: 'Compact', reference: 'OL 101 + ASF', salePrice: 3555, rental: '209 x 13' },
+            { slug: 'machine_compact_ol_101_asf_self_g', family: 'Compact', reference: 'OL 101 ASF SELF G', salePrice: 3679, rental: '209 x 13' },
+            { slug: 'machine_medium_ol_151_as', family: 'Medium', reference: 'OL 151 AS', salePrice: 6859, rental: '219 x 13' },
+            { slug: 'machine_medium_ol_151_as_g', family: 'Medium', reference: 'OL 151 AS G', salePrice: 6999, rental: '229 x 13' },
+            { slug: 'machine_medium_ol_151_as_asf', family: 'Medium', reference: 'OL 151 AS ASF', salePrice: 7199, rental: '229 x 13' },
+            { slug: 'machine_medium_ol_151_as_asf_g', family: 'Medium', reference: 'OL 151 AS ASF G', salePrice: 7359, rental: '239 x 13' },
+            { slug: 'machine_medium_ol_151_as_self_g', family: 'Medium', reference: 'OL 151 AS SELF G', salePrice: 7499, rental: '239 x 13' },
+            { slug: 'machine_medium_ol_61_as', family: 'Medium', reference: 'OL 61 AS', salePrice: 5674, rental: '219 x 13' },
+            { slug: 'machine_medium_ol_161_as_panier', family: 'Medium', reference: 'OL 161 AS + Panier', salePrice: 5899, rental: '199 x 13' },
+            { slug: 'machine_medium_ol_161_as_robinet_panier', family: 'Medium', reference: 'OL 161 AS + Robinet + Panier', salePrice: 6159, rental: '209 x 13' },
+            { slug: 'machine_medium_ol_161_as_asf', family: 'Medium', reference: 'OL 161 AS ASF', salePrice: 5920, rental: '209 x 13' },
+            { slug: 'machine_medium_ol_161_as_asf_g', family: 'Medium', reference: 'OL 161 AS ASF G', salePrice: 6059, rental: '219 x 13' },
+            { slug: 'machine_medium_ol_161_as_self_g', family: 'Medium', reference: 'OL 161 AS SELF G', salePrice: 6279, rental: '219 x 13' },
+            { slug: 'machine_eco_ol_161_as', family: 'Eco', reference: 'OL 161 AS ECO', salePrice: 5299, rental: '199 x 13' },
+            { slug: 'machine_eco_ol_161_as_ecolight', family: 'Eco', reference: 'OL 161 AS ECOLIGHT', salePrice: 5099, rental: '199 x 13' },
+            { slug: 'machine_eco_ol_161_as_g', family: 'Eco', reference: 'OL 161 AS G ECO', salePrice: 5459, rental: '209 x 13' },
+            { slug: 'machine_eco_ol_161_das', family: 'Eco', reference: 'OL 161 DAS ECO', salePrice: 5590, rental: '209 x 13' },
+            { slug: 'machine_eco_ol_161_as_self_g', family: 'Eco', reference: 'OL 161 AS SELF G ECO', salePrice: 5859, rental: '219 x 13' },
+            { slug: 'machine_eco_ol_161_das_self_g', family: 'Eco', reference: 'OL 161 DAS ECO SELF G', salePrice: 5990, rental: '219 x 13' },
+            { slug: 'machine_haut_debit_ol_351_as_self_g', family: 'Haut débit', reference: 'OL 351 AS SELF G', salePrice: 8689, rental: '299 x 13' },
+            { slug: 'machine_haut_debit_ol_351_as_self_g_double', family: 'Haut débit', reference: 'OL 351 AS SELF G Double Poubelles', salePrice: 9150, rental: '299 x 13' },
+            { slug: 'machine_haut_debit_ol_161_das_self_g', family: 'Haut débit', reference: 'OL 161 DAS SELF G', salePrice: 6279, rental: '219 x 13' },
+            { slug: 'machine_haut_debit_ol_161_das_self_g_double', family: 'Haut débit', reference: 'OL 161 DAS SELF G Double Poubelles', salePrice: 6755, rental: '279 x 13' },
+            { slug: 'machine_tres_haut_debit_ol_351_as_self_g', family: 'Très haut débit', reference: 'OL 351 AS SELF G', salePrice: 9150, rental: '309 x 13' },
+            { slug: 'machine_tres_haut_debit_ol_351_as_asf_self_g', family: 'Très haut débit', reference: 'OL 351 AS ASF SELF G', salePrice: 9659, rental: '319 x 13' },
+            { slug: 'machine_tres_haut_debit_ol_351_as_self_g_double', family: 'Très haut débit', reference: 'OL 351 AS SELF G Double Poubelles', salePrice: 9310, rental: '309 x 13' },
+            { slug: 'machine_tres_haut_debit_ol_351_as_g_double', family: 'Très haut débit', reference: 'OL 351 AS G Double Poubelles', salePrice: 9550, rental: '329 x 13' },
+            { slug: 'machine_smoothie_sml_26', family: 'Smoothie', reference: 'SML 26', salePrice: 3990, rental: '199 x 13' },
+            { slug: 'machine_smoothie_sml_26_g', family: 'Smoothie', reference: 'SML 26 G', salePrice: 4090, rental: '209 x 13' },
+            { slug: 'machine_smoothie_sml_126', family: 'Smoothie', reference: 'SML 126', salePrice: 4590, rental: '239 x 13' },
+            { slug: 'machine_smoothie_sml_126_g', family: 'Smoothie', reference: 'SML 126 G', salePrice: 4790, rental: '249 x 13' },
+            { slug: 'machine_sunnyland_sl_101', family: 'Sunnyland', reference: 'SL 101', salePrice: 3656, rental: '199 x 13' },
+            { slug: 'machine_cocoland_coco_101', family: 'Cocoland', reference: 'COCO 101', salePrice: 2656, rental: '199 x 13' },
+            { slug: 'machine_crudiland_cl_151', family: 'Crudiland', reference: 'CL 151', salePrice: 4890, rental: '279 x 13' },
+            { slug: 'machine_ananasland_al_101', family: 'Ananasland', reference: 'AL 101', salePrice: 3950, rental: '179 x 13' },
+            { slug: 'machine_ananasland_ap_151', family: 'Ananasland', reference: 'AP 151', salePrice: 7845, rental: '119 x 13' },
+            { slug: 'machine_ananasland_ap_171_das_sb', family: 'Ananasland', reference: 'AP 171 DAS SB', salePrice: 7945, rental: '129 x 13' },
+            { slug: 'machine_pomme_ap_71', family: 'Pomme', reference: 'AP 71', salePrice: 3895, rental: '119 x 13' },
+            { slug: 'machine_pomme_ap_171_das', family: 'Pomme', reference: 'AP 171 DAS', salePrice: 8845, rental: '139 x 13' },
+            { slug: 'machine_pomme_ap_171_das_sb', family: 'Pomme', reference: 'AP 171 DAS SB', salePrice: 9245, rental: '149 x 13' },
+            { slug: 'machine_premium_ol_161_das', family: 'Premium', reference: 'OL 161 DAS PREMIUM', salePrice: 8400, rental: '299 x 13' },
+            { slug: 'machine_premium_ol_351_as', family: 'Premium', reference: 'OL 351 AS PREMIUM', salePrice: 9350, rental: '359 x 13' },
+            { slug: 'machine_premium_ol_351_as_g', family: 'Premium', reference: 'OL 351 AS G PREMIUM', salePrice: 10250, rental: '399 x 13' },
+            { slug: 'machine_premium_sml_126', family: 'Premium', reference: 'SML 126 PREMIUM', salePrice: 5290, rental: '269 x 13' },
+            { slug: 'machine_fabrique_jus_duo', family: 'Fabrique à jus', reference: 'DUO', salePrice: 20990, rental: '569 x 13' },
+            { slug: 'machine_fabrique_jus_trio', family: 'Fabrique à jus', reference: 'TRIO', salePrice: 27990, rental: '709 x 13' },
+            { slug: 'machine_fabrique_jus_quattro', family: 'Fabrique à jus', reference: 'QUATTRO', salePrice: 29990, rental: '759 x 13' },
+            { slug: 'machine_offre_smoothie_duo', family: 'Offre Smoothie', reference: 'SML 26 + SL 101', salePrice: 20990, rental: '259 x 13' },
+            { slug: 'machine_offre_smoothie_trio', family: 'Offre Smoothie', reference: 'SML 126 + SL 101', salePrice: 23990, rental: '279 x 13' },
+            { slug: 'machine_offre_smoothie_quattro', family: 'Offre Smoothie', reference: 'SML 126 G + SL 101', salePrice: 27990, rental: '309 x 13' },
+        ];
+        const BASE_CATEGORY_LABELS = {
             capot: 'Capot',
             presse: 'Presse',
             rotor: 'Rotor',
@@ -202,7 +265,11 @@
             nettoyant: 'Nettoyant',
             autre: 'Autre',
         };
-        const CATEGORY_ORDER = [
+        const CATEGORY_LABELS = { ...BASE_CATEGORY_LABELS };
+        MACHINE_CATALOG.forEach((machine) => {
+            CATEGORY_LABELS[machine.slug] = `Machines · ${machine.family} · ${machine.reference}`;
+        });
+        const BASE_CATEGORY_ORDER = [
             'capot',
             'presse',
             'rotor',
@@ -218,6 +285,7 @@
             'nettoyant',
             'autre',
         ];
+        const CATEGORY_ORDER = [...BASE_CATEGORY_ORDER, ...MACHINE_CATALOG.map((machine) => machine.slug)];
         const STATUS_LABELS = { low: 'Critique', medium: 'À surveiller', good: 'Stable' };
         const STORAGE_KEYS = { products: 'sempa_products', movements: 'sempa_movements_v2', theme: 'sempa_theme' };
         const LEGACY_STORAGE_KEYS = { products: 'sempa_products_v2', movements: 'sempa_movements' };
@@ -230,13 +298,81 @@
         const DEFAULT_PRODUCTS = (() => {
             const now = new Date('2025-09-17T12:00:00Z').toISOString();
             let counter = 1;
-            return [
-                { id: `default-${counter++}`, name: 'Bouteille 0.33L PET', stock: 8, minStock: 15, price: 0.1, category: 'bouteille', lastUpdated: now },
-                { id: `default-${counter++}`, name: 'Bouteille 0.5L PET', stock: 120, minStock: 30, price: 0.09, category: 'bouteille', lastUpdated: now },
-                { id: `default-${counter++}`, name: 'Bouteille 0.75L PET', stock: 0, minStock: 20, price: 0.1, category: 'bouteille', lastUpdated: new Date('2025-09-30T12:00:00Z').toISOString() },
-                { id: `default-${counter++}`, name: 'Bouteille 1L PET', stock: 45, minStock: 20, price: 0.12, category: 'bouteille', lastUpdated: now },
-                { id: `default-${counter++}`, name: 'Capot OL61 Neuf', stock: 20, minStock: 5, price: 378, category: 'capot', lastUpdated: new Date('2025-10-01T12:00:00Z').toISOString() },
+            const defaults = [
+                {
+                    id: `default-${counter++}`,
+                    name: 'Bouteille 0.33L PET',
+                    reference: 'PET-033',
+                    stock: 8,
+                    minStock: 15,
+                    purchasePrice: 0.05,
+                    salePrice: 0.1,
+                    price: 0.1,
+                    category: 'bouteille',
+                    lastUpdated: now,
+                },
+                {
+                    id: `default-${counter++}`,
+                    name: 'Bouteille 0.5L PET',
+                    reference: 'PET-050',
+                    stock: 120,
+                    minStock: 30,
+                    purchasePrice: 0.06,
+                    salePrice: 0.09,
+                    price: 0.09,
+                    category: 'bouteille',
+                    lastUpdated: now,
+                },
+                {
+                    id: `default-${counter++}`,
+                    name: 'Bouteille 0.75L PET',
+                    reference: 'PET-075',
+                    stock: 0,
+                    minStock: 20,
+                    purchasePrice: 0.07,
+                    salePrice: 0.1,
+                    price: 0.1,
+                    category: 'bouteille',
+                    lastUpdated: new Date('2025-09-30T12:00:00Z').toISOString(),
+                },
+                {
+                    id: `default-${counter++}`,
+                    name: 'Bouteille 1L PET',
+                    reference: 'PET-100',
+                    stock: 45,
+                    minStock: 20,
+                    purchasePrice: 0.08,
+                    salePrice: 0.12,
+                    price: 0.12,
+                    category: 'bouteille',
+                    lastUpdated: now,
+                },
+                {
+                    id: `default-${counter++}`,
+                    name: 'Capot OL 61 Neuf',
+                    reference: 'OL 61',
+                    stock: 20,
+                    minStock: 5,
+                    purchasePrice: 280,
+                    salePrice: 378,
+                    price: 378,
+                    category: 'capot',
+                    lastUpdated: new Date('2025-10-01T12:00:00Z').toISOString(),
+                },
+                {
+                    id: `default-${counter++}`,
+                    name: 'Machine · OL 41',
+                    reference: 'OL 41',
+                    stock: 2,
+                    minStock: 1,
+                    purchasePrice: 2500,
+                    salePrice: 3449,
+                    price: 3449,
+                    category: 'machine_compact_ol_41',
+                    lastUpdated: now,
+                },
             ];
+            return defaults;
         })();
         const DEFAULT_SYNC_ENABLED = typeof window !== 'undefined' ? window.location.protocol !== 'file:' : false;
         let enableApiSync = DEFAULT_SYNC_ENABLED;
@@ -272,7 +408,7 @@
         function loadFromLocalStorage() {
             try {
                 const storedProducts = localStorage.getItem(STORAGE_KEYS.products) ?? localStorage.getItem(LEGACY_STORAGE_KEYS.products);
-                state.products = JSON.parse(storedProducts || '[]');
+                state.products = normalizeProducts(JSON.parse(storedProducts || '[]'));
             } catch (error) {
                 console.warn('Impossible de lire les produits du stockage local :', error);
                 state.products = [];
@@ -288,7 +424,8 @@
 
         function persistProducts() {
             try {
-                localStorage.setItem(STORAGE_KEYS.products, JSON.stringify(state.products));
+                const serialised = state.products.map((product) => sanitizeProductForStorage(product));
+                localStorage.setItem(STORAGE_KEYS.products, JSON.stringify(serialised));
             } catch (error) {
                 console.warn('Impossible de sauvegarder les produits localement :', error);
             }
@@ -302,9 +439,61 @@
             }
         }
 
+        function normalizeProduct(product) {
+            if (!product || typeof product !== 'object') {
+                return {
+                    id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `local-${Date.now()}`,
+                    name: '',
+                    reference: '',
+                    stock: 0,
+                    minStock: 0,
+                    purchasePrice: 0,
+                    salePrice: 0,
+                    price: 0,
+                    category: 'autre',
+                    description: '',
+                    lastUpdated: new Date().toISOString(),
+                };
+            }
+
+            const normalized = { ...product };
+            normalized.id = normalized.id || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `local-${Date.now()}`);
+            normalized.name = typeof normalized.name === 'string' ? normalized.name.trim() : '';
+            normalized.reference = typeof normalized.reference === 'string' ? normalized.reference.trim() : '';
+            const salePrice = Number(normalized.salePrice ?? normalized.price ?? 0);
+            const purchasePrice = Number(normalized.purchasePrice ?? 0);
+            normalized.salePrice = Number.isFinite(salePrice) ? salePrice : 0;
+            normalized.purchasePrice = Number.isFinite(purchasePrice) ? purchasePrice : 0;
+            normalized.price = normalized.salePrice;
+            normalized.stock = Number.isFinite(Number(normalized.stock)) ? Number(normalized.stock) : 0;
+            normalized.minStock = Number.isFinite(Number(normalized.minStock)) ? Number(normalized.minStock) : 0;
+            normalized.category = normalized.category || 'autre';
+            if (typeof normalized.description !== 'string') {
+                normalized.description = '';
+            }
+            if (!normalized.lastUpdated) {
+                normalized.lastUpdated = new Date().toISOString();
+            }
+            return normalized;
+        }
+
+        function normalizeProducts(products) {
+            return Array.isArray(products) ? products.map((product) => normalizeProduct(product)) : [];
+        }
+
+        function sanitizeProductForStorage(product) {
+            const normalized = normalizeProduct(product);
+            return {
+                ...normalized,
+                purchasePrice: Math.round(normalized.purchasePrice * 100) / 100,
+                salePrice: Math.round(normalized.salePrice * 100) / 100,
+                price: Math.round(normalized.salePrice * 100) / 100,
+            };
+        }
+
         function ensureDefaults() {
             if (!state.products.length) {
-                state.products = DEFAULT_PRODUCTS.map((product) => ({ ...product }));
+                state.products = normalizeProducts(DEFAULT_PRODUCTS);
                 persistProducts();
             }
         }
@@ -354,7 +543,7 @@
             try {
                 const data = await fetchJson(API_ENDPOINTS.products(), {}, 'Impossible de charger les produits.');
                 if (data && Array.isArray(data.products)) {
-                    state.products = data.products;
+                    state.products = normalizeProducts(data.products);
                     persistProducts();
                 }
             } catch (error) {
@@ -484,6 +673,12 @@
             document.getElementById('filter-category')?.addEventListener('change', filterProducts);
             document.getElementById('filter-status')?.addEventListener('change', filterProducts);
 
+            populateMachineSelectOptions();
+            const categorySelect = document.getElementById('product-category');
+            if (categorySelect) {
+                categorySelect.addEventListener('change', () => handleCategorySelection({ autoFill: true }));
+            }
+
             document.querySelectorAll('.sempa-tab').forEach((tab) => {
                 tab.addEventListener('click', () => switchToTab(tab.dataset.tab));
             });
@@ -504,6 +699,66 @@
             });
 
             window.addEventListener('storage', handleStorageChange);
+        }
+
+        function populateMachineSelectOptions() {
+            const optgroup = document.getElementById('machine-category-options');
+            if (!optgroup) {
+                return;
+            }
+
+            optgroup.innerHTML = '';
+            MACHINE_CATALOG.forEach((machine) => {
+                const option = document.createElement('option');
+                option.value = machine.slug;
+                const salePrice = Number(machine.salePrice) || 0;
+                const priceLabel = salePrice ? ` · ${formatCurrency(salePrice)}` : '';
+                option.textContent = `${machine.family} · ${machine.reference}${priceLabel}`;
+                option.dataset.reference = machine.reference;
+                if (salePrice) {
+                    option.dataset.salePrice = String(salePrice);
+                }
+                if (machine.rental) {
+                    option.dataset.rental = machine.rental;
+                }
+                optgroup.appendChild(option);
+            });
+        }
+
+        function handleCategorySelection(options = {}) {
+            const { autoFill = true } = options;
+            const select = document.getElementById('product-category');
+            if (!select) {
+                return;
+            }
+
+            const selectedOption = select.selectedOptions?.[0];
+            if (!selectedOption) {
+                return;
+            }
+
+            const referenceInput = document.getElementById('product-reference');
+            const nameInput = document.getElementById('product-name');
+            const saleInput = document.getElementById('product-sale-price');
+            const descInput = document.getElementById('product-desc');
+            const machine = MACHINE_CATALOG.find((item) => item.slug === selectedOption.value);
+
+            if (!autoFill || !machine) {
+                return;
+            }
+
+            if (referenceInput && !referenceInput.value) {
+                referenceInput.value = machine.reference;
+            }
+            if (nameInput && !nameInput.value) {
+                nameInput.value = machine.reference;
+            }
+            if (saleInput && (!saleInput.value || Number(saleInput.value) === 0) && Number(machine.salePrice)) {
+                saleInput.value = (Math.round(Number(machine.salePrice) * 100) / 100).toString();
+            }
+            if (descInput && machine.rental && !descInput.value) {
+                descInput.value = `Loyer indicatif : ${machine.rental}`;
+            }
         }
 
         function handleStorageChange(event) {
@@ -538,14 +793,19 @@
                 const row = document.createElement('tr');
                 row.dataset.category = product.category || 'autre';
                 row.dataset.status = status;
-                row.dataset.name = (product.name || '').toLowerCase();
                 row.dataset.id = product.id;
+                row.dataset.search = `${(product.name || '').toLowerCase()} ${(product.reference || '').toLowerCase()} ${getCategoryLabel(product.category || 'autre').toLowerCase()}`.trim();
+                const salePrice = Number(product.salePrice ?? product.price) || 0;
+                const purchasePrice = Number(product.purchasePrice) || 0;
                 row.innerHTML = `
                     <td data-label="Produit">${product.name}</td>
+                    <td data-label="Référence">${product.reference || '—'}</td>
                     <td data-label="Stock">${formatNumber(product.stock)}</td>
                     <td data-label="Seuil">${formatNumber(product.minStock)}</td>
                     <td data-label="Statut">${STATUS_LABELS[status]}</td>
-                    <td data-label="Valeur">${formatCurrency((Number(product.price) || 0) * (Number(product.stock) || 0))}</td>
+                    <td data-label="Prix achat">${formatCurrency(purchasePrice)}</td>
+                    <td data-label="Prix vente">${formatCurrency(salePrice)}</td>
+                    <td data-label="Valeur">${formatCurrency(salePrice * (Number(product.stock) || 0))}</td>
                     <td class="table-actions">
                         <button class="btn-secondary" type="button" onclick="App.openModal('edit','${product.id}')">Modifier</button>
                         <button class="btn-secondary" type="button" onclick="App.openQuickMovement('${product.id}','in')">Entrée</button>
@@ -635,7 +895,10 @@
             const mediumStock = products.filter((product) => getStockStatus(product.stock, product.minStock) === 'medium');
 
             const totalUnits = products.reduce((acc, product) => acc + (Number(product.stock) || 0), 0);
-            const totalValue = products.reduce((acc, product) => acc + ((Number(product.price) || 0) * (Number(product.stock) || 0)), 0);
+            const totalValue = products.reduce((acc, product) => {
+                const salePrice = Number(product.salePrice ?? product.price) || 0;
+                return acc + (salePrice * (Number(product.stock) || 0));
+            }, 0);
 
             setText('total-products', products.length);
             setText('alerts-count', lowStock.length);
@@ -772,7 +1035,8 @@
 
             const summary = state.products.reduce((acc, product) => {
                 const key = product.category || 'autre';
-                const value = (Number(product.stock) || 0) * (Number(product.price) || 0);
+                const salePrice = Number(product.salePrice ?? product.price) || 0;
+                const value = (Number(product.stock) || 0) * salePrice;
                 acc[key] = (acc[key] || 0) + value;
                 return acc;
             }, {});
@@ -853,7 +1117,8 @@
             }
 
             Array.from(table.rows).forEach((row) => {
-                const matchesSearch = !searchText || row.dataset.name.includes(searchText);
+                const haystack = row.dataset.search || '';
+                const matchesSearch = !searchText || haystack.includes(searchText);
                 const matchesCategory = !selectedCategory || row.dataset.category === selectedCategory;
                 const matchesStatus = !selectedStatus || row.dataset.status === selectedStatus;
                 row.style.display = matchesSearch && matchesCategory && matchesStatus ? '' : 'none';
@@ -895,12 +1160,15 @@
             if (action === 'new') {
                 document.getElementById('modal-title').textContent = 'Nouveau produit';
                 document.getElementById('product-name').value = '';
+                document.getElementById('product-reference').value = '';
                 document.getElementById('product-condition').value = '';
                 document.getElementById('product-stock').value = '0';
                 document.getElementById('product-minstock').value = '20';
-                document.getElementById('product-price').value = '0';
+                document.getElementById('product-purchase-price').value = '0';
+                document.getElementById('product-sale-price').value = '0';
                 document.getElementById('product-category').value = 'capot';
                 document.getElementById('product-desc').value = '';
+                handleCategorySelection({ autoFill: true });
             } else if (action === 'edit' && productId) {
                 document.getElementById('modal-title').textContent = 'Modifier le produit';
                 const product = state.products.find((p) => p.id === productId);
@@ -922,9 +1190,12 @@
                     document.getElementById('product-condition').value = condition;
                     document.getElementById('product-stock').value = product.stock;
                     document.getElementById('product-minstock').value = product.minStock;
-                    document.getElementById('product-price').value = product.price;
+                    document.getElementById('product-reference').value = product.reference || '';
+                    document.getElementById('product-purchase-price').value = Number(product.purchasePrice || 0);
+                    document.getElementById('product-sale-price').value = Number(product.salePrice ?? product.price ?? 0);
                     document.getElementById('product-category').value = product.category || 'autre';
                     document.getElementById('product-desc').value = product.description || '';
+                    handleCategorySelection({ autoFill: false });
                 }
             }
 
@@ -953,9 +1224,11 @@
                 name += ` ${condition}`;
             }
 
+            const reference = document.getElementById('product-reference').value.trim();
             const stockValue = parseInt(document.getElementById('product-stock').value, 10);
             const minStockValue = parseInt(document.getElementById('product-minstock').value, 10);
-            let priceValue = parseFloat(document.getElementById('product-price').value);
+            let purchasePriceValue = parseFloat(document.getElementById('product-purchase-price').value);
+            let salePriceValue = parseFloat(document.getElementById('product-sale-price').value);
             const description = document.getElementById('product-desc').value.trim();
 
             if (!baseName) {
@@ -970,15 +1243,21 @@
                 alert("Seuil d'alerte invalide.");
                 return;
             }
-            if (!Number.isFinite(priceValue) || priceValue < 0) {
-                priceValue = 0;
+            if (!Number.isFinite(purchasePriceValue) || purchasePriceValue < 0) {
+                purchasePriceValue = 0;
+            }
+            if (!Number.isFinite(salePriceValue) || salePriceValue < 0) {
+                salePriceValue = 0;
             }
 
             const payload = {
                 name,
+                reference,
                 stock: stockValue,
                 minStock: minStockValue,
-                price: Math.round(priceValue * 100) / 100,
+                purchasePrice: Math.round(purchasePriceValue * 100) / 100,
+                salePrice: Math.round(salePriceValue * 100) / 100,
+                price: Math.round(salePriceValue * 100) / 100,
                 category,
                 description,
                 lastUpdated: new Date().toISOString(),
@@ -990,16 +1269,16 @@
             if (isUpdate) {
                 const index = state.products.findIndex((product) => product.id === state.currentProductId);
                 if (index !== -1) {
-                    const updatedProduct = { ...state.products[index], ...payload, id: state.currentProductId };
+                    const updatedProduct = normalizeProduct({ ...state.products[index], ...payload, id: state.currentProductId });
                     state.products[index] = updatedProduct;
                 } else {
-                    const fallbackProduct = { ...payload, id: state.currentProductId };
+                    const fallbackProduct = normalizeProduct({ ...payload, id: state.currentProductId });
                     state.products.push(fallbackProduct);
                 }
             } else {
                 const newId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `local-${Date.now()}`;
                 targetId = newId;
-                state.products.push({ ...payload, id: newId });
+                state.products.push(normalizeProduct({ ...payload, id: newId }));
             }
 
             persistProducts();
@@ -1111,9 +1390,12 @@
                 try {
                     const productPayload = {
                         name: updatedProduct.name,
+                        reference: updatedProduct.reference || '',
                         stock: updatedProduct.stock,
                         minStock: updatedProduct.minStock,
-                        price: updatedProduct.price,
+                        purchasePrice: updatedProduct.purchasePrice,
+                        salePrice: updatedProduct.salePrice ?? updatedProduct.price,
+                        price: updatedProduct.salePrice ?? updatedProduct.price,
                         category: updatedProduct.category || 'autre',
                         description: updatedProduct.description || '',
                         lastUpdated: lastUpdated,
@@ -1228,16 +1510,32 @@
                 alert('Aucun produit à exporter.');
                 return;
             }
-            const headers = ['Nom du produit', 'Catégorie', 'Stock (unités)', 'Seuil', 'Prix unitaire (€)', 'Valeur stock (€)', 'Dernière mise à jour'];
-            const rows = state.products.map((product) => [
-                product.name,
-                getCategoryLabel(product.category || 'autre'),
-                formatNumber(product.stock),
-                formatNumber(product.minStock),
-                product.price,
-                (Number(product.price) || 0) * (Number(product.stock) || 0),
-                formatDate(product.lastUpdated),
-            ]);
+            const headers = [
+                'Nom du produit',
+                'Référence',
+                'Catégorie',
+                'Stock (unités)',
+                'Seuil',
+                "Prix d'achat (€)",
+                'Prix de vente (€)',
+                'Valeur stock (€)',
+                'Dernière mise à jour',
+            ];
+            const rows = state.products.map((product) => {
+                const salePrice = Number(product.salePrice ?? product.price) || 0;
+                const purchasePrice = Number(product.purchasePrice) || 0;
+                return [
+                    product.name,
+                    product.reference || '',
+                    getCategoryLabel(product.category || 'autre'),
+                    Number(product.stock) || 0,
+                    Number(product.minStock) || 0,
+                    Math.round(purchasePrice * 100) / 100,
+                    Math.round(salePrice * 100) / 100,
+                    Math.round((salePrice * (Number(product.stock) || 0)) * 100) / 100,
+                    formatDate(product.lastUpdated),
+                ];
+            });
             const csv = [headers, ...rows].map((cells) => cells.map(wrapCsvValue).join(';')).join('\n');
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
