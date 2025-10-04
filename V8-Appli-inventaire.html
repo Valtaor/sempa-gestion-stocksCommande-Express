@@ -15,6 +15,10 @@
             --secondary: #10b981;
             --secondary-light: #d1fae5;
             --accent: #f59e0b;
+            --cta-start: #f0006d;
+            --cta-mid: #db2777;
+            --cta-end: #f97316;
+            --cta-shadow: rgba(208, 34, 115, 0.55);
             --background: #fefaf9;
             --surface: #ffffff;
             --text-primary: #2d1b1f;
@@ -43,6 +47,10 @@
             --secondary: #34d399;
             --secondary-light: #065f46;
             --accent: #fbbf24;
+            --cta-start: #a855f7;
+            --cta-mid: #ec4899;
+            --cta-end: #f97316;
+            --cta-shadow: rgba(236, 72, 153, 0.45);
             --background: #1a1014;
             --surface: #2a1a1f;
             --text-primary: #f7eef0;
@@ -300,19 +308,27 @@
         }
 
         button.primary {
-            background: linear-gradient(135deg, #ec4899, #db2777 45%, #f97316 100%);
+            background: linear-gradient(135deg, var(--cta-start), var(--cta-mid) 55%, var(--cta-end));
             color: #fff;
-            box-shadow: 0 12px 20px -12px rgba(236, 72, 153, 0.8);
-            border: 1px solid rgba(255, 255, 255, 0.35);
-            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 18px 36px -18px var(--cta-shadow);
+            border: none;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+            background-size: 160% 160%;
+            transition: background-position 0.35s ease, transform 0.25s ease, box-shadow 0.35s ease;
         }
         button.primary:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
+            transform: translateY(-3px);
+            background-position: 95% 50%;
+            box-shadow: 0 22px 40px -18px var(--cta-shadow);
         }
         button.primary:focus-visible {
-            outline: 3px solid rgba(236, 72, 153, 0.45);
+            outline: 3px solid rgba(240, 0, 109, 0.55);
             outline-offset: 3px;
+            box-shadow: 0 0 0 4px rgba(240, 0, 109, 0.2);
+        }
+        .dark-mode button.primary:focus-visible {
+            outline-color: rgba(168, 85, 247, 0.6);
+            box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.25);
         }
 
         button.secondary { 
