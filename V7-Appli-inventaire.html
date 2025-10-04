@@ -302,9 +302,28 @@
             background-color: var(--border); 
         }
         
-        .dashboard-grid { 
-            display: grid; 
-            gap: 2rem; 
+        .dashboard-grid {
+            display: grid;
+            gap: 2rem;
+        }
+
+        .mobile-filters-toggle {
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+            border-radius: var(--radius);
+            padding: 0.6rem 1rem;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: #fff;
+            font-weight: 600;
+            width: 100%;
+            justify-content: center;
+            margin-bottom: 1rem;
+        }
+
+        .mobile-filters-toggle svg {
+            width: 18px;
+            height: 18px;
         }
 
         .filters {
@@ -313,6 +332,34 @@
             gap: 1rem;
             align-items: center;
             margin-bottom: 1.5rem;
+        }
+
+        .filters.collapsed {
+            display: none;
+        }
+
+        .quick-filters {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .quick-filter-btn {
+            flex: 1 1 auto;
+            min-width: 120px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text-secondary);
+            padding: 0.6rem 0.75rem;
+            border-radius: var(--radius);
+            font-size: 0.9rem;
+        }
+
+        .quick-filter-btn.active {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            color: var(--primary);
         }
         
         .table-wrapper { 
@@ -624,6 +671,28 @@
             grid-column: 1 / -1;
         }
 
+        .price-suggestion {
+            grid-column: 1 / -1;
+            background: var(--primary-light);
+            border-radius: var(--radius);
+            padding: 0.75rem 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            border: 1px dashed var(--primary);
+            color: var(--text-secondary);
+        }
+
+        .price-suggestion strong {
+            color: var(--text-primary);
+        }
+
+        .price-suggestion button {
+            align-self: flex-start;
+            padding: 0.4rem 0.75rem;
+            font-size: 0.85rem;
+        }
+
         .platform-list-modal {
             display: flex;
             flex-direction: column;
@@ -686,25 +755,165 @@
             color: var(--text-secondary);
         }
 
+        .insights-grid {
+            display: grid;
+            gap: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        }
+
+        .insight-card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .insight-card .insight-title {
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .insight-card .insight-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .mobile-action-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(12px);
+            border-top: 1px solid var(--border);
+            display: none;
+            justify-content: space-around;
+            padding: 0.6rem 0.5rem env(safe-area-inset-bottom);
+            z-index: 950;
+            box-shadow: 0 -8px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .dark-mode .mobile-action-bar {
+            background: rgba(26, 16, 20, 0.92);
+        }
+
+        .mobile-action-bar button {
+            flex: 1;
+            border-radius: var(--radius);
+            padding: 0.75rem 0.5rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            background: var(--border-light);
+        }
+
+        .mobile-action-bar button.primary-action {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: #fff;
+        }
+
+        .mobile-action-bar button svg {
+            width: 18px;
+            height: 18px;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 0 1rem;
             }
-            
+
             .card {
                 padding: 1.5rem;
             }
-            
-            .filters {
-                grid-template-columns: 1fr;
-            }
-            
+
             .stats-grid {
                 grid-template-columns: repeat(2, 1fr);
             }
 
             .platform-form {
                 grid-template-columns: 1fr;
+            }
+
+            .mobile-action-bar {
+                display: flex;
+            }
+
+            .mobile-filters-toggle {
+                display: inline-flex;
+            }
+
+            .filters.collapsed {
+                display: none;
+            }
+
+            .filters.open {
+                display: grid;
+                grid-template-columns: 1fr;
+            }
+
+            table,
+            thead,
+            tbody,
+            th,
+            td,
+            tr {
+                display: block;
+            }
+
+            thead {
+                display: none;
+            }
+
+            tbody tr {
+                margin-bottom: 1rem;
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+                overflow: hidden;
+                background: var(--surface);
+                box-shadow: var(--shadow-sm);
+            }
+
+            td {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 1rem;
+                border-bottom: 1px solid var(--border);
+                padding: 0.85rem 1rem;
+            }
+
+            td:last-child {
+                border-bottom: none;
+            }
+
+            td::before {
+                content: attr(data-label);
+                font-weight: 600;
+                color: var(--text-secondary);
+                flex: 1 0 45%;
+                text-align: left;
+            }
+
+            td > * {
+                flex: 1 0 55%;
+            }
+
+            .actions-cell {
+                justify-content: flex-start;
+            }
+
+            .actions-cell button {
+                width: 42px;
+                height: 42px;
+            }
+
+            body {
+                padding-bottom: 80px;
             }
         }
 
@@ -777,7 +986,7 @@
         </section>
 
         <section class="dashboard-grid">
-            <div class="card">
+            <div class="card" id="statsCard">
                 <h2 class="card-title">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />
@@ -824,14 +1033,34 @@
                     </div>
                 </div>
             </div>
-            <div class="card">
+            <div class="card" id="platformInsightsCard" hidden>
+                <h2 class="card-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 3v5.25M3 8.25A2.25 2.25 0 0 0 5.25 10.5H19.5M21 21v-5.25m0 0A2.25 2.25 0 0 0 18.75 13.5H4.5M9 3v1.5A1.5 1.5 0 0 0 10.5 6h3A1.5 1.5 0 0 0 15 4.5V3m0 18v-1.5a1.5 1.5 0 0 1 1.5-1.5h3A1.5 1.5 0 0 1 21 19.5V21" />
+                    </svg>
+                    Performances plateformes
+                </h2>
+                <div class="insights-grid" id="platformInsights"></div>
+            </div>
+            <div class="card" id="inventoryCard">
                 <h2 class="card-title">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z" />
                     </svg>
                     Inventaire
                 </h2>
-                <div class="filters">
+                <button type="button" class="mobile-filters-toggle" id="toggleFilters" aria-controls="filtersPanel" aria-expanded="false">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6" />
+                    </svg>
+                    Filtres & actions
+                </button>
+                <div class="quick-filters" id="quickFilters">
+                    <button type="button" class="quick-filter-btn" data-status-filter="all" aria-pressed="false">Tout</button>
+                    <button type="button" class="quick-filter-btn" data-status-filter="en-stock" aria-pressed="false">En stock</button>
+                    <button type="button" class="quick-filter-btn" data-status-filter="vendu" aria-pressed="false">Vendus</button>
+                </div>
+                <div class="filters" id="filtersPanel">
                     <input type="search" id="searchInput" placeholder="Rechercher...">
                     <select id="filterCasier"><option value="all">Tous les casiers</option></select>
                     <select id="filterStatus"><option value="all">Tous les statuts</option></select>
@@ -895,6 +1124,11 @@
                         <label for="shippingFees">Frais de livraison (€)</label>
                         <input type="number" id="shippingFees" placeholder="0.00" min="0" step="0.01">
                     </div>
+                    <div class="price-suggestion" id="priceSuggestion" hidden>
+                        <div><strong id="priceSuggestionValue"></strong> recommandés pour cette plateforme.</div>
+                        <div id="priceSuggestionDetails"></div>
+                        <button type="button" class="secondary" id="applyPriceSuggestion">Appliquer la suggestion</button>
+                    </div>
                 </div>
                 <div class="form-actions">
                     <button type="submit" class="primary">Ajouter</button>
@@ -906,6 +1140,27 @@
     
     <!-- Notification -->
     <div class="notification" id="notification"></div>
+
+    <nav class="mobile-action-bar" id="mobileActionBar" aria-label="Actions rapides">
+        <button type="button" id="mobileScrollInventory">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 4.5h18M3 9h18M3 13.5h18M3 18h18" />
+            </svg>
+            Liste
+        </button>
+        <button type="button" class="primary-action" id="mobileAddItem">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Ajouter
+        </button>
+        <button type="button" id="mobileScrollStats">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.071.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Statistiques
+        </button>
+    </nav>
 
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.18.0/dist/tf.min.js" integrity="sha384-tW96d2LkLGjn6+MQnG8drtJjnM/1Urs6IVwy+h81X/yS6Ii+1VOfLntB/rAIum6y" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.0/dist/mobilenet.min.js" integrity="sha384-l6j4K44jIZE8tm8c7x8uX3fVbw0BQsI2nuAIetsgif9JjTcP6omM6Wanhb7Spbij" crossorigin="anonymous"></script>
@@ -937,6 +1192,10 @@
         const searchInput = document.getElementById('searchInput');
         const filterCasier = document.getElementById('filterCasier');
         const filterStatus = document.getElementById('filterStatus');
+        const filtersPanel = document.getElementById('filtersPanel');
+        const toggleFiltersBtn = document.getElementById('toggleFilters');
+        const quickFiltersContainer = document.getElementById('quickFilters');
+        const quickFilterButtons = quickFiltersContainer ? Array.from(quickFiltersContainer.querySelectorAll('.quick-filter-btn')) : [];
         const exportCsvBtn = document.getElementById('exportCsv');
         const cancelEditBtn = document.getElementById('cancelEditBtn');
         const formTitle = document.getElementById('formTitle');
@@ -946,12 +1205,18 @@
         const photoPreviewContainer = document.getElementById('photoPreviewContainer');
         const aiProcessing = document.getElementById('aiProcessing');
         const notification = document.getElementById('notification');
+        const mobileActionBar = document.getElementById('mobileActionBar');
+        const mobileAddItemBtn = document.getElementById('mobileAddItem');
+        const mobileScrollInventoryBtn = document.getElementById('mobileScrollInventory');
+        const mobileScrollStatsBtn = document.getElementById('mobileScrollStats');
 
         // Éléments pour les statistiques
         const statEnStock = document.getElementById('statEnStock');
         const statVendus = document.getElementById('statVendus');
         const statCA = document.getElementById('statCA');
         const statMarge = document.getElementById('statMarge');
+        const platformInsightsCard = document.getElementById('platformInsightsCard');
+        const platformInsights = document.getElementById('platformInsights');
 
         // Éléments pour la gestion des plateformes
         const platformModal = document.getElementById('platformModal');
@@ -968,8 +1233,19 @@
         const customPlatformGroup = document.getElementById('customPlatformGroup');
         const platformCustomName = document.getElementById('platformCustomName');
         const platformSubmitBtn = platformForm.querySelector('button[type="submit"]');
+        const priceSuggestion = document.getElementById('priceSuggestion');
+        const priceSuggestionValue = document.getElementById('priceSuggestionValue');
+        const priceSuggestionDetails = document.getElementById('priceSuggestionDetails');
+        const applyPriceSuggestionBtn = document.getElementById('applyPriceSuggestion');
+        const prixAchatInput = document.getElementById('prixAchat');
 
         const KNOWN_PLATFORMS = ['vinted', 'leboncoin', 'ebay'];
+        const PLATFORM_RULES = {
+            vinted: { targetMargin: 0.35, feePercent: 0.08, feeFixed: 0.7, shipping: 0 },
+            leboncoin: { targetMargin: 0.3, feePercent: 0.05, feeFixed: 0 },
+            ebay: { targetMargin: 0.4, feePercent: 0.12, feeFixed: 0.35, shipping: 4.9 },
+            autre: { targetMargin: 0.3, feePercent: 0.05, feeFixed: 0 },
+        };
 
         function safeNumber(value, fallback = 0) {
             const parsed = Number.parseFloat(value);
@@ -979,6 +1255,68 @@
         function formatCurrency(value) {
             const number = safeNumber(value);
             return `${number.toFixed(2)} €`;
+        }
+
+        function getPlatformRule(type) {
+            return PLATFORM_RULES[type] || PLATFORM_RULES.autre;
+        }
+
+        function calculateSuggestedPrice(purchasePrice, platformType) {
+            const base = safeNumber(purchasePrice);
+            if (!base) {
+                return null;
+            }
+
+            const rule = getPlatformRule(platformType);
+            if (!rule) {
+                return null;
+            }
+
+            const feePercent = safeNumber(rule.feePercent);
+            const feeFixed = safeNumber(rule.feeFixed);
+            const targetMargin = safeNumber(rule.targetMargin);
+            const shipping = safeNumber(rule.shipping);
+
+            const desiredNet = base * (1 + targetMargin) + feeFixed + shipping;
+            const salePrice = feePercent >= 0.95 ? desiredNet : desiredNet / (1 - feePercent);
+            const platformFees = salePrice * feePercent + feeFixed;
+            const estimatedMargin = salePrice - platformFees - shipping - base;
+
+            return {
+                price: salePrice,
+                margin: estimatedMargin,
+                platformFees,
+                shipping,
+            };
+        }
+
+        function updatePriceSuggestion() {
+            if (!priceSuggestion) return;
+
+            const selectedType = platformSelect.value || 'autre';
+            const purchasePrice = prixAchatInput ? safeNumber(prixAchatInput.value) : 0;
+            const suggestion = calculateSuggestedPrice(purchasePrice, selectedType);
+
+            if (!suggestion) {
+                priceSuggestion.hidden = true;
+                return;
+            }
+
+            priceSuggestion.hidden = false;
+            priceSuggestionValue.textContent = formatCurrency(suggestion.price);
+
+            const details = [];
+            if (suggestion.margin) {
+                details.push(`Marge estimée : ${formatCurrency(suggestion.margin)}`);
+            }
+            if (suggestion.platformFees) {
+                details.push(`Frais estimés : ${formatCurrency(suggestion.platformFees)}`);
+            }
+            if (suggestion.shipping) {
+                details.push(`Livraison suggérée : ${formatCurrency(suggestion.shipping)}`);
+            }
+
+            priceSuggestionDetails.textContent = details.join(' • ') || '';
         }
 
         function generatePlatformId() {
@@ -1134,6 +1472,8 @@
             if (!isCustom) {
                 platformCustomName.value = '';
             }
+
+            updatePriceSuggestion();
         }
 
         function populatePlatformForm(platform, index) {
@@ -1152,6 +1492,8 @@
 
             platformEditIndex.value = index;
             platformSubmitBtn.textContent = 'Mettre à jour';
+
+            updatePriceSuggestion();
         }
 
         function markPlatformAsSold(itemId, platformIndex) {
@@ -1221,32 +1563,115 @@
             updateInventoryTable();
             updateStats();
             updateFilters();
-            
+
             // Gestionnaire d'événements pour le formulaire
             itemForm.addEventListener('submit', handleFormSubmit);
-            
+
             // Gestionnaire d'événements pour la recherche
             searchInput.addEventListener('input', updateInventoryTable);
-            
+
             // Gestionnaire d'événements pour les filtres
             filterCasier.addEventListener('change', updateInventoryTable);
             filterStatus.addEventListener('change', updateInventoryTable);
-            
+
+            if (toggleFiltersBtn && filtersPanel) {
+                const mobileBreakpoint = window.matchMedia('(max-width: 768px)');
+
+                const syncFiltersVisibility = () => {
+                    if (mobileBreakpoint.matches) {
+                        filtersPanel.classList.add('collapsed');
+                        filtersPanel.classList.remove('open');
+                        toggleFiltersBtn.setAttribute('aria-expanded', 'false');
+                    } else {
+                        filtersPanel.classList.remove('collapsed');
+                        filtersPanel.classList.remove('open');
+                        toggleFiltersBtn.setAttribute('aria-expanded', 'true');
+                    }
+                };
+
+                toggleFiltersBtn.addEventListener('click', () => {
+                    const willOpen = !filtersPanel.classList.contains('open');
+                    filtersPanel.classList.toggle('open', willOpen);
+                    filtersPanel.classList.toggle('collapsed', !willOpen);
+                    toggleFiltersBtn.setAttribute('aria-expanded', String(willOpen));
+                });
+
+                if (typeof mobileBreakpoint.addEventListener === 'function') {
+                    mobileBreakpoint.addEventListener('change', syncFiltersVisibility);
+                } else if (typeof mobileBreakpoint.addListener === 'function') {
+                    mobileBreakpoint.addListener(syncFiltersVisibility);
+                }
+                syncFiltersVisibility();
+            }
+
+            if (quickFilterButtons && quickFilterButtons.length) {
+                quickFilterButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        const status = button.dataset.statusFilter;
+                        filterStatus.value = status;
+                        updateInventoryTable();
+                    });
+                });
+            }
+
             // Gestionnaire d'événements pour l'export CSV
             exportCsvBtn.addEventListener('click', exportToCsv);
-            
+
             // Gestionnaire d'événements pour l'annulation de l'édition
             cancelEditBtn.addEventListener('click', cancelEdit);
-            
+
             // Gestionnaire d'événements pour la photo
             photoInput.addEventListener('change', handlePhotoUpload);
-            
+
+            if (prixAchatInput) {
+                prixAchatInput.addEventListener('input', updatePriceSuggestion);
+            }
+
+            if (applyPriceSuggestionBtn) {
+                applyPriceSuggestionBtn.addEventListener('click', () => {
+                    const suggestion = calculateSuggestedPrice(prixAchatInput ? prixAchatInput.value : 0, platformSelect.value || 'autre');
+                    if (!suggestion) {
+                        return;
+                    }
+
+                    platformPrice.value = suggestion.price.toFixed(2);
+
+                    if (platformSelect.value === 'ebay') {
+                        ebayFees.value = suggestion.platformFees.toFixed(2);
+                        if (!shippingFees.value && suggestion.shipping) {
+                            shippingFees.value = suggestion.shipping.toFixed(2);
+                        }
+                    }
+                });
+            }
+
             // Gestionnaire d'événements pour le formulaire des plateformes
             platformForm.addEventListener('submit', handlePlatformSubmit);
 
             // Gestionnaire d'événements pour le changement de plateforme
             platformSelect.addEventListener('change', updatePlatformFieldsVisibility);
             updatePlatformFieldsVisibility();
+
+            if (mobileAddItemBtn) {
+                mobileAddItemBtn.addEventListener('click', () => {
+                    itemForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    setTimeout(() => {
+                        document.getElementById('titre')?.focus();
+                    }, 300);
+                });
+            }
+
+            if (mobileScrollInventoryBtn) {
+                mobileScrollInventoryBtn.addEventListener('click', () => {
+                    document.getElementById('inventoryCard')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
+            }
+
+            if (mobileScrollStatsBtn) {
+                mobileScrollStatsBtn.addEventListener('click', () => {
+                    document.getElementById('statsCard')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
+            }
 
             // Gestionnaire d'événements pour fermer les modales
             document.querySelectorAll('.close-modal').forEach(button => {
@@ -1445,31 +1870,31 @@
 
                     return `
                         <tr>
-                            <td>
+                            <td data-label="Photo">
                                 ${photoHtml}
                             </td>
-                            <td>
+                            <td data-label="Titre">
                                 <strong>${escapeHtml(item.titre)}</strong>
                                 <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.25rem;">
                                     Acheté: ${formatDate(item.dateAchat)} | ${formatCurrency(item.prixAchat)}
                                 </div>
                             </td>
-                            <td>
+                            <td data-label="Infos">
                                 <div><strong>Casier:</strong> ${escapeHtml(item.casier)}</div>
                                 ${notesHtml}
                             </td>
-                            <td>
+                            <td data-label="Plateformes">
                                 <div class="platform-list">
                                     ${platformTags}
                                 </div>
                             </td>
-                            <td>
+                            <td data-label="Statut">
                                 <span class="status ${statusClass}">
                                     ${statusLabel}
                                 </span>
                                 ${saleDetails}
                             </td>
-                            <td class="actions-cell">
+                            <td class="actions-cell" data-label="Actions">
                                 <button class="platform-btn" title="Gérer les plateformes" data-id="${item.id}">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-4.72L4.318 3.44A1.5 1.5 0 015.378 3h13.243a1.5 1.5 0 011.06.44l1.19 1.189a3 3 0 01-.621 4.72m-13.5 8.65h3.75a.75.75 0 00.75-.75V13.5a.75.75 0 00-.75-.75H6.75a.75.75 0 00-.75.75v3.75c0 .415.336.75.75.75z" />
@@ -1512,6 +1937,8 @@
                     });
                 });
             }
+
+            updateQuickFilterState();
         }
 
         // Ouvrir la modale de gestion des plateformes
@@ -1830,10 +2257,92 @@
             statVendus.textContent = vendus;
             statCA.textContent = formatCurrency(ca);
             statMarge.textContent = formatCurrency(marge);
+
+            updatePlatformInsights();
+        }
+
+        function updatePlatformInsights() {
+            if (!platformInsights || !platformInsightsCard) {
+                return;
+            }
+
+            const summary = {};
+
+            inventory.forEach(item => {
+                if (!item.plateformes || item.plateformes.length === 0) {
+                    return;
+                }
+
+                item.plateformes.forEach(platform => {
+                    normalizePlatform(platform);
+                    const key = platform.type === 'autre' ? (platform.nom || 'autre') : (platform.type || 'autre');
+
+                    if (!summary[key]) {
+                        summary[key] = {
+                            nom: platform.type === 'autre' ? (platform.nom || 'Autre') : getPlatformLabel(platform.type),
+                            listed: 0,
+                            ventes: 0,
+                            chiffreAffaires: 0,
+                            marge: 0,
+                        };
+                    }
+
+                    summary[key].listed += 1;
+
+                    if (isPlatformSold(item, platform)) {
+                        summary[key].ventes += 1;
+                        const saleInfo = getSaleInfo(item);
+                        if (saleInfo) {
+                            const salePrice = safeNumber(saleInfo.prix);
+                            const totalFees = safeNumber(saleInfo.frais) + safeNumber(saleInfo.livraison);
+                            summary[key].chiffreAffaires += salePrice;
+                            summary[key].marge += salePrice - totalFees - safeNumber(item.prixAchat);
+                        }
+                    }
+                });
+            });
+
+            const entries = Object.values(summary).sort((a, b) => b.chiffreAffaires - a.chiffreAffaires);
+
+            if (entries.length === 0) {
+                platformInsights.innerHTML = '<p style="color: var(--text-muted);">Ajoutez des plateformes pour suivre leurs performances.</p>';
+                platformInsightsCard.hidden = false;
+                return;
+            }
+
+            platformInsightsCard.hidden = false;
+            platformInsights.innerHTML = entries.map(entry => {
+                const listedLabel = `${entry.listed} annonce${entry.listed > 1 ? 's' : ''}`;
+                const salesLabel = `${entry.ventes} vente${entry.ventes > 1 ? 's' : ''}`;
+                return `
+                    <div class="insight-card">
+                        <span class="insight-title">${escapeHtml(entry.nom)}</span>
+                        <span class="insight-value">${formatCurrency(entry.chiffreAffaires)}</span>
+                        <span style="font-size: 0.85rem; color: var(--text-secondary);">${listedLabel} • ${salesLabel}</span>
+                        <span style="font-size: 0.85rem; color: var(--text-secondary);">Marge : ${formatCurrency(entry.marge)}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateQuickFilterState() {
+            if (!quickFilterButtons || quickFilterButtons.length === 0) {
+                return;
+            }
+
+            const current = filterStatus.value || 'all';
+            quickFilterButtons.forEach(button => {
+                const isActive = button.dataset.statusFilter === current;
+                button.classList.toggle('active', isActive);
+                button.setAttribute('aria-pressed', String(isActive));
+            });
         }
 
         // Mettre à jour les filtres
         function updateFilters() {
+            const previousCasier = filterCasier.value;
+            const previousStatus = filterStatus.value;
+
             // Mettre à jour le filtre des casiers
             const casiers = [...new Set(inventory.map(item => item.casier).filter(Boolean))].sort();
             filterCasier.innerHTML = '<option value="all">Tous les casiers</option>' +
@@ -1841,13 +2350,23 @@
                     const safeValue = escapeHtml(casier);
                     return `<option value="${safeValue}">${safeValue}</option>`;
                 }).join('');
-            
+
+            if (filterCasier.querySelector(`option[value="${previousCasier}"]`)) {
+                filterCasier.value = previousCasier;
+            }
+
             // Mettre à jour le filtre des statuts
             filterStatus.innerHTML = `
                 <option value="all">Tous les statuts</option>
                 <option value="en-stock">En stock</option>
                 <option value="vendu">Vendu</option>
             `;
+
+            if (filterStatus.querySelector(`option[value="${previousStatus}"]`)) {
+                filterStatus.value = previousStatus;
+            }
+
+            updateQuickFilterState();
         }
 
         // Exporter en CSV
