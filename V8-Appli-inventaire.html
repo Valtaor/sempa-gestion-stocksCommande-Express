@@ -182,13 +182,28 @@
             top: 2rem;
         }
 
-        .form-grid { 
-            display: grid; 
-            gap: 1.5rem; 
+        .form-grid {
+            display: grid;
+            gap: 1.5rem;
         }
-        .form-group { 
-            display: flex; 
-            flex-direction: column; 
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
         }
         
         label {
@@ -285,13 +300,19 @@
         }
 
         button.primary {
-            background: linear-gradient(135deg, #f97316, #ec4899);
-            color: white;
-            box-shadow: var(--shadow-md);
+            background: linear-gradient(135deg, #ec4899, #db2777 45%, #f97316 100%);
+            color: #fff;
+            box-shadow: 0 12px 20px -12px rgba(236, 72, 153, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
         }
         button.primary:hover {
             transform: translateY(-2px);
             box-shadow: var(--shadow-lg);
+        }
+        button.primary:focus-visible {
+            outline: 3px solid rgba(236, 72, 153, 0.45);
+            outline-offset: 3px;
         }
 
         button.secondary { 
@@ -651,6 +672,126 @@
             color: var(--text-muted);
         }
 
+        .follow-up-group {
+            background: var(--primary-light);
+            border: 1px dashed var(--primary);
+            border-radius: var(--radius-lg);
+            padding: 1.1rem 1.25rem;
+            gap: 0.75rem;
+        }
+
+        .follow-up-top {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .follow-up-text {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            cursor: pointer;
+        }
+
+        .follow-up-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .follow-up-description {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 56px;
+            height: 30px;
+            flex-shrink: 0;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 999px;
+            border: 1px solid rgba(236, 72, 153, 0.4);
+            transition: var(--transition);
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            height: 24px;
+            width: 24px;
+            left: 3px;
+            top: 2px;
+            border-radius: 50%;
+            background: var(--primary);
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .toggle-switch input:checked + .toggle-slider {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-color: rgba(236, 72, 153, 0.6);
+        }
+
+        .toggle-switch input:checked + .toggle-slider::before {
+            transform: translateX(26px);
+            background: #fff;
+        }
+
+        .follow-up-hint {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+        }
+
+        .follow-up-hint svg {
+            width: 16px;
+            height: 16px;
+            color: var(--primary);
+            flex-shrink: 0;
+        }
+
+        .inventory-flags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-top: 0.5rem;
+        }
+
+        .badge-later {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            background: linear-gradient(135deg, rgba(236, 72, 153, 0.16), rgba(59, 130, 246, 0.1));
+            color: var(--primary-dark);
+            border: 1px solid rgba(236, 72, 153, 0.35);
+            padding: 0.25rem 0.6rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+        }
+
+        .badge-later svg {
+            width: 14px;
+            height: 14px;
+        }
+
         /* Modal pour gérer les plateformes de vente */
         .platform-modal .modal-content {
             width: min(600px, 90vw);
@@ -831,6 +972,10 @@
                 padding: 1.5rem;
             }
 
+            .follow-up-group {
+                padding: 1rem;
+            }
+
             .form-section .form-actions {
                 position: sticky;
                 bottom: calc(96px + env(safe-area-inset-bottom));
@@ -940,6 +1085,51 @@
             }
         }
 
+        @media (min-width: 640px) {
+            .follow-up-top {
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+            }
+
+            .follow-up-text {
+                max-width: calc(100% - 96px);
+            }
+        }
+
+        .dark-mode .follow-up-group {
+            background: rgba(236, 72, 153, 0.08);
+            border-color: rgba(236, 72, 153, 0.45);
+        }
+
+        .dark-mode .toggle-slider {
+            background: rgba(40, 24, 30, 0.9);
+            border-color: rgba(236, 72, 153, 0.35);
+        }
+
+        .dark-mode .toggle-slider::before {
+            background: var(--primary-dark);
+        }
+
+        .dark-mode .toggle-switch input:checked + .toggle-slider {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+            border-color: rgba(236, 72, 153, 0.6);
+        }
+
+        .dark-mode .toggle-switch input:checked + .toggle-slider::before {
+            background: #1f0f14;
+        }
+
+        .dark-mode .follow-up-hint {
+            color: var(--text-secondary);
+        }
+
+        .dark-mode .badge-later {
+            background: rgba(236, 72, 153, 0.25);
+            border-color: rgba(236, 72, 153, 0.4);
+            color: var(--primary);
+        }
+
     </style>
 </head>
 <body>
@@ -999,6 +1189,24 @@
                     <div class="form-group">
                         <label for="notes">Notes (facultatif)</label>
                         <textarea id="notes" rows="3" placeholder="État, provenance..."></textarea>
+                    </div>
+                    <div class="form-group full-width follow-up-group">
+                        <div class="follow-up-top">
+                            <label class="follow-up-text" for="completeLater" id="completeLaterLabel">
+                                <span class="follow-up-title">À renseigner plus tard</span>
+                                <span class="follow-up-description" id="completeLaterHelp">Activez cette option pour vous rappeler qu'il manque des informations à compléter sur cet objet.</span>
+                            </label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="completeLater" aria-labelledby="completeLaterLabel" aria-describedby="completeLaterHelp">
+                                <span class="toggle-slider" aria-hidden="true"></span>
+                            </label>
+                        </div>
+                        <div class="follow-up-hint">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>Les objets marqués affichent un badge «&nbsp;À compléter&nbsp;» dans votre inventaire pour ne plus les oublier.</span>
+                        </div>
                     </div>
                 </div>
                 <div class="form-actions">
@@ -1226,6 +1434,7 @@
         const photoInput = document.getElementById('photo');
         const photoPreview = document.getElementById('photoPreview');
         const photoPreviewContainer = document.getElementById('photoPreviewContainer');
+        const completeLaterInput = document.getElementById('completeLater');
         const aiProcessing = document.getElementById('aiProcessing');
         const notification = document.getElementById('notification');
         const mobileActionBar = document.getElementById('mobileActionBar');
@@ -1391,6 +1600,7 @@
         function normalizeItem(item) {
             if (!item) return item;
             item.prixAchat = safeNumber(item.prixAchat);
+            item.aCompleter = Boolean(item.aCompleter);
             item.plateformes = (item.plateformes || []).map(platform => normalizePlatform(platform)).filter(Boolean);
 
             if (item.vente) {
@@ -1725,6 +1935,7 @@
                 prixAchat: safeNumber(document.getElementById('prixAchat').value),
                 dateAchat: document.getElementById('dateAchat').value,
                 notes: document.getElementById('notes').value.trim(),
+                aCompleter: completeLaterInput ? completeLaterInput.checked : false,
                 photo: photoPreview.src || '',
                 statut: existingItem ? existingItem.statut : 'en-stock',
                 plateformes: existingItem ? existingItem.plateformes : [],
@@ -1853,6 +2064,17 @@
                     const notesHtml = item.notes
                         ? `<div style="margin-top: 0.25rem;"><strong>Notes:</strong> ${escapeHtml(item.notes)}</div>`
                         : '';
+                    const followUpBadge = item.aCompleter
+                        ? `<span class="badge-later">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                À compléter
+                            </span>`
+                        : '';
+                    const flagsHtml = followUpBadge
+                        ? `<div class="inventory-flags">${followUpBadge}</div>`
+                        : '';
 
                     const platformTags = item.plateformes && item.plateformes.length > 0
                         ? item.plateformes.map(platform => {
@@ -1904,6 +2126,7 @@
                             </td>
                             <td data-label="Infos">
                                 <div><strong>Casier:</strong> ${escapeHtml(item.casier)}</div>
+                                ${flagsHtml}
                                 ${notesHtml}
                             </td>
                             <td data-label="Plateformes">
@@ -2197,7 +2420,10 @@
             document.getElementById('prixAchat').value = item.prixAchat;
             document.getElementById('dateAchat').value = item.dateAchat;
             document.getElementById('notes').value = item.notes || '';
-            
+            if (completeLaterInput) {
+                completeLaterInput.checked = Boolean(item.aCompleter);
+            }
+
             if (item.photo) {
                 photoPreview.src = item.photo;
                 photoPreviewContainer.style.display = 'block';
@@ -2243,6 +2469,9 @@
             itemForm.reset();
             document.getElementById('dateAchat').valueAsDate = new Date();
             photoPreviewContainer.style.display = 'none';
+            if (completeLaterInput) {
+                completeLaterInput.checked = false;
+            }
             editMode = false;
             currentEditId = null;
             formTitle.innerHTML = `
@@ -2405,6 +2634,7 @@
                 'Prix d\'achat',
                 'Date d\'achat',
                 'Notes',
+                'À compléter',
                 'Statut',
                 'Plateformes',
                 'Plateforme vente',
@@ -2443,6 +2673,7 @@
                         safeNumber(item.prixAchat).toFixed(2),
                         escapeCsvValue(item.dateAchat),
                         escapeCsvValue(item.notes || ''),
+                        item.aCompleter ? 'Oui' : 'Non',
                         escapeCsvValue(item.statut === 'en-stock' ? 'En stock' : 'Vendu'),
                         escapeCsvValue(platforms),
                         escapeCsvValue(saleInfo ? saleInfo.nom : ''),
