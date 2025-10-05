@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventaire Bijoux</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #d4af37;
+            --primary-dark: #b4881d;
+            --primary-light: #f6e5b8;
+            --background: #faf9f6;
+            --surface: #ffffff;
+            --surface-alt: #fdf7ec;
+            --text: #2c2a27;
+            --text-muted: #7a756d;
+            --border: #ece6da;
+            --danger: #d14343;
+            --success: #2f9e44;
+            --warning: #e67700;
+            --radius: 16px;
+            --shadow: 0 12px 32px rgba(44, 42, 39, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            background: radial-gradient(circle at top, var(--surface-alt), var(--background));
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        header {
+            padding: 2.5rem 1.5rem 2rem;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: clamp(2.2rem, 5vw, 3.2rem);
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        header p {
+            max-width: 720px;
+            margin: 0 auto;
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        main {
+            padding: 0 1.5rem 3rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        @media (min-width: 1024px) {
+            .grid {
+                grid-template-columns: 380px 1fr;
+                align-items: start;
+            }
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(212, 175, 55, 0.1);
+            padding: 1.5rem;
+        }
+
+        .card h2 {
+            margin-top: 0;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card h2 span.badge {
+            background: rgba(212, 175, 55, 0.16);
+            color: var(--primary-dark);
+            font-size: 0.75rem;
+            padding: 0.35rem 0.75rem;
+            border-radius: 999px;
+        }
+
+        form label {
+            display: block;
+            margin-bottom: 0.4rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        form input[type="text"],
+        form input[type="number"],
+        form textarea,
+        form select {
+            width: 100%;
+            padding: 0.7rem 0.8rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.86);
+            transition: border-color 0.2s ease;
+            font-size: 0.95rem;
+        }
+
+        form input[type="text"]:focus,
+        form input[type="number"]:focus,
+        form textarea:focus,
+        form select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
+        }
+
+        .field-group {
+            margin-bottom: 1rem;
+        }
+
+        .inline-fields {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+
+        button, .button {
+            border: none;
+            cursor: pointer;
+            border-radius: 999px;
+            padding: 0.65rem 1.1rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        button.primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: #fff;
+            box-shadow: 0 10px 20px rgba(180, 136, 29, 0.3);
+        }
+
+        button.secondary {
+            background: rgba(212, 175, 55, 0.15);
+            color: var(--primary-dark);
+        }
+
+        button.danger {
+            background: rgba(209, 67, 67, 0.12);
+            color: var(--danger);
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 20px rgba(212, 175, 55, 0.18);
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 720px;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 0.75rem;
+            border-bottom: 1px solid rgba(44, 42, 39, 0.08);
+            font-size: 0.92rem;
+            vertical-align: top;
+        }
+
+        th {
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+        }
+
+        tr.low-stock td {
+            background: rgba(230, 119, 0, 0.06);
+        }
+
+        tr.out-of-stock td {
+            background: rgba(209, 67, 67, 0.06);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge.warning {
+            background: rgba(230, 119, 0, 0.16);
+            color: var(--warning);
+        }
+
+        .badge.danger {
+            background: rgba(209, 67, 67, 0.16);
+            color: var(--danger);
+        }
+
+        .badge.muted {
+            background: rgba(44, 42, 39, 0.08);
+            color: var(--text-muted);
+        }
+
+        .stock-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+        }
+
+        .filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .filters button {
+            background: rgba(212, 175, 55, 0.12);
+            color: var(--primary-dark);
+        }
+
+        .filters button.active {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: #fff;
+        }
+
+        .chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .chip {
+            background: rgba(44, 42, 39, 0.08);
+            padding: 0.3rem 0.6rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: var(--text-muted);
+        }
+
+        .toast {
+            position: fixed;
+            top: 1.5rem;
+            right: 1.5rem;
+            background: var(--surface);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            padding: 1rem 1.2rem;
+            border-left: 4px solid var(--primary);
+            min-width: 240px;
+            display: none;
+        }
+
+        .toast.show {
+            display: block;
+        }
+
+        .alert-panel {
+            background: rgba(230, 119, 0, 0.1);
+            border: 1px solid rgba(230, 119, 0, 0.3);
+            color: var(--warning);
+            border-radius: 12px;
+            padding: 0.9rem 1rem;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .alert-panel.show {
+            display: block;
+        }
+
+        .photo-previews {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 0.5rem;
+        }
+
+        .photo-previews img {
+            width: 64px;
+            height: 64px;
+            object-fit: cover;
+            border-radius: 12px;
+            border: 1px solid rgba(44, 42, 39, 0.1);
+        }
+
+        .history-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(44, 42, 39, 0.45);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            z-index: 1000;
+        }
+
+        .history-modal.show {
+            display: flex;
+        }
+
+        .history-content {
+            background: var(--surface);
+            border-radius: 18px;
+            padding: 1.5rem;
+            width: min(600px, 100%);
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow);
+        }
+
+        .history-content h3 {
+            margin-top: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-list {
+            margin-top: 1rem;
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .history-item {
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            background: rgba(44, 42, 39, 0.05);
+            border: 1px solid rgba(44, 42, 39, 0.06);
+        }
+
+        .history-item strong {
+            display: block;
+            margin-bottom: 0.2rem;
+        }
+
+        .history-item small {
+            color: var(--text-muted);
+        }
+
+        .import-export {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .warning-text {
+            background: rgba(230, 119, 0, 0.12);
+            border-radius: 12px;
+            padding: 0.75rem 0.9rem;
+            font-size: 0.85rem;
+            margin-top: 0.75rem;
+            color: var(--warning);
+        }
+
+        .title-alert {
+            display: none;
+            margin-top: 0.75rem;
+            padding: 0.75rem;
+            border-radius: 12px;
+            background: rgba(230, 119, 0, 0.12);
+            color: var(--warning);
+            font-size: 0.9rem;
+        }
+
+        .title-alert.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Inventaire Bijoux</h1>
+        <p>Pilotage complet de vos bijoux : génération automatique de titres, suivi des stocks en temps réel, réservations, ventes et historique détaillé des ajustements.</p>
+    </header>
+    <main>
+        <div class="alert-panel" id="alert-panel"></div>
+        <div class="grid">
+            <section class="card" aria-label="Formulaire de bijou">
+                <h2>Fiche bijou <span class="badge" id="mode-badge">Nouveau</span></h2>
+                <form id="bijou-form">
+                    <input type="hidden" id="bijou-id">
+                    <div class="field-group">
+                        <label for="type">Type *</label>
+                        <select id="type" required>
+                            <option value="">Sélectionner</option>
+                            <option value="collier">Collier</option>
+                            <option value="boucles">Boucles</option>
+                            <option value="bracelet">Bracelet</option>
+                        </select>
+                    </div>
+                    <div class="field-group inline-fields">
+                        <div>
+                            <label for="matiere">Matière *</label>
+                            <input type="text" id="matiere" required placeholder="Argent 925, Or 18k...">
+                        </div>
+                        <div>
+                            <label for="caracteristique">Caractéristique principale *</label>
+                            <input type="text" id="caracteristique" required placeholder="Perle, pendentif...">
+                        </div>
+                    </div>
+                    <div class="field-group">
+                        <label for="dimensions">Dimensions (cm) *</label>
+                        <input type="text" id="dimensions" required placeholder="Longueur 45 cm / pendentif 1.8×1.2 cm">
+                    </div>
+                    <div class="field-group inline-fields">
+                        <div>
+                            <label for="couleur">Couleur</label>
+                            <input type="text" id="couleur" placeholder="Argent, Doré...">
+                        </div>
+                        <div>
+                            <label for="couleurs">Couleur(s) complémentaire(s)</label>
+                            <input type="text" id="couleurs" placeholder="Rose gold, perle ivoire...">
+                        </div>
+                    </div>
+                    <div class="field-group">
+                        <label for="photos">Photos</label>
+                        <input type="file" id="photos" accept="image/*" multiple>
+                        <div class="photo-previews" id="photo-previews"></div>
+                    </div>
+                    <div class="field-group inline-fields">
+                        <div>
+                            <label for="quantite">Quantité *</label>
+                            <input type="number" id="quantite" min="0" value="0" required>
+                        </div>
+                        <div>
+                            <label for="seuil_bas">Seuil bas</label>
+                            <input type="number" id="seuil_bas" min="0" value="0">
+                        </div>
+                        <div>
+                            <label for="prix_achat">Prix d'achat (€)</label>
+                            <input type="number" step="0.01" min="0" id="prix_achat" placeholder="Optionnel">
+                        </div>
+                    </div>
+                    <div class="field-group inline-fields">
+                        <div>
+                            <label for="marque">Marque</label>
+                            <input type="text" id="marque" placeholder="Optionnel">
+                        </div>
+                        <div>
+                            <label for="etat">État</label>
+                            <input type="text" id="etat" placeholder="Neuf, Excellent...">
+                        </div>
+                        <div>
+                            <label for="defauts">Défauts</label>
+                            <input type="text" id="defauts" placeholder="Optionnel">
+                        </div>
+                    </div>
+                    <div class="field-group">
+                        <label>
+                            <input type="checkbox" id="flag_a_renseigner">
+                            Informations à compléter
+                        </label>
+                    </div>
+                    <div class="field-group">
+                        <label for="titre_court">Titre court</label>
+                        <div class="actions" style="margin:0.4rem 0;">
+                            <button type="button" class="secondary" id="btn-generer-titre">Générer automatiquement</button>
+                            <button type="button" class="secondary" id="btn-historique-titres">Historique des titres</button>
+                        </div>
+                        <input type="text" id="titre_court" placeholder="Titre d'affichage">
+                        <div class="title-alert" id="titre-alert">Impossible de générer un titre automatique : merci de compléter les champs requis.</div>
+                    </div>
+                    <div class="actions">
+                        <button type="submit" class="primary" id="btn-enregistrer">Enregistrer</button>
+                        <button type="button" class="secondary" id="btn-annuler">Réinitialiser</button>
+                    </div>
+                </form>
+            </section>
+            <section class="card" aria-label="Inventaire">
+                <h2>Inventaire <span class="badge muted" id="inventaire-total">0 articles</span></h2>
+                <div class="filters" role="tablist" aria-label="Filtres d'état">
+                    <button type="button" class="active" data-filter="all">Tous</button>
+                    <button type="button" data-filter="stock">En stock</button>
+                    <button type="button" data-filter="low">À réapprovisionner</button>
+                    <button type="button" data-filter="out">Épuisés</button>
+                </div>
+                <div class="import-export">
+                    <label class="button secondary" for="csv-import">Importer CSV</label>
+                    <input type="file" id="csv-import" accept=".csv" hidden>
+                    <button type="button" class="secondary" id="btn-export">Exporter CSV</button>
+                    <span class="chip">Token API : inventaire-bijoux-token</span>
+                </div>
+                <div class="table-wrapper">
+                    <table aria-live="polite">
+                        <thead>
+                            <tr>
+                                <th>Photo</th>
+                                <th>Titre</th>
+                                <th>Type</th>
+                                <th>Matière</th>
+                                <th>Qté</th>
+                                <th>Seuil</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventaire-body"></tbody>
+                    </table>
+                </div>
+                <div class="empty-state" id="empty-state">Aucun bijou enregistré pour le moment.</div>
+            </section>
+        </div>
+    </main>
+
+    <div class="toast" id="toast" role="status"></div>
+
+    <div class="history-modal" id="history-modal" aria-hidden="true">
+        <div class="history-content">
+            <h3>Historique <button type="button" class="secondary" id="close-history">Fermer</button></h3>
+            <div class="history-list" id="history-list"></div>
+        </div>
+    </div>
+
+    <div class="history-modal" id="title-history-modal" aria-hidden="true">
+        <div class="history-content">
+            <h3>Historique des titres <button type="button" class="secondary" id="close-title-history">Fermer</button></h3>
+            <div class="history-list" id="title-history-list"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'api/bijoux.php';
+        const API_TOKEN = 'inventaire-bijoux-token';
+        const DEFAULT_USER = 'admin';
+
+        const form = document.getElementById('bijou-form');
+        const modeBadge = document.getElementById('mode-badge');
+        const inventaireBody = document.getElementById('inventaire-body');
+        const inventaireTotal = document.getElementById('inventaire-total');
+        const emptyState = document.getElementById('empty-state');
+        const alertPanel = document.getElementById('alert-panel');
+        const toast = document.getElementById('toast');
+        const photoInput = document.getElementById('photos');
+        const photoPreview = document.getElementById('photo-previews');
+        const csvImport = document.getElementById('csv-import');
+        const historyModal = document.getElementById('history-modal');
+        const historyList = document.getElementById('history-list');
+        const titleHistoryModal = document.getElementById('title-history-modal');
+        const titleHistoryList = document.getElementById('title-history-list');
+        const titleAlert = document.getElementById('titre-alert');
+
+        let bijoux = [];
+        let currentFilter = 'all';
+        let currentPhotos = [];
+
+        const fields = {
+            id: document.getElementById('bijou-id'),
+            type: document.getElementById('type'),
+            matiere: document.getElementById('matiere'),
+            caracteristique: document.getElementById('caracteristique'),
+            dimensions: document.getElementById('dimensions'),
+            couleur: document.getElementById('couleur'),
+            couleurs: document.getElementById('couleurs'),
+            quantite: document.getElementById('quantite'),
+            seuil_bas: document.getElementById('seuil_bas'),
+            prix_achat: document.getElementById('prix_achat'),
+            flag: document.getElementById('flag_a_renseigner'),
+            titre_court: document.getElementById('titre_court'),
+            marque: document.getElementById('marque'),
+            etat: document.getElementById('etat'),
+            defauts: document.getElementById('defauts')
+        };
+
+        function showToast(message, type = 'info') {
+            toast.textContent = message;
+            toast.style.borderLeftColor = type === 'error' ? 'var(--danger)' : 'var(--primary)';
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3500);
+        }
+
+        async function apiFetch(path, options = {}) {
+            const headers = options.headers || {};
+            headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+            headers['Authorization'] = 'Bearer ' + API_TOKEN;
+            headers['X-User'] = DEFAULT_USER;
+            const response = await fetch(`${API_BASE}${path}`, {
+                credentials: 'omit',
+                ...options,
+                headers
+            });
+            if (!response.ok) {
+                const message = await response.text();
+                throw new Error(message || 'Erreur API');
+            }
+            if (response.headers.get('Content-Type')?.includes('application/json')) {
+                return response.json();
+            }
+            return response;
+        }
+
+        function resetForm() {
+            form.reset();
+            fields.id.value = '';
+            fields.quantite.value = 0;
+            fields.seuil_bas.value = 0;
+            currentPhotos = [];
+            renderPhotos();
+            modeBadge.textContent = 'Nouveau';
+            titleAlert.classList.remove('show');
+        }
+
+        function renderPhotos() {
+            photoPreview.innerHTML = currentPhotos.map(src => `<img src="${src}" alt="Photo bijou">`).join('');
+        }
+
+        function extractPrimaryDimension(dimensions) {
+            if (!dimensions) return '';
+            const parts = dimensions.split(/[\/]/);
+            return parts[0]?.trim() || dimensions.trim();
+        }
+
+        function generateTitlesFromValues(type, matiere, caracteristique, dimensions) {
+            if (!type || !matiere || !caracteristique || !dimensions) {
+                return { titre_court: '', avertissement: true };
+            }
+            const dimensionPrincipale = extractPrimaryDimension(dimensions);
+            const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
+            const titreCourt = `${typeLabel} ${matiere} ${caracteristique} ${dimensionPrincipale}`.replace(/\s+/g, ' ').trim();
+            return { titre_court: titreCourt, avertissement: false };
+        }
+
+        function generateTitlesFromForm() {
+            const result = generateTitlesFromValues(fields.type.value, fields.matiere.value, fields.caracteristique.value, fields.dimensions.value);
+            fields.titre_court.value = result.titre_court;
+            if (result.avertissement) {
+                titleAlert.classList.add('show');
+            } else {
+                titleAlert.classList.remove('show');
+            }
+            return result;
+        }
+
+        async function loadBijoux() {
+            try {
+                const data = await apiFetch('?resource=bijoux');
+                bijoux = data.bijoux || [];
+                renderInventory();
+            } catch (error) {
+                showToast('Impossible de charger les bijoux.', 'error');
+                console.error(error);
+            }
+        }
+
+        function renderAlerts() {
+            const lowStock = bijoux.filter(item => item.seuil_bas > 0 && item.quantite <= item.seuil_bas);
+            if (lowStock.length > 0) {
+                alertPanel.classList.add('show');
+                const items = lowStock.map(item => `<strong>${item.titre_court || item.id}</strong> : ${item.quantite} unité(s) (seuil ${item.seuil_bas})`).join('<br>');
+                alertPanel.innerHTML = `<strong>Alertes de stock bas :</strong><br>${items}`;
+            } else {
+                alertPanel.classList.remove('show');
+                alertPanel.textContent = '';
+            }
+        }
+
+        function filteredBijoux() {
+            return bijoux.filter(item => {
+                if (currentFilter === 'low') {
+                    return item.seuil_bas > 0 && item.quantite > 0 && item.quantite <= item.seuil_bas;
+                }
+                if (currentFilter === 'out') {
+                    return item.quantite === 0;
+                }
+                if (currentFilter === 'stock') {
+                    return item.quantite > (item.seuil_bas || 0);
+                }
+                return true;
+            });
+        }
+
+        function renderInventory() {
+            renderAlerts();
+            const list = filteredBijoux();
+            inventaireTotal.textContent = `${bijoux.length} article${bijoux.length > 1 ? 's' : ''}`;
+            emptyState.style.display = list.length === 0 ? 'block' : 'none';
+
+            inventaireBody.innerHTML = list.map(item => {
+                const badge = item.quantite === 0
+                    ? '<span class="badge danger">Épuisé</span>'
+                    : (item.seuil_bas > 0 && item.quantite <= item.seuil_bas
+                        ? '<span class="badge warning">Seuil bas</span>'
+                        : '');
+                const rowClass = item.quantite === 0 ? 'out-of-stock' : (item.seuil_bas > 0 && item.quantite <= item.seuil_bas ? 'low-stock' : '');
+                const photo = item.photos?.[0]
+                    ? `<img src="${item.photos[0]}" alt="${item.titre_court}" style="width:56px;height:56px;object-fit:cover;border-radius:12px;">`
+                    : '<span class="chip">Pas de photo</span>';
+                return `
+                    <tr class="${rowClass}">
+                        <td>${photo}</td>
+                        <td>
+                            <strong>${item.titre_court || 'Titre à renseigner'}</strong>
+                            ${badge}
+                            <div class="chips">
+                                <span class="chip">${item.dimensions}</span>
+                                ${item.flag_a_renseigner ? '<span class="chip">À compléter</span>' : ''}
+                            </div>
+                        </td>
+                        <td>${item.type}</td>
+                        <td>${item.matiere}</td>
+                        <td>${item.quantite}</td>
+                        <td>${item.seuil_bas}</td>
+                        <td>
+                            <div class="stock-actions" role="group" aria-label="Actions stock">
+                                <button type="button" class="secondary" data-action="add" data-id="${item.id}">+ Ajouter</button>
+                                <button type="button" class="secondary" data-action="remove" data-id="${item.id}">- Retirer</button>
+                                <button type="button" class="secondary" data-action="reserve" data-id="${item.id}">Réserver</button>
+                                <button type="button" class="secondary" data-action="sold" data-id="${item.id}">Vendu</button>
+                                <button type="button" class="secondary" data-action="set" data-id="${item.id}">Définir</button>
+                                <button type="button" class="secondary" data-action="edit" data-id="${item.id}">Éditer</button>
+                                <button type="button" class="secondary" data-action="history" data-id="${item.id}">Historique</button>
+                            </div>
+                        </td>
+                    </tr>`;
+            }).join('');
+        }
+
+        function getFormPayload() {
+            const titreGeneration = generateTitlesFromValues(fields.type.value, fields.matiere.value, fields.caracteristique.value, fields.dimensions.value);
+            const titreAvertissement = titreGeneration.avertissement && !fields.titre_court.value;
+            return {
+                id: fields.id.value,
+                type: fields.type.value,
+                matiere: fields.matiere.value.trim(),
+                caracteristique: fields.caracteristique.value.trim(),
+                dimensions: fields.dimensions.value.trim(),
+                couleur: fields.couleur.value.trim(),
+                couleurs: fields.couleurs.value.trim(),
+                photos: currentPhotos,
+                quantite: Number(fields.quantite.value || 0),
+                seuil_bas: Number(fields.seuil_bas.value || 0),
+                prix_achat: fields.prix_achat.value !== '' ? Number(fields.prix_achat.value) : null,
+                flag_a_renseigner: fields.flag.checked,
+                titre_court: fields.titre_court.value.trim(),
+                titre_avertissement: titreAvertissement,
+                marque: fields.marque.value.trim(),
+                etat: fields.etat.value.trim(),
+                defauts: fields.defauts.value.trim()
+            };
+        }
+
+        function populateForm(bijou) {
+            fields.id.value = bijou.id;
+            fields.type.value = bijou.type;
+            fields.matiere.value = bijou.matiere || '';
+            fields.caracteristique.value = bijou.caracteristique || '';
+            fields.dimensions.value = bijou.dimensions || '';
+            fields.couleur.value = bijou.couleur || '';
+            fields.couleurs.value = bijou.couleurs || '';
+            fields.quantite.value = bijou.quantite ?? 0;
+            fields.seuil_bas.value = bijou.seuil_bas ?? 0;
+            fields.prix_achat.value = bijou.prix_achat ?? '';
+            fields.flag.checked = Boolean(bijou.flag_a_renseigner);
+            fields.titre_court.value = bijou.titre_court || '';
+            fields.marque.value = bijou.marque || '';
+            fields.etat.value = bijou.etat || '';
+            fields.defauts.value = bijou.defauts || '';
+            currentPhotos = Array.isArray(bijou.photos) ? bijou.photos : [];
+            renderPhotos();
+            modeBadge.textContent = 'Édition';
+            titleAlert.classList.toggle('show', Boolean(bijou.titre_avertissement));
+        }
+
+        async function submitForm(event) {
+            event.preventDefault();
+            if (!form.reportValidity()) {
+                return;
+            }
+            const payload = getFormPayload();
+            const method = payload.id ? 'PUT' : 'POST';
+            const path = payload.id ? `?resource=bijoux&id=${encodeURIComponent(payload.id)}` : '?resource=bijoux';
+            try {
+                await apiFetch(path, {
+                    method,
+                    body: JSON.stringify(payload)
+                });
+                showToast('Bijou enregistré.');
+                resetForm();
+                await loadBijoux();
+            } catch (error) {
+                console.error(error);
+                showToast('Erreur lors de l\'enregistrement.', 'error');
+            }
+        }
+
+        function promptQuantity(action) {
+            let message = 'Quantité à appliquer';
+            switch (action) {
+                case 'add':
+                    message = 'Quantité à ajouter';
+                    break;
+                case 'remove':
+                    message = 'Quantité à retirer';
+                    break;
+                case 'reserve':
+                    message = 'Quantité à réserver';
+                    break;
+                case 'sold':
+                    message = 'Quantité vendue';
+                    break;
+                case 'set':
+                    message = 'Nouvelle quantité';
+                    break;
+            }
+            const value = prompt(message);
+            if (value === null) return null;
+            const parsed = Number(value);
+            if (!Number.isInteger(parsed) || parsed < 0) {
+                alert('Veuillez saisir un entier valide.');
+                return null;
+            }
+            if (action !== 'set' && parsed === 0) {
+                alert('La valeur doit être supérieure à zéro.');
+                return null;
+            }
+            return parsed;
+        }
+
+        async function handleStockAction(id, action) {
+            const valeur = promptQuantity(action);
+            if (valeur === null) return;
+            try {
+                await apiFetch(`?resource=stock&id=${encodeURIComponent(id)}&action=${action}`, {
+                    method: 'POST',
+                    body: JSON.stringify({ valeur })
+                });
+                showToast('Stock mis à jour.');
+                await loadBijoux();
+            } catch (error) {
+                console.error(error);
+                showToast('Impossible de modifier le stock.', 'error');
+            }
+        }
+
+        async function openHistory(id) {
+            try {
+                const data = await apiFetch(`?resource=historique&bijou_id=${encodeURIComponent(id)}&per_page=50`);
+                const items = data.logs || [];
+                historyList.innerHTML = items.length
+                    ? items.map(log => `
+                        <div class="history-item">
+                            <strong>${log.action.toUpperCase()}</strong>
+                            <div>Variation : ${log.delta > 0 ? '+' : ''}${log.delta}</div>
+                            <div>Nouvelle quantité : ${log.nouvelle_quantite}</div>
+                            <small>${new Date(log.timestamp).toLocaleString()} – ${log.utilisateur}</small>
+                        </div>`).join('')
+                    : '<p>Aucune opération enregistrée.</p>';
+                historyModal.classList.add('show');
+                historyModal.setAttribute('aria-hidden', 'false');
+            } catch (error) {
+                console.error(error);
+                showToast('Historique indisponible.', 'error');
+            }
+        }
+
+        async function openTitleHistory(id) {
+            try {
+                const data = await apiFetch(`?resource=titres&bijou_id=${encodeURIComponent(id)}`);
+                const items = data.titres || [];
+                titleHistoryList.innerHTML = items.length
+                    ? items.map(entry => `
+                        <div class="history-item">
+                            <strong>${entry.champ}</strong>
+                            <div>Ancien : ${entry.ancienne_valeur || '<em>vide</em>'}</div>
+                            <div>Nouveau : ${entry.nouvelle_valeur || '<em>vide</em>'}</div>
+                            <small>${new Date(entry.timestamp).toLocaleString()} – ${entry.utilisateur}</small>
+                        </div>`).join('')
+                    : '<p>Aucune modification enregistrée.</p>';
+                titleHistoryModal.classList.add('show');
+                titleHistoryModal.setAttribute('aria-hidden', 'false');
+            } catch (error) {
+                console.error(error);
+                showToast('Historique des titres indisponible.', 'error');
+            }
+        }
+
+        function handleTableClick(event) {
+            const button = event.target.closest('button[data-action]');
+            if (!button) return;
+            const action = button.dataset.action;
+            const id = button.dataset.id;
+            const bijou = bijoux.find(item => item.id === id);
+            if (!bijou) return;
+            if (action === 'edit') {
+                populateForm(bijou);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else if (action === 'history') {
+                openHistory(id);
+            } else {
+                handleStockAction(id, action);
+            }
+        }
+
+        function closeHistoryModal() {
+            historyModal.classList.remove('show');
+            historyModal.setAttribute('aria-hidden', 'true');
+        }
+
+        function closeTitleHistoryModal() {
+            titleHistoryModal.classList.remove('show');
+            titleHistoryModal.setAttribute('aria-hidden', 'true');
+        }
+
+        function handleFilterClick(event) {
+            const button = event.target.closest('button[data-filter]');
+            if (!button) return;
+            currentFilter = button.dataset.filter;
+            document.querySelectorAll('.filters button').forEach(btn => btn.classList.toggle('active', btn === button));
+            renderInventory();
+        }
+
+        photoInput.addEventListener('change', async () => {
+            const files = Array.from(photoInput.files || []);
+            const promises = files.map(file => new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            }));
+            try {
+                const images = await Promise.all(promises);
+                currentPhotos = images;
+                renderPhotos();
+            } catch (error) {
+                console.error(error);
+                showToast('Erreur lors du chargement des photos.', 'error');
+            }
+        });
+
+        csvImport.addEventListener('change', async () => {
+            const file = csvImport.files?.[0];
+            if (!file) return;
+            const formData = new FormData();
+            formData.append('fichier', file);
+            try {
+                const response = await fetch(`${API_BASE}?resource=import`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + API_TOKEN,
+                        'X-User': DEFAULT_USER
+                    },
+                    body: formData
+                });
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+                const result = await response.json();
+                showToast(`Import réussi : ${result.import.crees} créés, ${result.import.mis_a_jour} mis à jour.`);
+                await loadBijoux();
+            } catch (error) {
+                console.error(error);
+                showToast('Échec de l\'import CSV.', 'error');
+            } finally {
+                csvImport.value = '';
+            }
+        });
+
+        document.getElementById('btn-export').addEventListener('click', async () => {
+            try {
+                const response = await fetch(`${API_BASE}?resource=export`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + API_TOKEN,
+                        'X-User': DEFAULT_USER
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'inventaire_bijoux.csv';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                showToast('Export CSV généré.');
+            } catch (error) {
+                console.error(error);
+                showToast('Impossible d\'exporter le CSV.', 'error');
+            }
+        });
+
+        document.getElementById('btn-generer-titre').addEventListener('click', generateTitlesFromForm);
+        document.getElementById('btn-historique-titres').addEventListener('click', () => {
+            const id = fields.id.value;
+            if (!id) {
+                showToast('Enregistrez le bijou pour consulter l\'historique des titres.', 'error');
+                return;
+            }
+            openTitleHistory(id);
+        });
+        document.getElementById('btn-annuler').addEventListener('click', resetForm);
+        document.getElementById('close-history').addEventListener('click', closeHistoryModal);
+        document.getElementById('close-title-history').addEventListener('click', closeTitleHistoryModal);
+        historyModal.addEventListener('click', event => { if (event.target === historyModal) closeHistoryModal(); });
+        titleHistoryModal.addEventListener('click', event => { if (event.target === titleHistoryModal) closeTitleHistoryModal(); });
+        form.addEventListener('submit', submitForm);
+        inventaireBody.addEventListener('click', handleTableClick);
+        document.querySelector('.filters').addEventListener('click', handleFilterClick);
+
+        resetForm();
+        loadBijoux();
+    </script>
+</body>
+</html>
