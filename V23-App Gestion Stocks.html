@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Gestion des Stocks SEMPA v2.4</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root{color-scheme:light;--bg:#f8f9fa;--bg-alt:#e9ecef;--surface:#fff;--surface-alt:#f8f9fa;--border:rgba(0,0,0,.08);--border-strong:rgba(0,0,0,.15);--shadow-sm:0 4px 12px rgba(0,0,0,.06);--shadow-lg:0 1rem 3rem rgba(0,0,0,.175);--primary:#ff9f1c;--primary-dark:#e78f17;--primary-soft:rgba(255,159,28,.16);--text:#212529;--text-muted:#6c757d;--text-subtle:#adb5bd;--danger:#dc3545;--success:#198754;--warning:#ffc107;--radius-md:12px;--radius-lg:18px;--transition:.2s ease}#stock-app-wrapper{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif;background:var(--bg);color:var(--text);line-height:1.5;-webkit-font-smoothing:antialiased;transition:background .2s,color .2s}#stock-app-wrapper.dark-theme{color-scheme:dark;--bg:#0f172a;--bg-alt:#1e293b;--surface:#1e293b;--surface-alt:#0f172a;--border:rgba(255,255,255,.12);--border-strong:rgba(255,255,255,.2);--shadow-sm:0 4px 12px rgba(0,0,0,.3);--shadow-lg:0 1rem 3rem rgba(0,0,0,.5);--text:#e2e8f0;--text-muted:#94a3b8;--text-subtle:#475569}*,:after,:before{box-sizing:border-box}h1,h2,h3,h4,h5,h6{margin-top:0;margin-bottom:.5rem;font-weight:600;line-height:1.2}h1{font-size:1.75rem}h2{font-size:1.5rem}h3{font-size:1.25rem}p{margin-top:0;margin-bottom:1rem}.brand p{margin-top:2px;font-size:.9rem;color:var(--text-muted)}.app-shell{min-height:100vh;display:flex;flex-direction:column}.app-header{position:sticky;top:0;z-index:1020;padding:1rem 1.5rem;background:rgba(255,255,255,.8);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-bottom:1px solid var(--border)}.dark-theme .app-header{background:rgba(15,23,42,.8)}.header-inner{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;max-width:1400px;margin:0 auto}.card{border-radius:var(--radius-md);border:1px solid var(--border);padding:1.5rem;box-shadow:var(--shadow-sm);background:var(--surface)}.btn-primary,.btn-ghost,.btn-danger,.icon-button{cursor:pointer;transition:all .2s ease;font-weight:600;display:inline-flex;align-items:center;justify-content:center;gap:.5rem}.btn-primary:hover,.btn-ghost:hover,.btn-danger:hover,.icon-button:hover{transform:translateY(-1px)}.btn-primary{border:none;border-radius:var(--radius-md);background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff!important;padding:.6rem 1rem}.btn-ghost{border:1px solid var(--border-strong);border-radius:var(--radius-md);background:0 0;color:var(--text);padding:.5rem 1rem}.btn-danger{border:1px solid var(--danger);background:rgba(220,53,69,.1);color:var(--danger);border-radius:var(--radius-md);padding:.25rem .5rem}.icon-button{border:1px solid var(--border);border-radius:var(--radius-md);background:var(--surface);display:grid;place-items:center;width:40px;height:40px}.main-content{flex:1;padding:1.5rem}.content-max{max-width:1400px;margin:0 auto}.sempa-tabs{display:flex;gap:4px;padding:4px;background:var(--bg-alt);border-radius:var(--radius-md);overflow-x:auto;margin-bottom:1.5rem}.sempa-tab{border:none;border-radius:10px;background:0 0;padding:.5rem 1rem;font-weight:600;white-space:nowrap;color:var(--text-muted)}.sempa-tab.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow-sm)}.sempa-content{display:none}.sempa-content.active{display:block;animation:fade .3s}@keyframes fade{from{opacity:0}to{opacity:1}}.metrics-grid{display:grid;gap:1.5rem;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-bottom:1.5rem}.metric-card{padding:1.5rem}.dashboard-grid{display:grid;gap:1.5rem}@media(min-width:992px){.dashboard-grid.cols-2{grid-template-columns:1fr 1fr}}.table-wrapper{overflow-x:auto}.product-thumbnail{width:40px;height:40px;object-fit:cover;border-radius:6px;background:var(--bg-alt)}.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;place-items:center;z-index:1050;padding:1rem}.modal-backdrop.open{display:grid}.modal-panel{width:min(920px,95vw);max-height:90vh;display:flex;flex-direction:column;background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg)}.modal-header{padding:1rem 1.5rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}.modal-body{padding:1.5rem;overflow-y:auto;flex:1;display:grid;grid-template-columns:220px 1fr;gap:1.5rem}.modal-actions{padding:1rem 1.5rem;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:.75rem}.photo-uploader .preview{width:100%;height:180px;background:var(--bg-alt);border-radius:var(--radius-md);margin-bottom:1rem;border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-subtle)}.photo-uploader .preview img{width:100%;height:100%;object-fit:cover;border-radius:var(--radius-md)}.photo-uploader .preview svg{width:40px;height:40px;stroke-width:1.5}.history-log ul{font-size:.8rem;max-height:120px;overflow-y:auto;background:var(--bg-alt);border-radius:var(--radius-md);padding:.75rem}.list{list-style:none;margin:0;padding:0;display:grid;gap:.75rem}.list li{padding:.75rem 1rem;border-radius:var(--radius-md);background:var(--bg-alt);display:flex;justify-content:space-between;align-items:center;gap:.75rem}.dark-theme .list li{background:rgba(148,163,184,.14)}#app-error-banner{background:var(--danger);color:#fff;padding:1rem;text-align:center;display:none;border-radius:var(--radius-md);margin:0 1.5rem 1.5rem}tbody tr{cursor:pointer}label,input,select,textarea{font-size:.9rem;width:100%}label{display:flex;flex-direction:column;gap:4px}input,select,textarea{border-radius:var(--radius-md);border:1px solid var(--border-strong);padding:.5rem .75rem;background-color:var(--surface)}.badge{padding:4px 8px;border-radius:6px;font-size:.75rem;font-weight:600}.badge.low{background:var(--danger);color:white}.badge.medium{background:var(--warning);color:black}.badge.good{background:var(--success);color:white}.empty-state{color:var(--text-muted);font-style:italic;text-align:center}@media(max-width:768px){.modal-body{grid-template-columns:1fr}thead{display:none}tbody tr{display:block;padding:1rem;border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:1rem}tbody td{display:flex;justify-content:space-between;align-items:center;padding:.25rem 0;border:none}tbody td:before{content:attr(data-label);font-weight:600}}
+    </style>
+</head>
+<body>
+<div id="stock-app-wrapper">
+
+    <div id="app-error-banner"></div>
+
+    <div class="app-shell">
+        <header class="app-header">
+            <div class="header-inner">
+                <div class="brand">
+                    <h1>Gestion des Stocks</h1>
+                    <p>Visualisez et ajustez vos stocks instantanément.</p>
+                </div>
+                <div class="header-actions" id="header-actions">
+                    <button id="theme-toggle" class="icon-button" type="button" aria-label="Basculer le thème">🌙</button>
+                    <button class="btn-primary" type="button" onclick="App.openModal()">+ Nouveau produit</button>
+                </div>
+            </div>
+        </header>
+
+        <main class="main-content" id="main-content" style="display:none;">
+            <div class="content-max">
+                <nav class="sempa-tabs" aria-label="Navigation principale">
+                    <button class="sempa-tab active" type="button" data-tab="overview">Vue globale</button>
+                    <button class="sempa-tab" type="button" data-tab="inventory">Inventaire</button>
+                    <button class="sempa-tab" type="button" data-tab="movements">Mouvements</button>
+                    <button class="sempa-tab" type="button" data-tab="categories">Catégories</button>
+                </nav>
+
+                <section class="sempa-content active" id="overview">
+                     <div class="metrics-grid">
+                        <article class="metric-card"><div class="metric-label">Produits actifs</div><div class="metric-value" id="total-products">0</div></article>
+                        <article class="metric-card"><div class="metric-label">Alertes de stock</div><div class="metric-value" id="alerts-count">0</div></article>
+                        <article class="metric-card"><div class="metric-label">Unités disponibles</div><div class="metric-value" id="total-units">0</div></article>
+                        <article class="metric-card"><div class="metric-label">Valeur estimée</div><div class="metric-value" id="total-value">0 €</div></article>
+                    </div>
+                    <div class="section-heading" style="margin-top:2rem;"><h2>Analyse des Mouvements</h2></div>
+                    <div class="dashboard-grid cols-2">
+                        <div class="card">
+                            <h3><span style="color:var(--success)">●</span> Top 5 des Sorties (30 derniers jours)</h3>
+                            <ul class="list" id="best-sellers"><li class="empty-state">Chargement...</li></ul>
+                        </div>
+                         <div class="card">
+                            <h3><span style="color:var(--warning)">●</span> Produits dormants (Aucune sortie > 90j)</h3>
+                            <ul class="list" id="slow-movers"><li class="empty-state">Chargement...</li></ul>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="sempa-content" id="inventory">
+                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;margin-bottom:1.5rem;">
+                        <h2>Inventaire détaillé</h2>
+                        <button class="btn-ghost" type="button" onclick="App.exportInventory()">Exporter l'inventaire</button>
+                    </div>
+                    <div style="display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-bottom:1.5rem;">
+                        <input type="search" id="product-search" class="search-input" placeholder="Rechercher par nom ou référence..." autocomplete="off">
+                        <select id="filter-category" class="select"><option value="">Toutes les catégories</option></select>
+                        <select id="filter-status" class="select"><option value="">Tous les statuts</option><option value="low">Critique</option><option value="medium">À surveiller</option><option value="good">Stable</option></select>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead><tr><th>Photo</th><th>Produit</th><th>Référence</th><th>Stock</th><th>Seuil</th><th>Statut</th><th>Valeur</th><th>Actions</th></tr></thead>
+                            <tbody id="products-table"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="sempa-content" id="movements">
+                     <div class="section-heading"><h2>Suivi des mouvements</h2><p class="text-muted">Consignez chaque entrée, sortie ou ajustement.</p></div>
+                    <div class="dashboard-grid cols-2">
+                        <div class="card">
+                            <h3>Enregistrer un mouvement</h3>
+                            <form id="movement-form" style="display:grid;gap:1rem;">
+                                <label>Produit<select id="movement-product" class="select" required><option value="">Sélectionner un produit</option></select></label>
+                                <label>Type<select id="movement-type" class="select"><option value="in">Entrée</option><option value="out">Sortie</option><option value="adjust">Ajustement</option></select></label>
+                                <label>Quantité<input type="number" id="movement-quantity" min="1" value="1" required></label>
+                                <label>Raison<input type="text" id="movement-reason" placeholder="Ex: Réception commande, Vente..." required></label>
+                                <button class="btn-primary" type="submit" style="margin-top:1rem">Valider le mouvement</button>
+                            </form>
+                        </div>
+                        <div class="card">
+                            <h3>Historique récent</h3>
+                            <div class="table-wrapper" style="box-shadow:none;border-radius:var(--radius-md);">
+                                <table><thead><tr><th>Date</th><th>Produit</th><th>Type</th><th>Quantité</th><th>Raison</th></tr></thead><tbody id="movements-table"></tbody></table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="sempa-content" id="categories">
+                     <div class="section-heading"><h2>Gérer les catégories</h2></div>
+                    <div class="dashboard-grid cols-2">
+                        <div class="card">
+                            <h3>Ajouter une catégorie</h3>
+                            <form id="add-category-form" style="display:flex;gap:12px">
+                                <label style="margin:0;flex:1">Nom<input type="text" id="new-category-name" required placeholder="Ex: Visserie"></label>
+                                <button class="btn-primary" type="submit" style="align-self:end">Ajouter</button>
+                            </form>
+                        </div>
+                        <div class="card">
+                            <h3>Catégories existantes</h3>
+                            <ul class="list" id="categories-list"></ul>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <div class="modal-backdrop" id="product-modal">
+        <div class="modal-panel">
+            <div class="modal-header"><h2 id="modal-title">Fiche Produit</h2><button type="button" class="btn-ghost" onclick="App.closeModal()">×</button></div>
+            <div class="modal-body">
+                <div class="left-column">
+                    <div class="photo-uploader">
+                        <div id="product-image-preview" class="preview"></div>
+                        <label for="product-image-upload" id="photo-upload-label" class="btn-ghost" style="width:100%;text-align:center;cursor:pointer">Ajouter une photo</label>
+                        <input type="file" id="product-image-upload" accept="image/*" style="display:none">
+                    </div>
+                    <div class="history-log" id="product-history">
+                        <h4>Historique</h4><ul id="product-history-log"><li class="empty-state">Aucun historique.</li></ul>
+                    </div>
+                </div>
+                <div class="right-column">
+                    <form id="product-form" style="display:grid;gap:1rem">
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+                            <label>Nom du produit<input type="text" id="product-name" required></label>
+                            <label>Référence<input type="text" id="product-reference"></label>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+                            <label>Stock actuel<input type="number" id="product-stock" min="0"></label>
+                            <label>Seuil d'alerte<input type="number" id="product-minstock" min="0"></label>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+                            <label>Prix d'achat (€ HT)<input type="number" id="product-purchase-price" min="0" step="0.01"></label>
+                            <label>Prix de vente (€ HT)<input type="number" id="product-sale-price" min="0" step="0.01"></label>
+                        </div>
+                        <label>Catégorie<select id="product-category" class="select"></select></label>
+                        <label>Description<textarea id="product-desc" rows="2"></textarea></label>
+                        <div style="border-top:1px solid var(--border);padding-top:1rem">
+                            <label style="flex-direction:row;align-items:center;gap:8px;cursor:pointer">
+                                <input type="checkbox" id="product-is-kit">Ce produit est un kit
+                            </label>
+                            <div id="kit-components-section" style="display:none;margin-top:1rem;display:grid;gap:12px">
+                                <h4>Composants du kit</h4>
+                                <input type="search" id="kit-component-search" class="search-input" placeholder="Rechercher un composant...">
+                                <ul id="kit-component-search-results" class="list" style="max-height:120px;overflow-y:auto;background:var(--surface-alt)"></ul>
+                                <ul id="kit-components-list" class="list"></ul>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-ghost" type="button" onclick="App.closeModal()">Annuler</button>
+                <button class="btn-primary" type="button" onclick="App.saveProduct()">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const App = (() => {
+        'use strict';
+        const API_BASE = 'https://sempa.fr/wp-json/sempa-stocks/v1';
+        const API_ENDPOINTS = {
+            products: (id = '') => `${API_BASE}/products/${id}`,
+            photo: (id) => `${API_BASE}/products/${id}/photo`,
+            history: (id) => `${API_BASE}/products/${id}/history`,
+            movements: () => `${API_BASE}/movements`,
+            categories: (id = '') => `${API_BASE}/categories/${id}`,
+        };
+        const PLACEHOLDER_SVG = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5'><path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/><polyline points='17 8 12 3 7 8'/><line x1='12' y1='3' x2='12' y2='15'/></svg>`;
+        const STATUS_LABELS = { low: 'Critique', medium: 'À surveiller', good: 'Stable' };
+        
+        let state = { products: [], movements: [], categories: [], currentProductId: null, currentKitComponents: [] };
+        
+        async function fetchJson(url, options = {}) {
+            const fetchOptions = { ...options };
+            if (!(options.body instanceof FormData)) {
+                fetchOptions.headers = { 'Content-Type': 'application/json', ...options.headers };
+            }
+            if (typeof wpApiSettings !== 'undefined' && wpApiSettings.nonce) {
+                if (!fetchOptions.headers) fetchOptions.headers = {};
+                fetchOptions.headers['X-WP-Nonce'] = wpApiSettings.nonce;
+            }
+
+            try {
+                const response = await fetch(url, fetchOptions);
+                const text = await response.text();
+                let payload;
+                try {
+                    payload = text ? JSON.parse(text) : {};
+                } catch(e) {
+                    throw new Error("Réponse invalide du serveur.");
+                }
+
+                if (!response.ok) {
+                    let message = "Une erreur est survenue.";
+                    if (response.status === 403) message = "Permissions insuffisantes. Le rôle 'Éditeur' est requis.";
+                    else if (payload && payload.message) message = payload.message.replace(/<[^>]*>?/gm, '');
+                    throw new Error(message);
+                }
+                return payload;
+            } catch (error) {
+                console.error('Erreur API:', error);
+                throw error;
+            }
+        }
+
+        async function loadInitialData() {
+            try {
+                const [productsData, movementsData, categoriesData] = await Promise.all([
+                    fetchJson(API_ENDPOINTS.products()),
+                    fetchJson(API_ENDPOINTS.movements()),
+                    fetchJson(API_ENDPOINTS.categories())
+                ]);
+                state.products = (productsData.products || []).map(p => ({...p, id: Number(p.id)}));
+                state.movements = movementsData.movements || [];
+                state.categories = categoriesData || [];
+                document.getElementById('app-error-banner').style.display = 'none';
+                document.getElementById('main-content').style.display = 'block';
+            } catch (error) {
+                document.getElementById('app-error-banner').textContent = `Erreur de chargement : ${error.message}`;
+                document.getElementById('app-error-banner').style.display = 'block';
+            }
+        }
+        
+        async function refreshData() {
+            await loadInitialData();
+            renderAll();
+        }
+
+        function renderAll() {
+            renderProducts();
+            renderCategories();
+            renderMovements();
+            renderDashboard();
+            renderAdvancedDashboard();
+        }
+        
+        function getCategoryName(slug) {
+            const category = state.categories.find(c => c.slug === slug);
+            return category ? category.name : (slug || 'Sans catégorie');
+        }
+
+        function getStockStatus(stock, minStock) {
+            if (stock <= 0) return 'low';
+            if (stock <= minStock) return 'medium';
+            return 'good';
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount || 0);
+        }
+
+        function renderProducts() {
+            const tableBody = document.getElementById('products-table');
+            if(!tableBody) return;
+            const sorted = [...state.products].sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+            tableBody.innerHTML = sorted.map(p => {
+                const status = !p.is_kit ? getStockStatus(p.stock, p.minStock) : 'good';
+                return `
+                <tr onclick="App.openModal(${p.id})">
+                    <td data-label="Photo"><img src="${p.imageUrl || ''}" class="product-thumbnail" alt="${p.name}" onerror="this.style.display='none'"></td>
+                    <td data-label="Produit">${p.name}${p.is_kit ? ' (Kit)' : ''}</td>
+                    <td data-label="Référence">${p.reference || '—'}</td>
+                    <td data-label="Stock">${p.is_kit ? 'N/A' : p.stock}</td>
+                    <td data-label="Seuil">${p.minStock}</td>
+                    <td data-label="Statut">${!p.is_kit ? `<span class="badge ${status}">${STATUS_LABELS[status]}</span>` : 'N/A'}</td>
+                    <td data-label="Valeur">${formatCurrency(p.salePrice * p.stock)}</td>
+                    <td class="table-actions" onclick="event.stopPropagation()">
+                        <button class="btn-danger" type="button" onclick="App.deleteProduct(${p.id})">Supprimer</button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+        
+        function renderCategories() {
+            const list = document.getElementById('categories-list');
+            const selects = document.querySelectorAll('#product-category, #filter-category');
+            if (!list || !selects.length) return;
+            const optionsHTML = state.categories.map(c => `<option value="${c.slug}">${c.name}</option>`).join('');
+            selects.forEach(select => {
+                const currentVal = select.value;
+                select.innerHTML = (select.id === 'filter-category' ? '<option value="">Toutes les catégories</option>' : '') + optionsHTML;
+                if(currentVal) select.value = currentVal;
+            });
+            list.innerHTML = state.categories.map(c => `<li><span>${c.name}</span><button class="btn-danger" type="button" onclick="App.deleteCategory(${c.id})">X</button></li>`).join('') || '<li class="empty-state">Aucune catégorie.</li>';
+        }
+
+        function renderMovements() {
+            const tableBody = document.getElementById('movements-table');
+            const movementSelect = document.getElementById('movement-product');
+            if(!tableBody || !movementSelect) return;
+            tableBody.innerHTML = state.movements.slice(0, 50).map(m => `<tr><td>${new Date(m.date).toLocaleDateString('fr-FR')}</td><td>${m.productName}</td><td>${m.type === 'in' ? 'Entrée' : m.type === 'out' ? 'Sortie' : 'Ajustement'}</td><td>${m.type === 'in' ? '+' : '-'}${m.quantity}</td><td>${m.reason || '-'}</td></tr>`).join('');
+            movementSelect.innerHTML = '<option value="">Sélectionner un produit</option>' + state.products.filter(p => !p.is_kit).sort((a,b)=>a.name.localeCompare(b.name, 'fr')).map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+        }
+        
+        function renderDashboard() {
+            const totalProducts = state.products.length;
+            const totalUnits = state.products.filter(p => !p.is_kit).reduce((sum, p) => sum + p.stock, 0);
+            const totalValue = state.products.filter(p => !p.is_kit).reduce((sum, p) => sum + (p.salePrice * p.stock), 0);
+            const alertsCount = state.products.filter(p => !p.is_kit && p.stock <= p.minStock).length;
+
+            document.getElementById('total-products').textContent = totalProducts;
+            document.getElementById('total-units').textContent = totalUnits;
+            document.getElementById('total-value').textContent = formatCurrency(totalValue);
+            document.getElementById('alerts-count').textContent = alertsCount;
+        }
+
+        function renderAdvancedDashboard() {
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            
+            const recentMovements = state.movements.filter(m => new Date(m.date) >= thirtyDaysAgo && m.type === 'out');
+            const productOutCount = {};
+            
+            recentMovements.forEach(m => {
+                productOutCount[m.productId] = (productOutCount[m.productId] || 0) + m.quantity;
+            });
+            
+            const bestSellers = Object.entries(productOutCount)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 5)
+                .map(([productId, count]) => {
+                    const product = state.products.find(p => p.id == productId);
+                    return product ? { name: product.name, count } : null;
+                })
+                .filter(Boolean);
+            
+            const bestSellersList = document.getElementById('best-sellers');
+            bestSellersList.innerHTML = bestSellers.length ? 
+                bestSellers.map(p => `<li><span>${p.name}</span><strong>${p.count} unités</strong></li>`).join('') :
+                '<li class="empty-state">Aucune sortie récente</li>';
+
+            const ninetyDaysAgo = new Date();
+            ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+            
+            const slowMovers = state.products.filter(p => {
+                if (p.is_kit) return false;
+                const lastMovement = state.movements
+                    .filter(m => m.productId === p.id && m.type === 'out')
+                    .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+                
+                return !lastMovement || new Date(lastMovement.date) < ninetyDaysAgo;
+            }).slice(0, 10);
+            
+            const slowMoversList = document.getElementById('slow-movers');
+            slowMoversList.innerHTML = slowMovers.length ?
+                slowMovers.map(p => `<li><span>${p.name}</span><small>Stock: ${p.stock}</small></li>`).join('') :
+                '<li class="empty-state">Aucun produit dormant</li>';
+        }
+
+        async function openModal(productId = null) {
+            const modal = document.getElementById('product-modal');
+            document.getElementById('product-form').reset();
+            state.currentProductId = productId;
+            state.currentKitComponents = [];
+            
+            const product = productId ? await fetchJson(API_ENDPOINTS.products(productId)) : null;
+            const preview = document.getElementById('product-image-preview');
+            const label = document.getElementById('photo-upload-label');
+            
+            if (product) {
+                document.getElementById('product-name').value = product.name;
+                document.getElementById('product-reference').value = product.reference;
+                document.getElementById('product-stock').value = product.stock;
+                document.getElementById('product-minstock').value = product.minStock;
+                document.getElementById('product-purchase-price').value = product.purchasePrice;
+                document.getElementById('product-sale-price').value = product.salePrice;
+                document.getElementById('product-category').value = product.category;
+                document.getElementById('product-desc').value = product.description;
+                document.getElementById('product-is-kit').checked = product.is_kit;
+                
+                preview.innerHTML = product.imageUrl ? `<img src="${product.imageUrl}" alt="Aperçu">` : PLACEHOLDER_SVG;
+                label.textContent = product.imageUrl ? "Changer la photo" : "Ajouter une photo";
+                state.currentKitComponents = product.components || [];
+                fetchAndDisplayHistory(productId);
+            } else {
+                 preview.innerHTML = PLACEHOLDER_SVG;
+                 label.textContent = "Ajouter une photo";
+                 document.getElementById('product-history-log').innerHTML = '<li class="empty-state">Aucun historique.</li>';
+            }
+
+            toggleKitSection();
+            renderKitComponents();
+            modal.classList.add('open');
+        }
+
+        function closeModal() { 
+            document.getElementById('product-modal').classList.remove('open'); 
+        }
+
+        async function fetchAndDisplayHistory(productId) {
+             const historyLog = document.getElementById('product-history-log');
+            if(!historyLog) return;
+            try {
+                const history = await fetchJson(API_ENDPOINTS.history(productId));
+                historyLog.innerHTML = history.length ? history.map(h => `<li>${h.action}<small>${new Date(h.timestamp).toLocaleString('fr-FR')} par ${h.user_name}</small></li>`).join('') : '<li class="empty-state">Aucun historique.</li>';
+            } catch (error) { historyLog.innerHTML = '<li class="empty-state">Erreur chargement.</li>'; }
+        }
+
+        async function saveProduct() {
+            const form = document.getElementById('product-form');
+            const payload = {
+                name: form.querySelector('#product-name').value.trim(),
+                reference: form.querySelector('#product-reference').value.trim(),
+                stock: parseInt(form.querySelector('#product-stock').value, 10) || 0,
+                minStock: parseInt(form.querySelector('#product-minstock').value, 10) || 1,
+                purchasePrice: parseFloat(form.querySelector('#product-purchase-price').value) || 0,
+                salePrice: parseFloat(form.querySelector('#product-sale-price').value) || 0,
+                category: form.querySelector('#product-category').value,
+                description: form.querySelector('#product-desc').value.trim(),
+                is_kit: form.querySelector('#product-is-kit').checked,
+                components: state.currentKitComponents,
+            };
+            if (!payload.name) return alert('Le nom du produit est obligatoire.');
+
+            const isUpdate = Boolean(state.currentProductId);
+            const url = isUpdate ? API_ENDPOINTS.products(state.currentProductId) : API_ENDPOINTS.products();
+            const method = isUpdate ? 'PUT' : 'POST';
+
+            try {
+                const savedProduct = await fetchJson(url, { method, body: JSON.stringify(payload) });
+                const newProductId = savedProduct.id || state.currentProductId;
+                const photoFile = document.getElementById('product-image-upload').files[0];
+                if (photoFile && newProductId) {
+                    await uploadPhoto(newProductId, photoFile);
+                }
+                await refreshData();
+                closeModal();
+            } catch (error) { alert("Erreur: " + error.message); }
+        }
+        
+        async function uploadPhoto(productId, file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            try {
+                await fetch(API_ENDPOINTS.photo(productId), { 
+                    method: 'POST', 
+                    body: formData, 
+                    headers: (typeof wpApiSettings !== 'undefined' && wpApiSettings.nonce) ? { 'X-WP-Nonce': wpApiSettings.nonce } : {} 
+                });
+            } catch (error) {
+                alert("La photo n'a pas pu être envoyée : " + error.message);
+            }
+        }
+
+        async function deleteProduct(productId) {
+            if (!confirm(`Voulez-vous vraiment supprimer ce produit ?`)) return;
+            try {
+                await fetchJson(API_ENDPOINTS.products(productId), { method: 'DELETE' });
+                await refreshData();
+            } catch (error) { alert("Erreur: " + error.message); }
+        }
+
+        function toggleKitSection() {
+            const isKit = document.getElementById('product-is-kit').checked;
+            const kitSection = document.getElementById('kit-components-section');
+            kitSection.style.display = isKit ? 'grid' : 'none';
+        }
+
+        function handleComponentSearch(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const resultsContainer = document.getElementById('kit-component-search-results');
+            
+            if (searchTerm.length < 2) {
+                resultsContainer.innerHTML = '';
+                return;
+            }
+            
+            const filtered = state.products.filter(p => 
+                !p.is_kit && 
+                p.name.toLowerCase().includes(searchTerm) &&
+                !state.currentKitComponents.some(comp => comp.id === p.id)
+            );
+            
+            resultsContainer.innerHTML = filtered.map(p => 
+                `<li onclick="App.addComponentToKit(${p.id})" style="cursor:pointer">${p.name} (${p.reference || 'Sans référence'})</li>`
+            ).join('') || '<li class="empty-state">Aucun produit trouvé</li>';
+        }
+
+        function addComponentToKit(productId) {
+            const product = state.products.find(p => p.id === productId);
+            if (product && !state.currentKitComponents.some(comp => comp.id === productId)) {
+                state.currentKitComponents.push({
+                    id: productId,
+                    name: product.name,
+                    reference: product.reference,
+                    quantity: 1
+                });
+                renderKitComponents();
+            }
+            document.getElementById('kit-component-search').value = '';
+            document.getElementById('kit-component-search-results').innerHTML = '';
+        }
+
+        function renderKitComponents() {
+            const list = document.getElementById('kit-components-list');
+            list.innerHTML = state.currentKitComponents.map(comp => `
+                <li>
+                    <span>${comp.name} (${comp.reference || 'Sans référence'})</span>
+                    <div style="display:flex;gap:8px;align-items:center">
+                        <input type="number" value="${comp.quantity}" min="1" 
+                               onchange="App.updateComponentQuantity(${comp.id}, this.value)" 
+                               style="width:60px">
+                        <button class="btn-danger" onclick="App.removeComponent(${comp.id})">×</button>
+                    </div>
+                </li>
+            `).join('') || '<li class="empty-state">Aucun composant ajouté</li>';
+        }
+
+        function updateComponentQuantity(componentId, quantity) {
+            const comp = state.currentKitComponents.find(c => c.id === componentId);
+            if (comp) {
+                comp.quantity = parseInt(quantity) || 1;
+            }
+        }
+
+        function removeComponent(componentId) {
+            state.currentKitComponents = state.currentKitComponents.filter(c => c.id !== componentId);
+            renderKitComponents();
+        }
+
+        async function addCategory(e) {
+            e.preventDefault();
+            const nameInput = document.getElementById('new-category-name');
+            const name = nameInput.value.trim();
+            
+            if (!name) return;
+            
+            try {
+                await fetchJson(API_ENDPOINTS.categories(), {
+                    method: 'POST',
+                    body: JSON.stringify({ name })
+                });
+                nameInput.value = '';
+                await refreshData();
+            } catch (error) {
+                alert("Erreur: " + error.message);
+            }
+        }
+
+        async function deleteCategory(categoryId) {
+            if (!confirm('Supprimer cette catégorie ?')) return;
+            
+            try {
+                await fetchJson(API_ENDPOINTS.categories(categoryId), { method: 'DELETE' });
+                await refreshData();
+            } catch (error) {
+                alert("Erreur: " + error.message);
+            }
+        }
+
+        async function addStockMovement(e) {
+            e.preventDefault();
+            const form = e.target;
+            const productId = document.getElementById('movement-product').value;
+            const type = document.getElementById('movement-type').value;
+            const quantity = document.getElementById('movement-quantity').value;
+            const reason = document.getElementById('movement-reason').value;
+            
+            if (!productId || !quantity || !reason) {
+                alert('Veuillez remplir tous les champs');
+                return;
+            }
+            
+            const product = state.products.find(p => p.id == productId);
+            if (!product) return;
+            
+            try {
+                await fetchJson(API_ENDPOINTS.movements(), {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        productId: parseInt(productId),
+                        productName: product.name,
+                        type: type,
+                        quantity: parseInt(quantity),
+                        reason: reason
+                    })
+                });
+                
+                form.reset();
+                await refreshData();
+            } catch (error) {
+                alert("Erreur: " + error.message);
+            }
+        }
+
+        function filterProducts() {
+            const searchTerm = document.getElementById('product-search').value.toLowerCase();
+            const categoryFilter = document.getElementById('filter-category').value;
+            const statusFilter = document.getElementById('filter-status').value;
+            
+            const filtered = state.products.filter(p => {
+                const matchesSearch = p.name.toLowerCase().includes(searchTerm) || 
+                                    (p.reference && p.reference.toLowerCase().includes(searchTerm));
+                const matchesCategory = !categoryFilter || p.category === categoryFilter;
+                const matchesStatus = !statusFilter || getStockStatus(p.stock, p.minStock) === statusFilter;
+                
+                return matchesSearch && matchesCategory && matchesStatus;
+            });
+            
+            const tableBody = document.getElementById('products-table');
+            tableBody.innerHTML = filtered.map(p => {
+                const status = !p.is_kit ? getStockStatus(p.stock, p.minStock) : 'good';
+                return `
+                <tr onclick="App.openModal(${p.id})">
+                    <td data-label="Photo"><img src="${p.imageUrl || ''}" class="product-thumbnail" alt="${p.name}" onerror="this.style.display='none'"></td>
+                    <td data-label="Produit">${p.name}${p.is_kit ? ' (Kit)' : ''}</td>
+                    <td data-label="Référence">${p.reference || '—'}</td>
+                    <td data-label="Stock">${p.is_kit ? 'N/A' : p.stock}</td>
+                    <td data-label="Seuil">${p.minStock}</td>
+                    <td data-label="Statut">${!p.is_kit ? `<span class="badge ${status}">${STATUS_LABELS[status]}</span>` : 'N/A'}</td>
+                    <td data-label="Valeur">${formatCurrency(p.salePrice * p.stock)}</td>
+                    <td class="table-actions" onclick="event.stopPropagation()">
+                        <button class="btn-danger" type="button" onclick="App.deleteProduct(${p.id})">Supprimer</button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function exportInventory() {
+            const csvContent = [
+                ['Nom', 'Référence', 'Stock', 'Seuil', 'Statut', 'Prix Achat', 'Prix Vente', 'Valeur Stock', 'Catégorie'],
+                ...state.products.map(p => [
+                    p.name + (p.is_kit ? ' (Kit)' : ''),
+                    p.reference || '',
+                    p.is_kit ? 'N/A' : p.stock,
+                    p.minStock,
+                    p.is_kit ? 'N/A' : STATUS_LABELS[getStockStatus(p.stock, p.minStock)],
+                    p.purchasePrice,
+                    p.salePrice,
+                    p.is_kit ? 0 : p.salePrice * p.stock,
+                    getCategoryName(p.category)
+                ])
+            ].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `inventaire_sempa_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function applyTheme(theme) {
+            const wrapper = document.getElementById('stock-app-wrapper');
+            const toggle = document.getElementById('theme-toggle');
+            
+            if (theme === 'dark') {
+                wrapper.classList.add('dark-theme');
+                toggle.innerHTML = '☀️';
+                localStorage.setItem('sempa_theme', 'dark');
+            } else {
+                wrapper.classList.remove('dark-theme');
+                toggle.innerHTML = '🌙';
+                localStorage.setItem('sempa_theme', 'light');
+            }
+        }
+
+        function bindEvents() {
+            document.getElementById('theme-toggle')?.addEventListener('click', () => applyTheme(document.getElementById('stock-app-wrapper').classList.contains('dark-theme') ? 'light' : 'dark'));
+            document.querySelectorAll('.sempa-tab').forEach(tab => tab.addEventListener('click', (e) => {
+                document.querySelector('.sempa-tab.active')?.classList.remove('active');
+                document.querySelector('.sempa-content.active')?.classList.remove('active');
+                e.currentTarget.classList.add('active');
+                document.getElementById(e.currentTarget.dataset.tab)?.classList.add('active');
+            }));
+            
+            const addCategoryForm = document.getElementById('add-category-form');
+            if(addCategoryForm) addCategoryForm.addEventListener('submit', addCategory);
+            
+            const movementForm = document.getElementById('movement-form');
+            if(movementForm) movementForm.addEventListener('submit', addStockMovement);
+            
+            const productSearch = document.getElementById('product-search');
+            if(productSearch) productSearch.addEventListener('input', filterProducts);
+            
+            const categoryFilter = document.getElementById('filter-category');
+            if(categoryFilter) categoryFilter.addEventListener('change', filterProducts);
+            
+            const statusFilter = document.getElementById('filter-status');
+            if(statusFilter) statusFilter.addEventListener('change', filterProducts);
+            
+            document.getElementById('product-is-kit')?.addEventListener('change', toggleKitSection);
+            document.getElementById('kit-component-search')?.addEventListener('input', handleComponentSearch);
+            
+            document.getElementById('product-image-upload')?.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        document.getElementById('product-image-preview').innerHTML = `<img src="${e.target.result}" alt="Aperçu">`;
+                        document.getElementById('photo-upload-label').textContent = "Changer la photo";
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        async function init() {
+            bindEvents();
+            await loadInitialData();
+            renderAll();
+            applyTheme(localStorage.getItem('sempa_theme') || 'light');
+        }
+
+        return { 
+            init, openModal, closeModal, saveProduct, deleteProduct, 
+            addCategory, deleteCategory, removeComponent, exportInventory,
+            updateComponentQuantity, addComponentToKit, handleComponentSearch
+        };
+    })();
+
+    document.addEventListener('DOMContentLoaded', App.init);
+</script>
+</body>
+</html>
