@@ -151,7 +151,7 @@
                             <label style="flex-direction:row;align-items:center;gap:8px;cursor:pointer">
                                 <input type="checkbox" id="product-is-kit">Ce produit est un kit
                             </label>
-                            <div id="kit-components-section" style="display:none;margin-top:1rem;display:grid;gap:12px">
+                            <div id="kit-components-section" style="display:none;margin-top:1rem;gap:12px">
                                 <h4>Composants du kit</h4>
                                 <input type="search" id="kit-component-search" class="search-input" placeholder="Rechercher un composant...">
                                 <ul id="kit-component-search-results" class="list" style="max-height:120px;overflow-y:auto;background:var(--surface-alt)"></ul>
@@ -264,11 +264,27 @@
             return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount || 0);
         }
 
+        function getFilteredProducts() {
+            const searchTerm = (document.getElementById('product-search')?.value || '').toLowerCase();
+            const categoryFilter = document.getElementById('filter-category')?.value || '';
+            const statusFilter = document.getElementById('filter-status')?.value || '';
+
+            return state.products.filter(p => {
+                const matchesSearch = p.name.toLowerCase().includes(searchTerm) ||
+                                    (p.reference && p.reference.toLowerCase().includes(searchTerm));
+                const matchesCategory = !categoryFilter || p.category === categoryFilter;
+                const productStatus = !p.is_kit ? getStockStatus(p.stock, p.minStock) : 'good';
+                const matchesStatus = !statusFilter || productStatus === statusFilter;
+
+                return matchesSearch && matchesCategory && matchesStatus;
+            });
+        }
+
         function renderProducts() {
             const tableBody = document.getElementById('products-table');
             if(!tableBody) return;
-            const sorted = [...state.products].sort((a, b) => a.name.localeCompare(b.name, 'fr'));
-            tableBody.innerHTML = sorted.map(p => {
+            const productsToDisplay = getFilteredProducts().sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+            tableBody.innerHTML = productsToDisplay.map(p => {
                 const status = !p.is_kit ? getStockStatus(p.stock, p.minStock) : 'good';
                 return `
                 <tr onclick="App.openModal(${p.id})">
@@ -303,7 +319,10 @@
             const tableBody = document.getElementById('movements-table');
             const movementSelect = document.getElementById('movement-product');
             if(!tableBody || !movementSelect) return;
-            tableBody.innerHTML = state.movements.slice(0, 50).map(m => `<tr><td>${new Date(m.date).toLocaleDateString('fr-FR')}</td><td>${m.productName}</td><td>${m.type === 'in' ? 'Entrée' : m.type === 'out' ? 'Sortie' : 'Ajustement'}</td><td>${m.type === 'in' ? '+' : '-'}${m.quantity}</td><td>${m.reason || '-'}</td></tr>`).join('');
+            tableBody.innerHTML = state.movements.slice(0, 50).map(m => {
+                const quantityDisplay = m.type === 'in' ? `+${m.quantity}` : m.type === 'out' ? `-${m.quantity}` : `${m.quantity}`;
+                return `<tr><td>${new Date(m.date).toLocaleDateString('fr-FR')}</td><td>${m.productName}</td><td>${m.type === 'in' ? 'Entrée' : m.type === 'out' ? 'Sortie' : 'Ajustement'}</td><td>${quantityDisplay}</td><td>${m.reason || '-'}</td></tr>`;
+            }).join('');
             movementSelect.innerHTML = '<option value="">Sélectionner un produit</option>' + state.products.filter(p => !p.is_kit).sort((a,b)=>a.name.localeCompare(b.name, 'fr')).map(p => `<option value="${p.id}">${p.name}</option>`).join('');
         }
         
@@ -599,36 +618,7 @@
         }
 
         function filterProducts() {
-            const searchTerm = document.getElementById('product-search').value.toLowerCase();
-            const categoryFilter = document.getElementById('filter-category').value;
-            const statusFilter = document.getElementById('filter-status').value;
-            
-            const filtered = state.products.filter(p => {
-                const matchesSearch = p.name.toLowerCase().includes(searchTerm) || 
-                                    (p.reference && p.reference.toLowerCase().includes(searchTerm));
-                const matchesCategory = !categoryFilter || p.category === categoryFilter;
-                const matchesStatus = !statusFilter || getStockStatus(p.stock, p.minStock) === statusFilter;
-                
-                return matchesSearch && matchesCategory && matchesStatus;
-            });
-            
-            const tableBody = document.getElementById('products-table');
-            tableBody.innerHTML = filtered.map(p => {
-                const status = !p.is_kit ? getStockStatus(p.stock, p.minStock) : 'good';
-                return `
-                <tr onclick="App.openModal(${p.id})">
-                    <td data-label="Photo"><img src="${p.imageUrl || ''}" class="product-thumbnail" alt="${p.name}" onerror="this.style.display='none'"></td>
-                    <td data-label="Produit">${p.name}${p.is_kit ? ' (Kit)' : ''}</td>
-                    <td data-label="Référence">${p.reference || '—'}</td>
-                    <td data-label="Stock">${p.is_kit ? 'N/A' : p.stock}</td>
-                    <td data-label="Seuil">${p.minStock}</td>
-                    <td data-label="Statut">${!p.is_kit ? `<span class="badge ${status}">${STATUS_LABELS[status]}</span>` : 'N/A'}</td>
-                    <td data-label="Valeur">${formatCurrency(p.salePrice * p.stock)}</td>
-                    <td class="table-actions" onclick="event.stopPropagation()">
-                        <button class="btn-danger" type="button" onclick="App.deleteProduct(${p.id})">Supprimer</button>
-                    </td>
-                </tr>`;
-            }).join('');
+            renderProducts();
         }
 
         function exportInventory() {

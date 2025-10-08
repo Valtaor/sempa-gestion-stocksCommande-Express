@@ -219,25 +219,53 @@ function sempa_save_product_callback(WP_REST_Request $request) {
         $history_log[] = "Produit créé.";
     }
     
+    $was_kit = isset($old_product['is_kit']) ? (int) $old_product['is_kit'] : 0;
     if ($product_data['is_kit']) {
-        $wpdb->delete("{$wpdb->prefix}kit_components", array('kit_id' => $id)); 
-        $components = $data['components'] ?? [];
-        
-        if (!empty($components)) {
-            $old_components_count = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->prefix}kit_components WHERE kit_id = %d", $id));
-            if ($old_components_count != count($components)) { 
-                $history_log[] = "La liste des composants a été modifiée."; 
-            }
-            foreach ($components as $comp) { 
-                if(!empty($comp['id']) && !empty($comp['quantity'])) { 
-                    $wpdb->insert("{$wpdb->prefix}kit_components", array(
-                        'kit_id' => $id, 
-                        'component_id' => intval($comp['id']), 
-                        'quantity' => intval($comp['quantity'])
-                    )); 
-                } 
+        if (!$was_kit) {
+            $history_log[] = "Le produit est désormais géré comme un kit.";
+        }
+
+        $existing_components = $wpdb->get_results($wpdb->prepare("SELECT component_id, quantity FROM {$wpdb->prefix}kit_components WHERE kit_id = %d", $id), ARRAY_A);
+        $existing_map = array();
+        if (is_array($existing_components)) {
+            foreach ($existing_components as $existing_component) {
+                $existing_map[intval($existing_component['component_id'])] = intval($existing_component['quantity']);
             }
         }
+
+        $wpdb->delete("{$wpdb->prefix}kit_components", array('kit_id' => $id));
+        $components = $data['components'] ?? [];
+
+        if (!empty($components)) {
+            $new_map = array();
+            foreach ($components as $comp) {
+                $component_id = isset($comp['id']) ? intval($comp['id']) : 0;
+                $component_quantity = isset($comp['quantity']) ? intval($comp['quantity']) : 0;
+
+                if ($component_id && $component_quantity) {
+                    $new_map[$component_id] = $component_quantity;
+                }
+            }
+
+            if ($existing_map !== $new_map) {
+                $history_log[] = "La liste des composants a été modifiée.";
+            }
+
+            foreach ($new_map as $component_id => $component_quantity) {
+                $wpdb->insert("{$wpdb->prefix}kit_components", array(
+                    'kit_id' => $id,
+                    'component_id' => $component_id,
+                    'quantity' => $component_quantity
+                ));
+            }
+        } elseif (!empty($existing_map)) {
+            $history_log[] = "La liste des composants a été modifiée.";
+        }
+    } else {
+        if ($was_kit) {
+            $history_log[] = "Ce produit n'est plus géré comme un kit.";
+        }
+        $wpdb->delete("{$wpdb->prefix}kit_components", array('kit_id' => $id));
     }
     
     if (!empty($history_log)) { 
@@ -322,41 +350,140 @@ function sempa_get_movements_callback(WP_REST_Request $request) {
 }
 
 function sempa_create_movement_callback(WP_REST_Request $request) {
-    global $wpdb; 
-    $data = $request->get_json_params(); 
-    $current_user = wp_get_current_user(); 
-    $user_name = $current_user->display_name;
-    
-    $productId = intval($data['productId']);
-    $product = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}products WHERE id = %d", $productId), ARRAY_A);
-    
-    if ($product && $product['is_kit'] && $data['type'] == 'out') {
-        $components = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}kit_components WHERE kit_id = %d", $productId));
-        foreach ($components as $comp) { 
-            $wpdb->query($wpdb->prepare("UPDATE {$wpdb->prefix}products SET stock = stock - %d WHERE id = %d", $comp->quantity * $data['quantity'], $comp->component_id)); 
-        }
-        $log_action = "Mouvement de sortie pour le kit '{$product['name']}' (quantité: {$data['quantity']}).";
-    } else { 
-        $log_action = "Mouvement de stock: {$data['type']} de {$data['quantity']} pour '{$product['name']}'. Raison: {$data['reason']}"; 
+    global $wpdb;
+
+    $data = $request->get_json_params();
+    $product_id = isset($data['productId']) ? intval($data['productId']) : 0;
+    $type = isset($data['type']) ? sanitize_key($data['type']) : '';
+    $quantity = isset($data['quantity']) ? intval($data['quantity']) : 0;
+    $reason = isset($data['reason']) ? sanitize_text_field($data['reason']) : '';
+    $product_name = isset($data['productName']) ? sanitize_text_field($data['productName']) : '';
+
+    if (!$product_id) {
+        return new WP_Error('bad_request', 'Produit introuvable.', array('status' => 400));
     }
-    
-    $wpdb->insert("{$wpdb->prefix}movements", array(
-        'productId' => $productId, 
-        'productName' => sanitize_text_field($data['productName']), 
-        'type' => sanitize_text_field($data['type']), 
-        'quantity' => intval($data['quantity']), 
-        'reason' => sanitize_text_field($data['reason']),
-        'date' => current_time('mysql')
-    ));
-    
-    $wpdb->insert("{$wpdb->prefix}product_history", array(
-        'product_id' => $productId, 
-        'user_name' => $user_name, 
-        'action' => $log_action,
-        'timestamp' => current_time('mysql')
-    ));
-    
-    return new WP_REST_Response(['status' => 'success'], 201);
+
+    if (!in_array($type, array('in', 'out', 'adjust'), true)) {
+        return new WP_Error('bad_request', 'Type de mouvement invalide.', array('status' => 400));
+    }
+
+    if ($type === 'adjust') {
+        if ($quantity < 0) {
+            return new WP_Error('bad_request', 'La quantité doit être positive pour un ajustement.', array('status' => 400));
+        }
+    } elseif ($quantity <= 0) {
+        return new WP_Error('bad_request', 'La quantité doit être supérieure à zéro.', array('status' => 400));
+    }
+
+    $product = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}products WHERE id = %d", $product_id), ARRAY_A);
+    if (!$product) {
+        return new WP_Error('not_found', 'Produit introuvable.', array('status' => 404));
+    }
+
+    $current_stock = intval($product['stock']);
+    $new_stock = $current_stock;
+    $component_logs = array();
+
+    if ($type === 'in') {
+        $new_stock = $current_stock + $quantity;
+    } elseif ($type === 'out') {
+        if (!$product['is_kit'] && $quantity > $current_stock) {
+            return new WP_Error('insufficient_stock', 'Stock insuffisant pour effectuer la sortie.', array('status' => 400));
+        }
+        $new_stock = max(0, $current_stock - $quantity);
+    } elseif ($type === 'adjust') {
+        $new_stock = max(0, $quantity);
+    }
+
+    if (!empty($product['is_kit']) && $type === 'out') {
+        $components = $wpdb->get_results($wpdb->prepare(
+            "SELECT kc.component_id, kc.quantity, p.name, p.stock FROM {$wpdb->prefix}kit_components kc " .
+            "JOIN {$wpdb->prefix}products p ON p.id = kc.component_id WHERE kc.kit_id = %d",
+            $product_id
+        ), ARRAY_A);
+
+        foreach ($components as $component) {
+            $required = intval($component['quantity']) * $quantity;
+            $available = intval($component['stock']);
+            if ($required > $available) {
+                return new WP_Error(
+                    'insufficient_component_stock',
+                    sprintf('Stock insuffisant pour le composant %s.', $component['name']),
+                    array('status' => 400)
+                );
+            }
+        }
+
+        foreach ($components as $component) {
+            $required = intval($component['quantity']) * $quantity;
+            $wpdb->query($wpdb->prepare(
+                "UPDATE {$wpdb->prefix}products SET stock = GREATEST(stock - %d, 0) WHERE id = %d",
+                $required,
+                intval($component['component_id'])
+            ));
+            $component_logs[] = sprintf('%s (-%d)', $component['name'], $required);
+        }
+    }
+
+    $wpdb->update(
+        "{$wpdb->prefix}products",
+        array('stock' => $new_stock),
+        array('id' => $product_id),
+        array('%d'),
+        array('%d')
+    );
+
+    $movement_inserted = $wpdb->insert(
+        "{$wpdb->prefix}movements",
+        array(
+            'productId' => $product_id,
+            'productName' => $product_name ?: $product['name'],
+            'type' => $type,
+            'quantity' => $quantity,
+            'reason' => $reason,
+            'date' => current_time('mysql')
+        ),
+        array('%d', '%s', '%s', '%d', '%s', '%s')
+    );
+
+    if ($movement_inserted === false) {
+        return new WP_Error('db_error', 'Impossible de créer le mouvement.', array('status' => 500));
+    }
+
+    $current_user = wp_get_current_user();
+    $log_action = '';
+    switch ($type) {
+        case 'in':
+            $log_action = sprintf("Entrée de stock : +%d (stock actuel : %d). Raison : %s", $quantity, $new_stock, $reason);
+            break;
+        case 'out':
+            $log_action = sprintf("Sortie de stock : -%d (stock actuel : %d). Raison : %s", $quantity, $new_stock, $reason);
+            if ($component_logs) {
+                $log_action .= ' | Composants ajustés : ' . implode(', ', $component_logs);
+            }
+            break;
+        case 'adjust':
+            $log_action = sprintf("Stock ajusté à %d (ancien stock : %d). Raison : %s", $new_stock, $current_stock, $reason);
+            break;
+    }
+
+    $wpdb->insert(
+        "{$wpdb->prefix}product_history",
+        array(
+            'product_id' => $product_id,
+            'user_name' => $current_user->display_name,
+            'action' => $log_action,
+            'timestamp' => current_time('mysql')
+        ),
+        array('%d', '%s', '%s', '%s')
+    );
+
+    $updated_product = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}products WHERE id = %d", $product_id), ARRAY_A);
+
+    return new WP_REST_Response(array(
+        'status' => 'success',
+        'product' => $updated_product,
+    ), 201);
 }
 
 function sempa_get_categories_callback(WP_REST_Request $request) {
