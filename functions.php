@@ -253,16 +253,27 @@ function sempa_public_api_permission($request = null) {
     return true;
 }
 
-function sempa_check_api_permission() {
-    if (!is_user_logged_in()) {
-        return new WP_Error('rest_forbidden', __('Authentification requise.', 'sempa'), array('status' => 401));
+// Autorise les écritures de l'API soit via une session WP valide, soit via un
+// nonce REST, soit via un filtre permettant de conserver le comportement "API
+// publique" déployé avec la V24. Par défaut le filtre renvoie true afin de ne
+// pas bloquer l'application si aucun système d'authentification n'est en
+// place.
+function sempa_check_api_permission(WP_REST_Request $request) {
+    if (is_user_logged_in() && current_user_can('edit_posts')) {
+        return true;
     }
 
-    if (!current_user_can('edit_posts')) {
-        return new WP_Error('rest_forbidden', __('Permissions insuffisantes.', 'sempa'), array('status' => 403));
+    $nonce = $request->get_header('X-WP-Nonce');
+    if ($nonce && wp_verify_nonce($nonce, 'wp_rest')) {
+        return true;
     }
 
-    return true;
+    $is_public_write_allowed = apply_filters('sempa_allow_public_stock_writes', true, $request);
+    if ($is_public_write_allowed) {
+        return true;
+    }
+
+    return new WP_Error('rest_forbidden', __('Authentification requise.', 'sempa'), array('status' => 401));
 }
 
 function sempa_normalize_product(array $product) {
