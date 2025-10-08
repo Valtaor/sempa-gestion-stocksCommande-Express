@@ -34,6 +34,36 @@ if (!function_exists('parse_currency')) {
     }
 }
 
+if (!function_exists('sempa_table_name')) {
+    /**
+     * Resolve the actual table name for a custom table that may or may not use the WordPress prefix.
+     */
+    function sempa_table_name($base_name) {
+        global $wpdb;
+
+        static $cache = array();
+        if (isset($cache[$base_name])) {
+            return $cache[$base_name];
+        }
+
+        $prefixed = $wpdb->prefix . $base_name;
+        $tables = $wpdb->get_col('SHOW TABLES');
+
+        if (in_array($prefixed, $tables, true)) {
+            $cache[$base_name] = $prefixed;
+            return $cache[$base_name];
+        }
+
+        if (in_array($base_name, $tables, true)) {
+            $cache[$base_name] = $base_name;
+            return $cache[$base_name];
+        }
+
+        $cache[$base_name] = $prefixed;
+        return $cache[$base_name];
+    }
+}
+
 // --- DÉBUT DU CODE POUR LA GESTION DES COMMANDES SEMPA ---
 
 add_action('rest_api_init', function () {
@@ -47,7 +77,7 @@ add_action('rest_api_init', function () {
 function enregistrer_commande_callback(WP_REST_Request $request) {
     global $wpdb;
 
-    $table_name = $wpdb->prefix . 'commandes'; // CORRECTION: Ajout du préfixe
+    $table_name = sempa_table_name('commandes');
     $data = $request->get_json_params();
 
     $client_data    = $data['client']   ?? [];
@@ -96,7 +126,7 @@ add_action('rest_api_init', function () {
 
 function handle_contact_submission($request) {
     global $wpdb;
-    $table_name = $wpdb->prefix . 'contact_submissions';
+    $table_name = sempa_table_name('contact_submissions');
     $data = $request->get_json_params();
     $request_type = sanitize_text_field($data['request_type'] ?? '');
     $fullname = sanitize_text_field($data['fullname'] ?? '');
@@ -298,17 +328,19 @@ function sempa_normalize_product(array $product) {
 function sempa_get_products_callback(WP_REST_Request $request) {
     global $wpdb;
     $id = $request->get_param('id');
+    $products_table = sempa_table_name('products');
+    $kit_components_table = sempa_table_name('kit_components');
 
     if ($id) {
-        $product = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}products WHERE id = %d", $id), ARRAY_A);
+        $product = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$products_table} WHERE id = %d", $id), ARRAY_A);
         if (!$product) {
             return new WP_Error('not_found', __('Produit introuvable.', 'sempa'), array('status' => 404));
         }
         if (!empty($product['is_kit'])) {
             $product['components'] = $wpdb->get_results(
                 $wpdb->prepare(
-                    "SELECT p.id, p.name, p.reference, kc.quantity FROM {$wpdb->prefix}kit_components kc " .
-                    "JOIN {$wpdb->prefix}products p ON p.id = kc.component_id WHERE kc.kit_id = %d",
+                    "SELECT p.id, p.name, p.reference, kc.quantity FROM {$kit_components_table} kc " .
+                    "JOIN {$products_table} p ON p.id = kc.component_id WHERE kc.kit_id = %d",
                     $id
                 ),
                 ARRAY_A
@@ -318,7 +350,7 @@ function sempa_get_products_callback(WP_REST_Request $request) {
         return rest_ensure_response(sempa_normalize_product($product));
     }
 
-    $products = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}products ORDER BY name ASC", ARRAY_A);
+    $products = $wpdb->get_results("SELECT * FROM {$products_table} ORDER BY name ASC", ARRAY_A);
     $products = array_map('sempa_normalize_product', $products);
 
     return rest_ensure_response(array('products' => $products));
@@ -330,6 +362,9 @@ function sempa_save_product_callback(WP_REST_Request $request) {
     $data = $request->get_json_params();
     $current_user = wp_get_current_user();
     $history_log = array();
+    $products_table = sempa_table_name('products');
+    $kit_components_table = sempa_table_name('kit_components');
+    $product_history_table = sempa_table_name('product_history');
 
     $product_data = array(
         'name' => sanitize_text_field($data['name'] ?? ''),
@@ -346,7 +381,7 @@ function sempa_save_product_callback(WP_REST_Request $request) {
 
     $old_product = null;
     if ($id) {
-        $old_product = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}products WHERE id = %d", $id), ARRAY_A);
+        $old_product = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$products_table} WHERE id = %d", $id), ARRAY_A);
         if (!$old_product) {
             return new WP_Error('not_found', __('Produit introuvable.', 'sempa'), array('status' => 404));
         }
@@ -357,9 +392,9 @@ function sempa_save_product_callback(WP_REST_Request $request) {
             }
         }
 
-        $wpdb->update("{$wpdb->prefix}products", $product_data, array('id' => $id));
+        $wpdb->update($products_table, $product_data, array('id' => $id));
     } else {
-        $wpdb->insert("{$wpdb->prefix}products", $product_data);
+        $wpdb->insert($products_table, $product_data);
         $id = $wpdb->insert_id;
         $history_log[] = __('Produit créé.', 'sempa');
     }
@@ -375,7 +410,7 @@ function sempa_save_product_callback(WP_REST_Request $request) {
         }
 
         $existing_components = $wpdb->get_results(
-            $wpdb->prepare("SELECT component_id, quantity FROM {$wpdb->prefix}kit_components WHERE kit_id = %d", $id),
+            $wpdb->prepare("SELECT component_id, quantity FROM {$kit_components_table} WHERE kit_id = %d", $id),
             ARRAY_A
         );
         $existing_map = array();
@@ -383,7 +418,7 @@ function sempa_save_product_callback(WP_REST_Request $request) {
             $existing_map[intval($existing_component['component_id'])] = intval($existing_component['quantity']);
         }
 
-        $wpdb->delete("{$wpdb->prefix}kit_components", array('kit_id' => $id));
+        $wpdb->delete($kit_components_table, array('kit_id' => $id));
 
         $components = array();
         if (!empty($data['components']) && is_array($data['components'])) {
@@ -402,7 +437,7 @@ function sempa_save_product_callback(WP_REST_Request $request) {
 
         foreach ($components as $component_id => $component_quantity) {
             $wpdb->insert(
-                "{$wpdb->prefix}kit_components",
+                $kit_components_table,
                 array(
                     'kit_id' => $id,
                     'component_id' => $component_id,
@@ -414,12 +449,12 @@ function sempa_save_product_callback(WP_REST_Request $request) {
         if ($was_kit) {
             $history_log[] = __('Ce produit n\'est plus géré comme un kit.', 'sempa');
         }
-        $wpdb->delete("{$wpdb->prefix}kit_components", array('kit_id' => $id));
+        $wpdb->delete($kit_components_table, array('kit_id' => $id));
     }
 
     if (!empty($history_log)) {
         $wpdb->insert(
-            "{$wpdb->prefix}product_history",
+            $product_history_table,
             array(
                 'product_id' => $id,
                 'user_name' => $current_user->display_name,
@@ -433,12 +468,12 @@ function sempa_save_product_callback(WP_REST_Request $request) {
         return new WP_Error('db_error', $wpdb->last_error, array('status' => 500));
     }
 
-    $product = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}products WHERE id = %d", $id), ARRAY_A);
+    $product = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$products_table} WHERE id = %d", $id), ARRAY_A);
     if (!empty($product['is_kit'])) {
         $product['components'] = $wpdb->get_results(
             $wpdb->prepare(
-                "SELECT p.id, p.name, p.reference, kc.quantity FROM {$wpdb->prefix}kit_components kc " .
-                "JOIN {$wpdb->prefix}products p ON p.id = kc.component_id WHERE kc.kit_id = %d",
+                "SELECT p.id, p.name, p.reference, kc.quantity FROM {$kit_components_table} kc " .
+                "JOIN {$products_table} p ON p.id = kc.component_id WHERE kc.kit_id = %d",
                 $id
             ),
             ARRAY_A
@@ -453,6 +488,8 @@ function sempa_upload_photo_callback(WP_REST_Request $request) {
     $id = intval($request->get_param('id'));
     $files = $request->get_file_params();
     $file = isset($files['file']) ? $files['file'] : null;
+    $products_table = sempa_table_name('products');
+    $product_history_table = sempa_table_name('product_history');
 
     if (!$id || empty($file)) {
         return new WP_Error('bad_request', __('Fichier ou ID de produit manquant.', 'sempa'), array('status' => 400));
@@ -464,11 +501,11 @@ function sempa_upload_photo_callback(WP_REST_Request $request) {
     }
 
     $image_url = wp_get_attachment_url($attachment_id);
-    $wpdb->update("{$wpdb->prefix}products", array('imageUrl' => $image_url, 'lastUpdated' => current_time('mysql')), array('id' => $id));
+    $wpdb->update($products_table, array('imageUrl' => $image_url, 'lastUpdated' => current_time('mysql')), array('id' => $id));
 
     $current_user = wp_get_current_user();
     $wpdb->insert(
-        "{$wpdb->prefix}product_history",
+        $product_history_table,
         array(
             'product_id' => $id,
             'user_name' => $current_user->display_name,
@@ -483,8 +520,9 @@ function sempa_upload_photo_callback(WP_REST_Request $request) {
 function sempa_get_history_callback(WP_REST_Request $request) {
     global $wpdb;
     $id = intval($request->get_param('id'));
+    $product_history_table = sempa_table_name('product_history');
     $history = $wpdb->get_results(
-        $wpdb->prepare("SELECT * FROM {$wpdb->prefix}product_history WHERE product_id = %d ORDER BY timestamp DESC", $id),
+        $wpdb->prepare("SELECT * FROM {$product_history_table} WHERE product_id = %d ORDER BY timestamp DESC", $id),
         ARRAY_A
     );
 
@@ -494,18 +532,21 @@ function sempa_get_history_callback(WP_REST_Request $request) {
 function sempa_delete_product_callback(WP_REST_Request $request) {
     global $wpdb;
     $id = intval($request->get_param('id'));
+    $products_table = sempa_table_name('products');
+    $kit_components_table = sempa_table_name('kit_components');
+    $product_history_table = sempa_table_name('product_history');
     if (!$id) {
         return new WP_Error('bad_request', __('Identifiant manquant.', 'sempa'), array('status' => 400));
     }
 
-    $product = $wpdb->get_row($wpdb->prepare("SELECT name FROM {$wpdb->prefix}products WHERE id = %d", $id));
+    $product = $wpdb->get_row($wpdb->prepare("SELECT name FROM {$products_table} WHERE id = %d", $id));
     if (!$product) {
         return new WP_Error('not_found', __('Produit introuvable.', 'sempa'), array('status' => 404));
     }
 
     $current_user = wp_get_current_user();
     $wpdb->insert(
-        "{$wpdb->prefix}product_history",
+        $product_history_table,
         array(
             'product_id' => $id,
             'user_name' => $current_user->display_name,
@@ -514,8 +555,8 @@ function sempa_delete_product_callback(WP_REST_Request $request) {
         )
     );
 
-    $wpdb->delete("{$wpdb->prefix}kit_components", array('kit_id' => $id));
-    $wpdb->delete("{$wpdb->prefix}products", array('id' => $id));
+    $wpdb->delete($kit_components_table, array('kit_id' => $id));
+    $wpdb->delete($products_table, array('id' => $id));
 
     if (!empty($wpdb->last_error)) {
         return new WP_Error('db_error', $wpdb->last_error, array('status' => 500));
@@ -526,7 +567,8 @@ function sempa_delete_product_callback(WP_REST_Request $request) {
 
 function sempa_get_movements_callback(WP_REST_Request $request) {
     global $wpdb;
-    $movements = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}movements ORDER BY date DESC LIMIT 300", ARRAY_A);
+    $movements_table = sempa_table_name('movements');
+    $movements = $wpdb->get_results("SELECT * FROM {$movements_table} ORDER BY date DESC LIMIT 300", ARRAY_A);
 
     return rest_ensure_response(array('movements' => $movements));
 }
@@ -540,6 +582,10 @@ function sempa_create_movement_callback(WP_REST_Request $request) {
     $quantity = isset($data['quantity']) ? intval($data['quantity']) : 0;
     $reason = isset($data['reason']) ? sanitize_text_field($data['reason']) : '';
     $product_name = isset($data['productName']) ? sanitize_text_field($data['productName']) : '';
+    $products_table = sempa_table_name('products');
+    $kit_components_table = sempa_table_name('kit_components');
+    $movements_table = sempa_table_name('movements');
+    $product_history_table = sempa_table_name('product_history');
 
     if (!$product_id) {
         return new WP_Error('bad_request', __('Produit introuvable.', 'sempa'), array('status' => 400));
@@ -557,7 +603,7 @@ function sempa_create_movement_callback(WP_REST_Request $request) {
         return new WP_Error('bad_request', __('La quantité doit être supérieure à zéro.', 'sempa'), array('status' => 400));
     }
 
-    $product = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}products WHERE id = %d", $product_id), ARRAY_A);
+    $product = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$products_table} WHERE id = %d", $product_id), ARRAY_A);
     if (!$product) {
         return new WP_Error('not_found', __('Produit introuvable.', 'sempa'), array('status' => 404));
     }
@@ -580,8 +626,8 @@ function sempa_create_movement_callback(WP_REST_Request $request) {
     if (!empty($product['is_kit']) && $type === 'out') {
         $components = $wpdb->get_results(
             $wpdb->prepare(
-                "SELECT kc.component_id, kc.quantity, p.name, p.stock FROM {$wpdb->prefix}kit_components kc " .
-                "JOIN {$wpdb->prefix}products p ON p.id = kc.component_id WHERE kc.kit_id = %d",
+                "SELECT kc.component_id, kc.quantity, p.name, p.stock FROM {$kit_components_table} kc " .
+                "JOIN {$products_table} p ON p.id = kc.component_id WHERE kc.kit_id = %d",
                 $product_id
             ),
             ARRAY_A
@@ -603,7 +649,7 @@ function sempa_create_movement_callback(WP_REST_Request $request) {
             $required = intval($component['quantity']) * $quantity;
             $wpdb->query(
                 $wpdb->prepare(
-                    "UPDATE {$wpdb->prefix}products SET stock = GREATEST(stock - %d, 0) WHERE id = %d",
+                    "UPDATE {$products_table} SET stock = GREATEST(stock - %d, 0) WHERE id = %d",
                     $required,
                     intval($component['component_id'])
                 )
@@ -613,7 +659,7 @@ function sempa_create_movement_callback(WP_REST_Request $request) {
     }
 
     $wpdb->update(
-        "{$wpdb->prefix}products",
+        $products_table,
         array('stock' => $new_stock, 'lastUpdated' => current_time('mysql')),
         array('id' => $product_id),
         array('%d', '%s'),
@@ -621,7 +667,7 @@ function sempa_create_movement_callback(WP_REST_Request $request) {
     );
 
     $movement_inserted = $wpdb->insert(
-        "{$wpdb->prefix}movements",
+        $movements_table,
         array(
             'productId' => $product_id,
             'productName' => $product_name ?: $product['name'],
@@ -655,7 +701,7 @@ function sempa_create_movement_callback(WP_REST_Request $request) {
     }
 
     $wpdb->insert(
-        "{$wpdb->prefix}product_history",
+        $product_history_table,
         array(
             'product_id' => $product_id,
             'user_name' => $current_user->display_name,
@@ -665,12 +711,12 @@ function sempa_create_movement_callback(WP_REST_Request $request) {
         array('%d', '%s', '%s', '%s')
     );
 
-    $updated_product = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}products WHERE id = %d", $product_id), ARRAY_A);
+    $updated_product = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$products_table} WHERE id = %d", $product_id), ARRAY_A);
     if (!empty($updated_product['is_kit'])) {
         $updated_product['components'] = $wpdb->get_results(
             $wpdb->prepare(
-                "SELECT p.id, p.name, p.reference, kc.quantity FROM {$wpdb->prefix}kit_components kc " .
-                "JOIN {$wpdb->prefix}products p ON p.id = kc.component_id WHERE kc.kit_id = %d",
+                "SELECT p.id, p.name, p.reference, kc.quantity FROM {$kit_components_table} kc " .
+                "JOIN {$products_table} p ON p.id = kc.component_id WHERE kc.kit_id = %d",
                 $product_id
             ),
             ARRAY_A
@@ -685,7 +731,8 @@ function sempa_create_movement_callback(WP_REST_Request $request) {
 
 function sempa_get_categories_callback(WP_REST_Request $request) {
     global $wpdb;
-    $categories = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}product_categories ORDER BY name ASC", ARRAY_A);
+    $categories_table = sempa_table_name('product_categories');
+    $categories = $wpdb->get_results("SELECT * FROM {$categories_table} ORDER BY name ASC", ARRAY_A);
 
     return rest_ensure_response($categories);
 }
@@ -694,6 +741,7 @@ function sempa_create_category_callback(WP_REST_Request $request) {
     global $wpdb;
     $data = $request->get_json_params();
     $name = sanitize_text_field($data['name'] ?? '');
+    $categories_table = sempa_table_name('product_categories');
 
     if ($name === '') {
         return new WP_Error('bad_request', __('Le nom de la catégorie est obligatoire.', 'sempa'), array('status' => 400));
@@ -701,7 +749,7 @@ function sempa_create_category_callback(WP_REST_Request $request) {
 
     $slug = sanitize_title($name);
     $wpdb->insert(
-        "{$wpdb->prefix}product_categories",
+        $categories_table,
         array('name' => $name, 'slug' => $slug),
         array('%s', '%s')
     );
@@ -716,11 +764,12 @@ function sempa_create_category_callback(WP_REST_Request $request) {
 function sempa_delete_category_callback(WP_REST_Request $request) {
     global $wpdb;
     $id = intval($request->get_param('id'));
+    $categories_table = sempa_table_name('product_categories');
     if (!$id) {
         return new WP_Error('bad_request', __('Identifiant manquant.', 'sempa'), array('status' => 400));
     }
 
-    $wpdb->delete("{$wpdb->prefix}product_categories", array('id' => $id));
+    $wpdb->delete($categories_table, array('id' => $id));
 
     if (!empty($wpdb->last_error)) {
         return new WP_Error('db_error', $wpdb->last_error, array('status' => 500));
