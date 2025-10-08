@@ -289,6 +289,62 @@
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
         }
 
+        .reports-card {
+            gap: 24px;
+        }
+
+        .reports-filters .date-input {
+            min-height: 44px;
+        }
+
+        .date-input {
+            background: #fff;
+        }
+
+        .report-quick-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .report-quick-actions .btn-ghost {
+            padding: 8px 14px;
+        }
+
+        .report-quick-actions .btn-ghost.active {
+            background: var(--color-accent);
+            color: #fff;
+            box-shadow: 0 8px 18px rgba(255, 159, 28, 0.25);
+        }
+
+        .metric-caption {
+            font-size: 0.85rem;
+            color: var(--color-muted);
+            margin-top: 6px;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin: 32px 0 16px;
+        }
+
+        .table-header h3 {
+            margin: 0;
+        }
+
+        .table-header .text-muted {
+            margin: 0;
+        }
+
+        .table-empty {
+            text-align: center;
+            color: var(--color-muted);
+            font-style: italic;
+        }
+
         .card {
             background: var(--color-surface);
             border-radius: var(--radius-lg);
@@ -925,6 +981,7 @@
                     <button class="sempa-tab active" type="button" data-tab="overview">Vue globale</button>
                     <button class="sempa-tab" type="button" data-tab="inventory">Inventaire</button>
                     <button class="sempa-tab" type="button" data-tab="movements">Mouvements</button>
+                    <button class="sempa-tab" type="button" data-tab="reports">Rapports &amp; analyses</button>
                     <button class="sempa-tab" type="button" data-tab="categories">Catégories</button>
                 </nav>
 
@@ -1034,6 +1091,93 @@
                                 </table>
                             </div>
                         </div>
+                    </div>
+                </section>
+
+                <section class="sempa-content" id="reports">
+                    <div class="section-block">
+                        <h2 class="section-title">Rapports &amp; analyses</h2>
+                        <p class="section-subtitle">Visualisez vos indicateurs clés et filtrez précisément vos mouvements.</p>
+                    </div>
+                    <div class="card reports-card">
+                        <h3>Filtres dynamiques</h3>
+                        <div class="filters-grid reports-filters">
+                            <input type="search" id="report-search" class="search-input" placeholder="Produit, référence ou mot-clé..." autocomplete="off">
+                            <select id="report-type" class="select">
+                                <option value="">Tous les types</option>
+                                <option value="in">Entrées</option>
+                                <option value="out">Sorties</option>
+                                <option value="adjust">Ajustements</option>
+                            </select>
+                            <select id="report-category" class="select">
+                                <option value="">Toutes les catégories</option>
+                            </select>
+                            <input type="date" id="report-start" class="date-input" aria-label="Date de début">
+                            <input type="date" id="report-end" class="date-input" aria-label="Date de fin">
+                        </div>
+                        <div class="report-quick-actions" role="group" aria-label="Raccourcis de période">
+                            <button class="btn-ghost" type="button" data-report-range="12m">12 derniers mois</button>
+                            <button class="btn-ghost" type="button" data-report-range="year-previous">Année précédente</button>
+                            <button class="btn-ghost" type="button" data-report-range="year-current">Année en cours</button>
+                            <button class="btn-ghost" type="button" data-report-range="90d">90 derniers jours</button>
+                            <button class="btn-ghost" type="button" data-report-range="30d">30 derniers jours</button>
+                            <button class="btn-ghost" type="button" data-report-range="clear">Réinitialiser</button>
+                        </div>
+                    </div>
+                    <div class="metrics-grid reports-metrics">
+                        <article class="metric-card">
+                            <div class="metric-label">Mouvements filtrés</div>
+                            <div class="metric-value" id="report-total-movements">0</div>
+                            <p class="metric-caption" id="report-unique-products">0 produit impacté</p>
+                        </article>
+                        <article class="metric-card">
+                            <div class="metric-label">Sorties (quantité)</div>
+                            <div class="metric-value" id="report-total-out-qty">0</div>
+                            <p class="metric-caption">Valeur estimée : <span id="report-total-out-value">0 €</span></p>
+                        </article>
+                        <article class="metric-card">
+                            <div class="metric-label">Entrées (quantité)</div>
+                            <div class="metric-value" id="report-total-in-qty">0</div>
+                            <p class="metric-caption">Coût estimé : <span id="report-total-in-value">0 €</span></p>
+                        </article>
+                        <article class="metric-card">
+                            <div class="metric-label">Impact net</div>
+                            <div class="metric-value" id="report-net-qty">0</div>
+                            <p class="metric-caption">Ajustements : <span id="report-adjust-qty">0</span></p>
+                        </article>
+                    </div>
+                    <div class="dashboard-grid">
+                        <div class="card">
+                            <h3>Top produits</h3>
+                            <ul class="list" id="report-top-products">
+                                <li class="empty-state">Aucune donnée disponible</li>
+                            </ul>
+                        </div>
+                        <div class="card">
+                            <h3>Répartition par type</h3>
+                            <ul class="list" id="report-type-breakdown">
+                                <li class="empty-state">Aucune donnée disponible</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="table-header">
+                        <h3>Résultats détaillés</h3>
+                        <p class="text-muted" id="report-results-info"></p>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Produit</th>
+                                    <th>Type</th>
+                                    <th>Quantité</th>
+                                    <th>Catégorie</th>
+                                    <th>Raison</th>
+                                </tr>
+                            </thead>
+                            <tbody id="report-table"></tbody>
+                        </table>
                     </div>
                 </section>
 
@@ -1195,6 +1339,7 @@
             renderMovements();
             renderDashboard();
             renderAdvancedDashboard();
+            renderReports();
         }
         
         function getCategoryName(slug) {
@@ -1210,6 +1355,18 @@
 
         function formatCurrency(amount) {
             return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount || 0);
+        }
+
+        function formatNumber(value) {
+            return new Intl.NumberFormat('fr-FR').format(Number(value) || 0);
+        }
+
+        function formatDateInputValue(date) {
+            if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
         }
 
         function getFilteredProducts() {
@@ -1252,7 +1409,7 @@
         
         function renderCategories() {
             const list = document.getElementById('categories-list');
-            const selects = document.querySelectorAll('#product-category, #filter-category');
+            const selects = document.querySelectorAll('#product-category, #filter-category, #report-category');
             if (!list || !selects.length) return;
             const optionsHTML = state.categories.map(c => `<option value="${c.slug}">${c.name}</option>`).join('');
             selects.forEach(select => {
@@ -1289,7 +1446,7 @@
         function renderAdvancedDashboard() {
             const thirtyDaysAgo = new Date();
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-            
+
             const recentMovements = state.movements.filter(m => new Date(m.date) >= thirtyDaysAgo && m.type === 'out');
             const productOutCount = {};
             
@@ -1327,6 +1484,263 @@
             slowMoversList.innerHTML = slowMovers.length ?
                 slowMovers.map(p => `<li><span>${p.name}</span><small>Stock: ${p.stock}</small></li>`).join('') :
                 '<li class="empty-state">Aucun produit dormant</li>';
+        }
+
+        function clearReportQuickRange() {
+            document.querySelectorAll('[data-report-range]').forEach(btn => btn.classList.remove('active'));
+        }
+
+        function getReportFilters() {
+            const search = (document.getElementById('report-search')?.value || '').toLowerCase().trim();
+            const type = document.getElementById('report-type')?.value || '';
+            const category = document.getElementById('report-category')?.value || '';
+            const startValue = document.getElementById('report-start')?.value;
+            const endValue = document.getElementById('report-end')?.value;
+
+            let startDate = startValue ? new Date(`${startValue}T00:00:00`) : null;
+            let endDate = endValue ? new Date(`${endValue}T23:59:59`) : null;
+
+            if (startDate && endDate && startDate > endDate) {
+                const temp = startDate;
+                startDate = endDate;
+                endDate = temp;
+            }
+
+            return { search, type, category, startDate, endDate };
+        }
+
+        function getReportDataset() {
+            const filters = getReportFilters();
+            const productMap = new Map(state.products.map(p => [Number(p.id), p]));
+
+            return state.movements.map(m => {
+                const productId = Number(m.productId);
+                const product = productMap.get(productId) || null;
+                return { ...m, product, productId };
+            }).filter(item => {
+                const movementDate = new Date(item.date);
+                if (filters.startDate && movementDate < filters.startDate) return false;
+                if (filters.endDate && movementDate > filters.endDate) return false;
+
+                const matchesType = !filters.type || item.type === filters.type;
+                if (!matchesType) return false;
+
+                const productCategory = item.product ? item.product.category : '';
+                const matchesCategory = !filters.category || productCategory === filters.category;
+                if (!matchesCategory) return false;
+
+                if (!filters.search) return true;
+
+                const haystacks = [
+                    item.product ? item.product.name : '',
+                    item.product ? (item.product.reference || '') : '',
+                    item.productName || '',
+                    item.reason || ''
+                ].map(text => text.toLowerCase());
+
+                return haystacks.some(text => text.includes(filters.search));
+            });
+        }
+
+        function renderReports() {
+            const tableBody = document.getElementById('report-table');
+            const resultsInfo = document.getElementById('report-results-info');
+            const topProductsList = document.getElementById('report-top-products');
+            const typeBreakdownList = document.getElementById('report-type-breakdown');
+
+            if (!tableBody || !resultsInfo || !topProductsList || !typeBreakdownList) return;
+
+            const dataset = getReportDataset();
+            const total = dataset.length;
+
+            const summary = dataset.reduce((acc, movement) => {
+                const quantity = Number(movement.quantity) || 0;
+                const product = movement.product;
+                const label = product ? `${product.name}${product.reference ? ` (${product.reference})` : ''}` : (movement.productName || 'Produit inconnu');
+
+                acc.products.add(product ? product.id : label);
+                acc.typeMovements[movement.type] = (acc.typeMovements[movement.type] || 0) + 1;
+                acc.typeQuantities[movement.type] = (acc.typeQuantities[movement.type] || 0) + quantity;
+                acc.perProduct[label] = (acc.perProduct[label] || 0) + Math.abs(quantity);
+
+                switch (movement.type) {
+                    case 'out':
+                        acc.outQty += quantity;
+                        acc.outValue += (product ? product.salePrice || 0 : 0) * quantity;
+                        acc.netQty -= quantity;
+                        break;
+                    case 'in':
+                        acc.inQty += quantity;
+                        acc.inValue += (product ? (product.purchasePrice || product.salePrice || 0) : 0) * quantity;
+                        acc.netQty += quantity;
+                        break;
+                    case 'adjust':
+                        acc.adjustQty += quantity;
+                        acc.netQty += quantity;
+                        break;
+                    default:
+                        break;
+                }
+
+                return acc;
+            }, {
+                outQty: 0,
+                outValue: 0,
+                inQty: 0,
+                inValue: 0,
+                adjustQty: 0,
+                netQty: 0,
+                products: new Set(),
+                perProduct: {},
+                typeMovements: {},
+                typeQuantities: {}
+            });
+
+            const uniqueCount = summary.products.size;
+
+            document.getElementById('report-total-movements')?.textContent = formatNumber(total);
+            document.getElementById('report-unique-products')?.textContent = `${formatNumber(uniqueCount)} produit${uniqueCount > 1 ? 's' : ''} impacté${uniqueCount > 1 ? 's' : ''}`;
+            document.getElementById('report-total-out-qty')?.textContent = formatNumber(summary.outQty);
+            document.getElementById('report-total-out-value')?.textContent = formatCurrency(summary.outValue);
+            document.getElementById('report-total-in-qty')?.textContent = formatNumber(summary.inQty);
+            document.getElementById('report-total-in-value')?.textContent = formatCurrency(summary.inValue);
+
+            const netValue = summary.netQty;
+            const netElement = document.getElementById('report-net-qty');
+            if (netElement) {
+                const prefix = netValue > 0 ? '+' : '';
+                netElement.textContent = `${prefix}${formatNumber(netValue)}`;
+            }
+            document.getElementById('report-adjust-qty')?.textContent = formatNumber(summary.adjustQty);
+
+            const maxRows = 200;
+            if (total === 0) {
+                resultsInfo.textContent = 'Aucun mouvement pour ces filtres.';
+                tableBody.innerHTML = '<tr><td class="table-empty" colspan="6">Aucun mouvement trouvé</td></tr>';
+                topProductsList.innerHTML = '<li class="empty-state">Aucune donnée disponible</li>';
+                typeBreakdownList.innerHTML = '<li class="empty-state">Aucune donnée disponible</li>';
+                return;
+            }
+
+            resultsInfo.textContent = total > maxRows
+                ? `Affichage des ${maxRows} premiers mouvements sur ${formatNumber(total)}.`
+                : `${formatNumber(total)} mouvement${total > 1 ? 's' : ''} affiché${total > 1 ? 's' : ''}.`;
+
+            const TYPE_LABELS = { in: 'Entrée', out: 'Sortie', adjust: 'Ajustement' };
+
+            tableBody.innerHTML = dataset
+                .sort((a, b) => new Date(b.date) - new Date(a.date))
+                .slice(0, maxRows)
+                .map(movement => {
+                    const quantity = Number(movement.quantity) || 0;
+                    const quantityDisplay = movement.type === 'out'
+                        ? `-${formatNumber(quantity)}`
+                        : movement.type === 'in'
+                            ? `+${formatNumber(quantity)}`
+                            : formatNumber(quantity);
+                    const date = new Date(movement.date);
+                    const productName = movement.product ? movement.product.name : (movement.productName || 'Produit inconnu');
+                    const category = movement.product ? getCategoryName(movement.product.category) : '—';
+                    const reason = movement.reason ? movement.reason : '—';
+
+                    return `
+                        <tr>
+                            <td>${date.toLocaleDateString('fr-FR')}</td>
+                            <td>${productName}</td>
+                            <td>${TYPE_LABELS[movement.type] || movement.type}</td>
+                            <td>${quantityDisplay}</td>
+                            <td>${category}</td>
+                            <td>${reason}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+            const topProducts = Object.entries(summary.perProduct)
+                .sort(([, a], [, b]) => b - a)
+                .slice(0, 5);
+
+            topProductsList.innerHTML = topProducts.length
+                ? topProducts.map(([label, qty]) => `<li><span>${label}</span><strong>${formatNumber(qty)} unité${qty > 1 ? 's' : ''}</strong></li>`).join('')
+                : '<li class="empty-state">Aucune donnée disponible</li>';
+
+            const breakdown = ['out', 'in', 'adjust'].map(type => ({
+                type,
+                label: type === 'out' ? 'Sorties' : type === 'in' ? 'Entrées' : 'Ajustements',
+                movements: summary.typeMovements[type] || 0,
+                quantity: summary.typeQuantities[type] || 0
+            })).filter(item => item.movements > 0);
+
+            typeBreakdownList.innerHTML = breakdown.length
+                ? breakdown.map(item => `<li><span>${item.label}</span><strong>${formatNumber(item.movements)} mouvement${item.movements > 1 ? 's' : ''} • ${formatNumber(item.quantity)} unité${item.quantity > 1 ? 's' : ''}</strong></li>`).join('')
+                : '<li class="empty-state">Aucune donnée disponible</li>';
+        }
+
+        function setReportRange(range) {
+            const startInput = document.getElementById('report-start');
+            const endInput = document.getElementById('report-end');
+            if (!startInput || !endInput) return;
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            let startDate = null;
+            let endDate = null;
+
+            switch (range) {
+                case '30d': {
+                    endDate = new Date(today);
+                    startDate = new Date(today);
+                    startDate.setDate(startDate.getDate() - 29);
+                    break;
+                }
+                case '90d': {
+                    endDate = new Date(today);
+                    startDate = new Date(today);
+                    startDate.setDate(startDate.getDate() - 89);
+                    break;
+                }
+                case '12m': {
+                    endDate = new Date(today);
+                    startDate = new Date(today);
+                    startDate.setFullYear(startDate.getFullYear() - 1);
+                    startDate.setDate(startDate.getDate() + 1);
+                    break;
+                }
+                case 'year-current': {
+                    startDate = new Date(today.getFullYear(), 0, 1);
+                    endDate = new Date(today);
+                    break;
+                }
+                case 'year-previous': {
+                    const year = today.getFullYear() - 1;
+                    startDate = new Date(year, 0, 1);
+                    endDate = new Date(year, 11, 31);
+                    break;
+                }
+                case 'clear':
+                    startDate = null;
+                    endDate = null;
+                    break;
+                default:
+                    break;
+            }
+
+            if (startDate) {
+                startInput.value = formatDateInputValue(startDate);
+            } else {
+                startInput.value = '';
+            }
+
+            if (endDate) {
+                endInput.value = formatDateInputValue(endDate);
+            } else {
+                endInput.value = '';
+            }
+
+            document.querySelectorAll('[data-report-range]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.reportRange === range && range !== 'clear');
+            });
+
+            renderReports();
         }
 
         async function openModal(productId = null) {
@@ -1634,10 +2048,32 @@
             
             const statusFilter = document.getElementById('filter-status');
             if(statusFilter) statusFilter.addEventListener('change', filterProducts);
-            
+
             document.getElementById('product-is-kit')?.addEventListener('change', toggleKitSection);
             document.getElementById('kit-component-search')?.addEventListener('input', handleComponentSearch);
-            
+
+            const reportSearch = document.getElementById('report-search');
+            if (reportSearch) reportSearch.addEventListener('input', () => renderReports());
+
+            const reportType = document.getElementById('report-type');
+            if (reportType) reportType.addEventListener('change', () => renderReports());
+
+            const reportCategory = document.getElementById('report-category');
+            if (reportCategory) reportCategory.addEventListener('change', () => renderReports());
+
+            const reportStart = document.getElementById('report-start');
+            if (reportStart) reportStart.addEventListener('change', () => { clearReportQuickRange(); renderReports(); });
+
+            const reportEnd = document.getElementById('report-end');
+            if (reportEnd) reportEnd.addEventListener('change', () => { clearReportQuickRange(); renderReports(); });
+
+            document.querySelectorAll('[data-report-range]').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    setReportRange(button.dataset.reportRange);
+                });
+            });
+
             document.getElementById('product-image-upload')?.addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 if (file) {
