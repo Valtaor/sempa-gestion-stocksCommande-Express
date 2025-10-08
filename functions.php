@@ -149,7 +149,7 @@ add_action('rest_api_init', function () {
         array(
             'methods' => WP_REST_Server::READABLE,
             'callback' => 'sempa_get_products_callback',
-            'permission_callback' => 'sempa_check_api_permission',
+            'permission_callback' => 'sempa_public_api_permission',
         ),
         array(
             'methods' => WP_REST_Server::CREATABLE,
@@ -167,7 +167,7 @@ add_action('rest_api_init', function () {
         array(
             'methods' => WP_REST_Server::READABLE,
             'callback' => 'sempa_get_products_callback',
-            'permission_callback' => 'sempa_check_api_permission',
+            'permission_callback' => 'sempa_public_api_permission',
         ),
         array(
             'methods' => WP_REST_Server::EDITABLE,
@@ -193,7 +193,7 @@ add_action('rest_api_init', function () {
     register_rest_route($namespace, '/products/(?P<id>\d+)/history', array(
         'methods' => WP_REST_Server::READABLE,
         'callback' => 'sempa_get_history_callback',
-        'permission_callback' => 'sempa_check_api_permission',
+        'permission_callback' => 'sempa_public_api_permission',
         'args' => array(
             'id' => array('validate_callback' => 'sempa_validate_positive_int'),
         ),
@@ -203,7 +203,7 @@ add_action('rest_api_init', function () {
         array(
             'methods' => WP_REST_Server::READABLE,
             'callback' => 'sempa_get_movements_callback',
-            'permission_callback' => 'sempa_check_api_permission',
+            'permission_callback' => 'sempa_public_api_permission',
         ),
         array(
             'methods' => WP_REST_Server::CREATABLE,
@@ -216,7 +216,7 @@ add_action('rest_api_init', function () {
         array(
             'methods' => WP_REST_Server::READABLE,
             'callback' => 'sempa_get_categories_callback',
-            'permission_callback' => 'sempa_check_api_permission',
+            'permission_callback' => 'sempa_public_api_permission',
         ),
         array(
             'methods' => WP_REST_Server::CREATABLE,
@@ -239,6 +239,18 @@ add_action('rest_api_init', function () {
 
 function sempa_validate_positive_int($param) {
     return is_numeric($param) && intval($param) > 0;
+}
+
+// Autorise les opérations de lecture de l'API stocks sans authentification afin
+// que l'application front puisse charger les données publiques (équivalent du
+// comportement de la V24).
+function sempa_public_api_permission($request = null) {
+    // WordPress passe systématiquement l'objet WP_REST_Request au callback de
+    // permission. On accepte cet argument optionnel pour éviter une erreur de
+    // comptage des paramètres qui bloquerait complètement la réponse.
+    unset($request);
+
+    return true;
 }
 
 function sempa_check_api_permission() {
