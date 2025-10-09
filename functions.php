@@ -244,11 +244,14 @@ function sempa_validate_positive_int($param) {
 // Autorise les opérations de lecture de l'API stocks sans authentification afin
 // que l'application front puisse charger les données publiques (équivalent du
 // comportement de la V24).
-function sempa_public_api_permission($request = null) {
-    // WordPress passe systématiquement l'objet WP_REST_Request au callback de
-    // permission. On accepte cet argument optionnel pour éviter une erreur de
-    // comptage des paramètres qui bloquerait complètement la réponse.
-    unset($request);
+function sempa_public_api_permission() {
+    return true;
+}
+
+function sempa_check_api_permission() {
+    if (!is_user_logged_in()) {
+        return new WP_Error('rest_forbidden', __('Authentification requise.', 'sempa'), array('status' => 401));
+    }
 
     return true;
 }
