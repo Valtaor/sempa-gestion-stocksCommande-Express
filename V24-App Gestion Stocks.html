@@ -52,6 +52,139 @@
             -webkit-font-smoothing: antialiased;
         }
 
+        body.app-locked {
+            overflow: hidden;
+        }
+
+        .app-access-gate {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: radial-gradient(circle at top, rgba(255, 159, 28, 0.25), rgba(15, 23, 42, 0.82));
+            backdrop-filter: blur(8px);
+            z-index: 9999;
+        }
+
+        .app-access-gate[hidden] {
+            display: none;
+        }
+
+        .app-access-card {
+            width: min(440px, 100%);
+            padding: clamp(32px, 5vw, 40px);
+            border-radius: var(--radius-lg);
+            background: rgba(255, 255, 255, 0.96);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            display: grid;
+            gap: 24px;
+            text-align: left;
+        }
+
+        .app-access-card h1 {
+            font-size: clamp(1.4rem, 2vw, 1.75rem);
+            line-height: 1.2;
+        }
+
+        .app-access-card p {
+            color: var(--color-text);
+            line-height: 1.6;
+        }
+
+        .app-access-form {
+            display: grid;
+            gap: 16px;
+        }
+
+        .app-access-label {
+            font-weight: 600;
+            color: var(--color-text);
+        }
+
+        .app-access-input-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .app-access-input {
+            width: 100%;
+            padding: 14px 48px 14px 16px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--color-border);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .app-access-input:focus {
+            outline: none;
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 4px rgba(255, 159, 28, 0.25);
+        }
+
+        .app-access-toggle {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            padding: 6px 10px;
+            border: none;
+            border-radius: var(--radius-sm);
+            background: transparent;
+            color: var(--color-accent);
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .app-access-remember {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            color: var(--color-muted);
+        }
+
+        .app-access-remember input {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--color-accent);
+        }
+
+        .app-access-submit {
+            padding: 14px 20px;
+            border-radius: var(--radius-sm);
+            border: none;
+            background: var(--color-accent);
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .app-access-submit:hover {
+            background: var(--color-accent-hover);
+            transform: translateY(-1px);
+        }
+
+        .app-access-error {
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            background: rgba(224, 49, 49, 0.1);
+            color: var(--color-danger);
+            font-weight: 500;
+        }
+
+        .app-access-error[hidden] {
+            display: none;
+        }
+
         h1, h2, h3, h4 {
             margin: 0;
             font-weight: 600;
@@ -956,8 +1089,29 @@
         }
     </style>
 </head>
-<body>
-<div id="stock-app-wrapper">
+<body class="app-locked">
+<div class="app-access-gate" id="app-access-gate" role="dialog" aria-modal="true" aria-labelledby="app-access-title" data-password="Sempa2024!">
+    <div class="app-access-card">
+        <div>
+            <h1 id="app-access-title">Accès réservé aux collaborateurs SEMPA</h1>
+            <p>Merci de saisir le mot de passe partagé pour consulter l'application de gestion des stocks. Ce contrôle limite l'accès aux personnes autorisées tout en conservant une expérience simple.</p>
+        </div>
+        <form class="app-access-form" id="app-access-form" novalidate>
+            <label class="app-access-label" for="app-access-password">Mot de passe</label>
+            <div class="app-access-input-group">
+                <input type="password" id="app-access-password" class="app-access-input" name="app-access-password" autocomplete="current-password" required placeholder="Entrez le mot de passe">
+                <button type="button" class="app-access-toggle" id="app-access-toggle" aria-controls="app-access-password" aria-label="Afficher le mot de passe">Afficher</button>
+            </div>
+            <label class="app-access-remember" for="app-access-remember">
+                <input type="checkbox" id="app-access-remember" name="app-access-remember"> Se souvenir de moi sur cet appareil
+            </label>
+            <p class="app-access-error" id="app-access-error" role="alert" hidden>Mot de passe incorrect. Veuillez réessayer.</p>
+            <button type="submit" class="app-access-submit">Accéder à l'application</button>
+        </form>
+        <p style="font-size: 0.9rem; color: var(--color-muted);">Besoin d'aide ? Contactez l'équipe SEMPA pour obtenir ou réinitialiser le mot de passe.</p>
+    </div>
+</div>
+<div id="stock-app-wrapper" aria-hidden="true">
     <div id="app-error-banner" class="app-error-banner"></div>
     <div class="app-shell">
         <header class="app-header">
@@ -2094,14 +2248,174 @@
             applyTheme(localStorage.getItem('sempa_theme') || 'light');
         }
 
-        return { 
-            init, openModal, closeModal, saveProduct, deleteProduct, 
-            addCategory, deleteCategory, removeComponent, exportInventory,
-            updateComponentQuantity, addComponentToKit, handleComponentSearch
-        };
+    return {
+        init, openModal, closeModal, saveProduct, deleteProduct,
+        addCategory, deleteCategory, removeComponent, exportInventory,
+        updateComponentQuantity, addComponentToKit, handleComponentSearch
+    };
     })();
 
-    document.addEventListener('DOMContentLoaded', App.init);
+    let sempaAppInitialized = false;
+
+    function initializeStockApp() {
+        if (sempaAppInitialized) {
+            return;
+        }
+
+        sempaAppInitialized = true;
+        App.init();
+    }
+
+    const AccessGate = (() => {
+        const SESSION_KEY = 'sempa_stock_access_granted';
+        const REMEMBER_KEY = 'sempa_stock_access_remembered';
+
+        function safeGet(storage, key) {
+            try {
+                return storage.getItem(key);
+            } catch (error) {
+                console.warn('Stockage web indisponible :', error);
+                return null;
+            }
+        }
+
+        function safeSet(storage, key, value) {
+            try {
+                storage.setItem(key, value);
+            } catch (error) {
+                console.warn('Impossible d\'enregistrer la session locale :', error);
+            }
+        }
+
+        function safeRemove(storage, key) {
+            try {
+                storage.removeItem(key);
+            } catch (error) {
+                console.warn('Impossible de nettoyer la session locale :', error);
+            }
+        }
+
+        function init() {
+            const gate = document.getElementById('app-access-gate');
+            const form = document.getElementById('app-access-form');
+            const input = document.getElementById('app-access-password');
+            const toggle = document.getElementById('app-access-toggle');
+            const remember = document.getElementById('app-access-remember');
+            const error = document.getElementById('app-access-error');
+            const appWrapper = document.getElementById('stock-app-wrapper');
+
+            if (!gate || !form || !input) {
+                document.body.classList.remove('app-locked');
+                if (appWrapper) {
+                    appWrapper.removeAttribute('aria-hidden');
+                }
+                initializeStockApp();
+                return;
+            }
+
+            const storedPassword = (gate.dataset.password || '').trim();
+
+            if (!storedPassword) {
+                unlock({ gate });
+                return;
+            }
+
+            const hasRememberedAccess = safeGet(localStorage, REMEMBER_KEY) === '1';
+            const hasSessionAccess = safeGet(sessionStorage, SESSION_KEY) === '1';
+
+            if (hasRememberedAccess || hasSessionAccess) {
+                unlock({ gate, remember: hasRememberedAccess });
+                return;
+            }
+
+            gate.removeAttribute('hidden');
+            gate.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('app-locked');
+            if (appWrapper) {
+                appWrapper.setAttribute('aria-hidden', 'true');
+            }
+
+            form.addEventListener('submit', (event) => {
+                event.preventDefault();
+                const value = input.value.trim();
+
+                if (value === storedPassword) {
+                    const shouldRemember = remember ? remember.checked : false;
+                    unlock({ gate, remember: shouldRemember });
+                    return;
+                }
+
+                if (error) {
+                    error.textContent = 'Mot de passe incorrect. Veuillez réessayer.';
+                    error.removeAttribute('hidden');
+                }
+
+                input.value = '';
+                input.focus();
+            });
+
+            input.addEventListener('input', () => {
+                if (error && !error.hasAttribute('hidden')) {
+                    error.setAttribute('hidden', 'hidden');
+                }
+            });
+
+            if (toggle) {
+                toggle.addEventListener('click', () => {
+                    const isPassword = input.getAttribute('type') === 'password';
+                    input.setAttribute('type', isPassword ? 'text' : 'password');
+                    toggle.textContent = isPassword ? 'Masquer' : 'Afficher';
+                    toggle.setAttribute('aria-label', isPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
+                    input.focus();
+                });
+            }
+
+            setTimeout(() => input.focus(), 50);
+        }
+
+        function unlock({ gate, remember = false } = {}) {
+            if (remember) {
+                safeSet(localStorage, REMEMBER_KEY, '1');
+            } else {
+                safeRemove(localStorage, REMEMBER_KEY);
+            }
+
+            safeSet(sessionStorage, SESSION_KEY, '1');
+
+            if (gate) {
+                gate.setAttribute('hidden', 'hidden');
+                gate.setAttribute('aria-hidden', 'true');
+            }
+
+            document.body.classList.remove('app-locked');
+
+            const error = document.getElementById('app-access-error');
+            if (error) {
+                error.setAttribute('hidden', 'hidden');
+            }
+
+            const input = document.getElementById('app-access-password');
+            if (input) {
+                input.value = '';
+            }
+
+            const rememberCheckbox = document.getElementById('app-access-remember');
+            if (rememberCheckbox) {
+                rememberCheckbox.checked = false;
+            }
+
+            const appWrapper = document.getElementById('stock-app-wrapper');
+            if (appWrapper) {
+                appWrapper.removeAttribute('aria-hidden');
+            }
+
+            initializeStockApp();
+        }
+
+        return { init };
+    })();
+
+    document.addEventListener('DOMContentLoaded', AccessGate.init);
 </script>
 </body>
 </html>
