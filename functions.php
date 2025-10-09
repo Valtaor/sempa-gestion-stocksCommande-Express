@@ -253,11 +253,20 @@ function sempa_check_api_permission() {
         return new WP_Error('rest_forbidden', __('Authentification requise.', 'sempa'), array('status' => 401));
     }
 
-    if (!current_user_can('edit_posts')) {
-        return new WP_Error('rest_forbidden', __('Permissions insuffisantes.', 'sempa'), array('status' => 403));
+    return true;
+}
+
+// Laisse les opérations d'écriture de l'API totalement ouvertes pour
+// l'application de stock. Un filtre reste disponible si l'on souhaite
+// réintroduire un contrôle plus strict à l'avenir.
+function sempa_check_api_permission(WP_REST_Request $request) {
+    $is_public_write_allowed = apply_filters('sempa_allow_public_stock_writes', true, $request);
+
+    if ($is_public_write_allowed) {
+        return true;
     }
 
-    return true;
+    return new WP_Error('rest_forbidden', __('Authentification requise.', 'sempa'), array('status' => 401));
 }
 
 function sempa_normalize_product(array $product) {
@@ -722,14 +731,46 @@ function sempa_delete_category_callback(WP_REST_Request $request) {
  * après leur connexion. Les autres utilisateurs vont au tableau de bord.
  */
 add_filter('login_redirect', 'sempa_specific_user_redirect', 10, 3);
-function sempa_specific_user_redirect($redirect_to, $request, $user) {
-    if (isset($user->user_login) && $user->ID) {
-        $collaborator_emails = array('victorfaucher@sempa.fr', 'jean-baptiste@sempa.fr');
-        if (in_array($user->user_email, $collaborator_emails)) {
-            return 'https://sempa.fr/gestion-stocks-sempa/';
-        } else {
-            return admin_url();
+function sempa_specific_user_redirect($redirect_to, $requested_redirect_to, $user) {
+    if (!($user instanceof WP_User)) {
+        return $redirect_to;
+    }
+
+    $collaborator_emails = apply_filters('sempa_stock_redirect_emails', array(
+        'victorfaucher@sempa.fr',
+        'jean-baptiste@sempa.fr',
+    ));
+    $normalized_emails = array_map('strtolower', $collaborator_emails);
+    $user_email = strtolower($user->user_email);
+
+    if (in_array($user_email, $normalized_emails, true)) {
+        $app_url = sempa_get_stock_app_url();
+
+        if (!empty($app_url)) {
+            return $app_url;
         }
     }
+
     return $redirect_to;
+}
+
+function sempa_get_stock_app_url() {
+    $default_url = home_url('/gestion-stocks-sempa/');
+    $potential_slugs = array(
+        'gestion-stocks-sempa',
+        'gestion-stocks',
+        'app-gestion-stocks',
+        'stock-management'
+    );
+
+    foreach ($potential_slugs as $slug) {
+        $page = get_page_by_path($slug);
+        if ($page) {
+            $url = get_permalink($page);
+
+            return apply_filters('sempa_stock_app_url', $url, $page);
+        }
+    }
+
+    return apply_filters('sempa_stock_app_url', $default_url, null);
 }

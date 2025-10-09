@@ -52,6 +52,139 @@
             -webkit-font-smoothing: antialiased;
         }
 
+        body.app-locked {
+            overflow: hidden;
+        }
+
+        .app-access-gate {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: radial-gradient(circle at top, rgba(255, 159, 28, 0.25), rgba(15, 23, 42, 0.82));
+            backdrop-filter: blur(8px);
+            z-index: 9999;
+        }
+
+        .app-access-gate[hidden] {
+            display: none;
+        }
+
+        .app-access-card {
+            width: min(440px, 100%);
+            padding: clamp(32px, 5vw, 40px);
+            border-radius: var(--radius-lg);
+            background: rgba(255, 255, 255, 0.96);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            display: grid;
+            gap: 24px;
+            text-align: left;
+        }
+
+        .app-access-card h1 {
+            font-size: clamp(1.4rem, 2vw, 1.75rem);
+            line-height: 1.2;
+        }
+
+        .app-access-card p {
+            color: var(--color-text);
+            line-height: 1.6;
+        }
+
+        .app-access-form {
+            display: grid;
+            gap: 16px;
+        }
+
+        .app-access-label {
+            font-weight: 600;
+            color: var(--color-text);
+        }
+
+        .app-access-input-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .app-access-input {
+            width: 100%;
+            padding: 14px 48px 14px 16px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--color-border);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .app-access-input:focus {
+            outline: none;
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 4px rgba(255, 159, 28, 0.25);
+        }
+
+        .app-access-toggle {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            padding: 6px 10px;
+            border: none;
+            border-radius: var(--radius-sm);
+            background: transparent;
+            color: var(--color-accent);
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .app-access-remember {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            color: var(--color-muted);
+        }
+
+        .app-access-remember input {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--color-accent);
+        }
+
+        .app-access-submit {
+            padding: 14px 20px;
+            border-radius: var(--radius-sm);
+            border: none;
+            background: var(--color-accent);
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .app-access-submit:hover {
+            background: var(--color-accent-hover);
+            transform: translateY(-1px);
+        }
+
+        .app-access-error {
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            background: rgba(224, 49, 49, 0.1);
+            color: var(--color-danger);
+            font-weight: 500;
+        }
+
+        .app-access-error[hidden] {
+            display: none;
+        }
+
         h1, h2, h3, h4 {
             margin: 0;
             font-weight: 600;
@@ -289,6 +422,62 @@
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
         }
 
+        .reports-card {
+            gap: 24px;
+        }
+
+        .reports-filters .date-input {
+            min-height: 44px;
+        }
+
+        .date-input {
+            background: #fff;
+        }
+
+        .report-quick-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .report-quick-actions .btn-ghost {
+            padding: 8px 14px;
+        }
+
+        .report-quick-actions .btn-ghost.active {
+            background: var(--color-accent);
+            color: #fff;
+            box-shadow: 0 8px 18px rgba(255, 159, 28, 0.25);
+        }
+
+        .metric-caption {
+            font-size: 0.85rem;
+            color: var(--color-muted);
+            margin-top: 6px;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin: 32px 0 16px;
+        }
+
+        .table-header h3 {
+            margin: 0;
+        }
+
+        .table-header .text-muted {
+            margin: 0;
+        }
+
+        .table-empty {
+            text-align: center;
+            color: var(--color-muted);
+            font-style: italic;
+        }
+
         .card {
             background: var(--color-surface);
             border-radius: var(--radius-lg);
@@ -502,6 +691,27 @@
             outline: none;
             border-color: var(--color-accent);
             box-shadow: 0 0 0 4px rgba(255, 159, 28, 0.18);
+        }
+
+        .select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-color: #fff;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='none' stroke='%236c757d' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M2 2l4 4 4-4'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 18px center;
+            background-size: 14px 8px;
+            padding-right: 48px;
+            cursor: pointer;
+        }
+
+        .select:focus {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='none' stroke='%23ff9f1c' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M2 2l4 4 4-4'/%3E%3C/svg%3E");
+        }
+
+        .select::-ms-expand {
+            display: none;
         }
 
         textarea {
@@ -879,8 +1089,29 @@
         }
     </style>
 </head>
-<body>
-<div id="stock-app-wrapper">
+<body class="app-locked">
+<div class="app-access-gate" id="app-access-gate" role="dialog" aria-modal="true" aria-labelledby="app-access-title" data-password="Sempa2024!">
+    <div class="app-access-card">
+        <div>
+            <h1 id="app-access-title">Accès réservé aux collaborateurs SEMPA</h1>
+            <p>Merci de saisir le mot de passe partagé pour consulter l'application de gestion des stocks. Ce contrôle limite l'accès aux personnes autorisées tout en conservant une expérience simple.</p>
+        </div>
+        <form class="app-access-form" id="app-access-form" novalidate>
+            <label class="app-access-label" for="app-access-password">Mot de passe</label>
+            <div class="app-access-input-group">
+                <input type="password" id="app-access-password" class="app-access-input" name="app-access-password" autocomplete="current-password" required placeholder="Entrez le mot de passe">
+                <button type="button" class="app-access-toggle" id="app-access-toggle" aria-controls="app-access-password" aria-label="Afficher le mot de passe">Afficher</button>
+            </div>
+            <label class="app-access-remember" for="app-access-remember">
+                <input type="checkbox" id="app-access-remember" name="app-access-remember"> Se souvenir de moi sur cet appareil
+            </label>
+            <p class="app-access-error" id="app-access-error" role="alert" hidden>Mot de passe incorrect. Veuillez réessayer.</p>
+            <button type="submit" class="app-access-submit">Accéder à l'application</button>
+        </form>
+        <p style="font-size: 0.9rem; color: var(--color-muted);">Besoin d'aide ? Contactez l'équipe SEMPA pour obtenir ou réinitialiser le mot de passe.</p>
+    </div>
+</div>
+<div id="stock-app-wrapper" aria-hidden="true">
     <div id="app-error-banner" class="app-error-banner"></div>
     <div class="app-shell">
         <header class="app-header">
@@ -904,6 +1135,7 @@
                     <button class="sempa-tab active" type="button" data-tab="overview">Vue globale</button>
                     <button class="sempa-tab" type="button" data-tab="inventory">Inventaire</button>
                     <button class="sempa-tab" type="button" data-tab="movements">Mouvements</button>
+                    <button class="sempa-tab" type="button" data-tab="reports">Rapports &amp; analyses</button>
                     <button class="sempa-tab" type="button" data-tab="categories">Catégories</button>
                 </nav>
 
@@ -1013,6 +1245,93 @@
                                 </table>
                             </div>
                         </div>
+                    </div>
+                </section>
+
+                <section class="sempa-content" id="reports">
+                    <div class="section-block">
+                        <h2 class="section-title">Rapports &amp; analyses</h2>
+                        <p class="section-subtitle">Visualisez vos indicateurs clés et filtrez précisément vos mouvements.</p>
+                    </div>
+                    <div class="card reports-card">
+                        <h3>Filtres dynamiques</h3>
+                        <div class="filters-grid reports-filters">
+                            <input type="search" id="report-search" class="search-input" placeholder="Produit, référence ou mot-clé..." autocomplete="off">
+                            <select id="report-type" class="select">
+                                <option value="">Tous les types</option>
+                                <option value="in">Entrées</option>
+                                <option value="out">Sorties</option>
+                                <option value="adjust">Ajustements</option>
+                            </select>
+                            <select id="report-category" class="select">
+                                <option value="">Toutes les catégories</option>
+                            </select>
+                            <input type="date" id="report-start" class="date-input" aria-label="Date de début">
+                            <input type="date" id="report-end" class="date-input" aria-label="Date de fin">
+                        </div>
+                        <div class="report-quick-actions" role="group" aria-label="Raccourcis de période">
+                            <button class="btn-ghost" type="button" data-report-range="12m">12 derniers mois</button>
+                            <button class="btn-ghost" type="button" data-report-range="year-previous">Année précédente</button>
+                            <button class="btn-ghost" type="button" data-report-range="year-current">Année en cours</button>
+                            <button class="btn-ghost" type="button" data-report-range="90d">90 derniers jours</button>
+                            <button class="btn-ghost" type="button" data-report-range="30d">30 derniers jours</button>
+                            <button class="btn-ghost" type="button" data-report-range="clear">Réinitialiser</button>
+                        </div>
+                    </div>
+                    <div class="metrics-grid reports-metrics">
+                        <article class="metric-card">
+                            <div class="metric-label">Mouvements filtrés</div>
+                            <div class="metric-value" id="report-total-movements">0</div>
+                            <p class="metric-caption" id="report-unique-products">0 produit impacté</p>
+                        </article>
+                        <article class="metric-card">
+                            <div class="metric-label">Sorties (quantité)</div>
+                            <div class="metric-value" id="report-total-out-qty">0</div>
+                            <p class="metric-caption">Valeur estimée : <span id="report-total-out-value">0 €</span></p>
+                        </article>
+                        <article class="metric-card">
+                            <div class="metric-label">Entrées (quantité)</div>
+                            <div class="metric-value" id="report-total-in-qty">0</div>
+                            <p class="metric-caption">Coût estimé : <span id="report-total-in-value">0 €</span></p>
+                        </article>
+                        <article class="metric-card">
+                            <div class="metric-label">Impact net</div>
+                            <div class="metric-value" id="report-net-qty">0</div>
+                            <p class="metric-caption">Ajustements : <span id="report-adjust-qty">0</span></p>
+                        </article>
+                    </div>
+                    <div class="dashboard-grid">
+                        <div class="card">
+                            <h3>Top produits</h3>
+                            <ul class="list" id="report-top-products">
+                                <li class="empty-state">Aucune donnée disponible</li>
+                            </ul>
+                        </div>
+                        <div class="card">
+                            <h3>Répartition par type</h3>
+                            <ul class="list" id="report-type-breakdown">
+                                <li class="empty-state">Aucune donnée disponible</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="table-header">
+                        <h3>Résultats détaillés</h3>
+                        <p class="text-muted" id="report-results-info"></p>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Produit</th>
+                                    <th>Type</th>
+                                    <th>Quantité</th>
+                                    <th>Catégorie</th>
+                                    <th>Raison</th>
+                                </tr>
+                            </thead>
+                            <tbody id="report-table"></tbody>
+                        </table>
                     </div>
                 </section>
 
@@ -1174,6 +1493,7 @@
             renderMovements();
             renderDashboard();
             renderAdvancedDashboard();
+            renderReports();
         }
         
         function getCategoryName(slug) {
@@ -1189,6 +1509,18 @@
 
         function formatCurrency(amount) {
             return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount || 0);
+        }
+
+        function formatNumber(value) {
+            return new Intl.NumberFormat('fr-FR').format(Number(value) || 0);
+        }
+
+        function formatDateInputValue(date) {
+            if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
         }
 
         function getFilteredProducts() {
@@ -1231,7 +1563,7 @@
         
         function renderCategories() {
             const list = document.getElementById('categories-list');
-            const selects = document.querySelectorAll('#product-category, #filter-category');
+            const selects = document.querySelectorAll('#product-category, #filter-category, #report-category');
             if (!list || !selects.length) return;
             const optionsHTML = state.categories.map(c => `<option value="${c.slug}">${c.name}</option>`).join('');
             selects.forEach(select => {
@@ -1268,7 +1600,7 @@
         function renderAdvancedDashboard() {
             const thirtyDaysAgo = new Date();
             thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-            
+
             const recentMovements = state.movements.filter(m => new Date(m.date) >= thirtyDaysAgo && m.type === 'out');
             const productOutCount = {};
             
@@ -1306,6 +1638,263 @@
             slowMoversList.innerHTML = slowMovers.length ?
                 slowMovers.map(p => `<li><span>${p.name}</span><small>Stock: ${p.stock}</small></li>`).join('') :
                 '<li class="empty-state">Aucun produit dormant</li>';
+        }
+
+        function clearReportQuickRange() {
+            document.querySelectorAll('[data-report-range]').forEach(btn => btn.classList.remove('active'));
+        }
+
+        function getReportFilters() {
+            const search = (document.getElementById('report-search')?.value || '').toLowerCase().trim();
+            const type = document.getElementById('report-type')?.value || '';
+            const category = document.getElementById('report-category')?.value || '';
+            const startValue = document.getElementById('report-start')?.value;
+            const endValue = document.getElementById('report-end')?.value;
+
+            let startDate = startValue ? new Date(`${startValue}T00:00:00`) : null;
+            let endDate = endValue ? new Date(`${endValue}T23:59:59`) : null;
+
+            if (startDate && endDate && startDate > endDate) {
+                const temp = startDate;
+                startDate = endDate;
+                endDate = temp;
+            }
+
+            return { search, type, category, startDate, endDate };
+        }
+
+        function getReportDataset() {
+            const filters = getReportFilters();
+            const productMap = new Map(state.products.map(p => [Number(p.id), p]));
+
+            return state.movements.map(m => {
+                const productId = Number(m.productId);
+                const product = productMap.get(productId) || null;
+                return { ...m, product, productId };
+            }).filter(item => {
+                const movementDate = new Date(item.date);
+                if (filters.startDate && movementDate < filters.startDate) return false;
+                if (filters.endDate && movementDate > filters.endDate) return false;
+
+                const matchesType = !filters.type || item.type === filters.type;
+                if (!matchesType) return false;
+
+                const productCategory = item.product ? item.product.category : '';
+                const matchesCategory = !filters.category || productCategory === filters.category;
+                if (!matchesCategory) return false;
+
+                if (!filters.search) return true;
+
+                const haystacks = [
+                    item.product ? item.product.name : '',
+                    item.product ? (item.product.reference || '') : '',
+                    item.productName || '',
+                    item.reason || ''
+                ].map(text => text.toLowerCase());
+
+                return haystacks.some(text => text.includes(filters.search));
+            });
+        }
+
+        function renderReports() {
+            const tableBody = document.getElementById('report-table');
+            const resultsInfo = document.getElementById('report-results-info');
+            const topProductsList = document.getElementById('report-top-products');
+            const typeBreakdownList = document.getElementById('report-type-breakdown');
+
+            if (!tableBody || !resultsInfo || !topProductsList || !typeBreakdownList) return;
+
+            const dataset = getReportDataset();
+            const total = dataset.length;
+
+            const summary = dataset.reduce((acc, movement) => {
+                const quantity = Number(movement.quantity) || 0;
+                const product = movement.product;
+                const label = product ? `${product.name}${product.reference ? ` (${product.reference})` : ''}` : (movement.productName || 'Produit inconnu');
+
+                acc.products.add(product ? product.id : label);
+                acc.typeMovements[movement.type] = (acc.typeMovements[movement.type] || 0) + 1;
+                acc.typeQuantities[movement.type] = (acc.typeQuantities[movement.type] || 0) + quantity;
+                acc.perProduct[label] = (acc.perProduct[label] || 0) + Math.abs(quantity);
+
+                switch (movement.type) {
+                    case 'out':
+                        acc.outQty += quantity;
+                        acc.outValue += (product ? product.salePrice || 0 : 0) * quantity;
+                        acc.netQty -= quantity;
+                        break;
+                    case 'in':
+                        acc.inQty += quantity;
+                        acc.inValue += (product ? (product.purchasePrice || product.salePrice || 0) : 0) * quantity;
+                        acc.netQty += quantity;
+                        break;
+                    case 'adjust':
+                        acc.adjustQty += quantity;
+                        acc.netQty += quantity;
+                        break;
+                    default:
+                        break;
+                }
+
+                return acc;
+            }, {
+                outQty: 0,
+                outValue: 0,
+                inQty: 0,
+                inValue: 0,
+                adjustQty: 0,
+                netQty: 0,
+                products: new Set(),
+                perProduct: {},
+                typeMovements: {},
+                typeQuantities: {}
+            });
+
+            const uniqueCount = summary.products.size;
+
+            document.getElementById('report-total-movements')?.textContent = formatNumber(total);
+            document.getElementById('report-unique-products')?.textContent = `${formatNumber(uniqueCount)} produit${uniqueCount > 1 ? 's' : ''} impacté${uniqueCount > 1 ? 's' : ''}`;
+            document.getElementById('report-total-out-qty')?.textContent = formatNumber(summary.outQty);
+            document.getElementById('report-total-out-value')?.textContent = formatCurrency(summary.outValue);
+            document.getElementById('report-total-in-qty')?.textContent = formatNumber(summary.inQty);
+            document.getElementById('report-total-in-value')?.textContent = formatCurrency(summary.inValue);
+
+            const netValue = summary.netQty;
+            const netElement = document.getElementById('report-net-qty');
+            if (netElement) {
+                const prefix = netValue > 0 ? '+' : '';
+                netElement.textContent = `${prefix}${formatNumber(netValue)}`;
+            }
+            document.getElementById('report-adjust-qty')?.textContent = formatNumber(summary.adjustQty);
+
+            const maxRows = 200;
+            if (total === 0) {
+                resultsInfo.textContent = 'Aucun mouvement pour ces filtres.';
+                tableBody.innerHTML = '<tr><td class="table-empty" colspan="6">Aucun mouvement trouvé</td></tr>';
+                topProductsList.innerHTML = '<li class="empty-state">Aucune donnée disponible</li>';
+                typeBreakdownList.innerHTML = '<li class="empty-state">Aucune donnée disponible</li>';
+                return;
+            }
+
+            resultsInfo.textContent = total > maxRows
+                ? `Affichage des ${maxRows} premiers mouvements sur ${formatNumber(total)}.`
+                : `${formatNumber(total)} mouvement${total > 1 ? 's' : ''} affiché${total > 1 ? 's' : ''}.`;
+
+            const TYPE_LABELS = { in: 'Entrée', out: 'Sortie', adjust: 'Ajustement' };
+
+            tableBody.innerHTML = dataset
+                .sort((a, b) => new Date(b.date) - new Date(a.date))
+                .slice(0, maxRows)
+                .map(movement => {
+                    const quantity = Number(movement.quantity) || 0;
+                    const quantityDisplay = movement.type === 'out'
+                        ? `-${formatNumber(quantity)}`
+                        : movement.type === 'in'
+                            ? `+${formatNumber(quantity)}`
+                            : formatNumber(quantity);
+                    const date = new Date(movement.date);
+                    const productName = movement.product ? movement.product.name : (movement.productName || 'Produit inconnu');
+                    const category = movement.product ? getCategoryName(movement.product.category) : '—';
+                    const reason = movement.reason ? movement.reason : '—';
+
+                    return `
+                        <tr>
+                            <td>${date.toLocaleDateString('fr-FR')}</td>
+                            <td>${productName}</td>
+                            <td>${TYPE_LABELS[movement.type] || movement.type}</td>
+                            <td>${quantityDisplay}</td>
+                            <td>${category}</td>
+                            <td>${reason}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+            const topProducts = Object.entries(summary.perProduct)
+                .sort(([, a], [, b]) => b - a)
+                .slice(0, 5);
+
+            topProductsList.innerHTML = topProducts.length
+                ? topProducts.map(([label, qty]) => `<li><span>${label}</span><strong>${formatNumber(qty)} unité${qty > 1 ? 's' : ''}</strong></li>`).join('')
+                : '<li class="empty-state">Aucune donnée disponible</li>';
+
+            const breakdown = ['out', 'in', 'adjust'].map(type => ({
+                type,
+                label: type === 'out' ? 'Sorties' : type === 'in' ? 'Entrées' : 'Ajustements',
+                movements: summary.typeMovements[type] || 0,
+                quantity: summary.typeQuantities[type] || 0
+            })).filter(item => item.movements > 0);
+
+            typeBreakdownList.innerHTML = breakdown.length
+                ? breakdown.map(item => `<li><span>${item.label}</span><strong>${formatNumber(item.movements)} mouvement${item.movements > 1 ? 's' : ''} • ${formatNumber(item.quantity)} unité${item.quantity > 1 ? 's' : ''}</strong></li>`).join('')
+                : '<li class="empty-state">Aucune donnée disponible</li>';
+        }
+
+        function setReportRange(range) {
+            const startInput = document.getElementById('report-start');
+            const endInput = document.getElementById('report-end');
+            if (!startInput || !endInput) return;
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            let startDate = null;
+            let endDate = null;
+
+            switch (range) {
+                case '30d': {
+                    endDate = new Date(today);
+                    startDate = new Date(today);
+                    startDate.setDate(startDate.getDate() - 29);
+                    break;
+                }
+                case '90d': {
+                    endDate = new Date(today);
+                    startDate = new Date(today);
+                    startDate.setDate(startDate.getDate() - 89);
+                    break;
+                }
+                case '12m': {
+                    endDate = new Date(today);
+                    startDate = new Date(today);
+                    startDate.setFullYear(startDate.getFullYear() - 1);
+                    startDate.setDate(startDate.getDate() + 1);
+                    break;
+                }
+                case 'year-current': {
+                    startDate = new Date(today.getFullYear(), 0, 1);
+                    endDate = new Date(today);
+                    break;
+                }
+                case 'year-previous': {
+                    const year = today.getFullYear() - 1;
+                    startDate = new Date(year, 0, 1);
+                    endDate = new Date(year, 11, 31);
+                    break;
+                }
+                case 'clear':
+                    startDate = null;
+                    endDate = null;
+                    break;
+                default:
+                    break;
+            }
+
+            if (startDate) {
+                startInput.value = formatDateInputValue(startDate);
+            } else {
+                startInput.value = '';
+            }
+
+            if (endDate) {
+                endInput.value = formatDateInputValue(endDate);
+            } else {
+                endInput.value = '';
+            }
+
+            document.querySelectorAll('[data-report-range]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.reportRange === range && range !== 'clear');
+            });
+
+            renderReports();
         }
 
         async function openModal(productId = null) {
@@ -1613,10 +2202,32 @@
             
             const statusFilter = document.getElementById('filter-status');
             if(statusFilter) statusFilter.addEventListener('change', filterProducts);
-            
+
             document.getElementById('product-is-kit')?.addEventListener('change', toggleKitSection);
             document.getElementById('kit-component-search')?.addEventListener('input', handleComponentSearch);
-            
+
+            const reportSearch = document.getElementById('report-search');
+            if (reportSearch) reportSearch.addEventListener('input', () => renderReports());
+
+            const reportType = document.getElementById('report-type');
+            if (reportType) reportType.addEventListener('change', () => renderReports());
+
+            const reportCategory = document.getElementById('report-category');
+            if (reportCategory) reportCategory.addEventListener('change', () => renderReports());
+
+            const reportStart = document.getElementById('report-start');
+            if (reportStart) reportStart.addEventListener('change', () => { clearReportQuickRange(); renderReports(); });
+
+            const reportEnd = document.getElementById('report-end');
+            if (reportEnd) reportEnd.addEventListener('change', () => { clearReportQuickRange(); renderReports(); });
+
+            document.querySelectorAll('[data-report-range]').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    setReportRange(button.dataset.reportRange);
+                });
+            });
+
             document.getElementById('product-image-upload')?.addEventListener('change', function(e) {
                 const file = e.target.files[0];
                 if (file) {
@@ -1637,14 +2248,174 @@
             applyTheme(localStorage.getItem('sempa_theme') || 'light');
         }
 
-        return { 
-            init, openModal, closeModal, saveProduct, deleteProduct, 
-            addCategory, deleteCategory, removeComponent, exportInventory,
-            updateComponentQuantity, addComponentToKit, handleComponentSearch
-        };
+    return {
+        init, openModal, closeModal, saveProduct, deleteProduct,
+        addCategory, deleteCategory, removeComponent, exportInventory,
+        updateComponentQuantity, addComponentToKit, handleComponentSearch
+    };
     })();
 
-    document.addEventListener('DOMContentLoaded', App.init);
+    let sempaAppInitialized = false;
+
+    function initializeStockApp() {
+        if (sempaAppInitialized) {
+            return;
+        }
+
+        sempaAppInitialized = true;
+        App.init();
+    }
+
+    const AccessGate = (() => {
+        const SESSION_KEY = 'sempa_stock_access_granted';
+        const REMEMBER_KEY = 'sempa_stock_access_remembered';
+
+        function safeGet(storage, key) {
+            try {
+                return storage.getItem(key);
+            } catch (error) {
+                console.warn('Stockage web indisponible :', error);
+                return null;
+            }
+        }
+
+        function safeSet(storage, key, value) {
+            try {
+                storage.setItem(key, value);
+            } catch (error) {
+                console.warn('Impossible d\'enregistrer la session locale :', error);
+            }
+        }
+
+        function safeRemove(storage, key) {
+            try {
+                storage.removeItem(key);
+            } catch (error) {
+                console.warn('Impossible de nettoyer la session locale :', error);
+            }
+        }
+
+        function init() {
+            const gate = document.getElementById('app-access-gate');
+            const form = document.getElementById('app-access-form');
+            const input = document.getElementById('app-access-password');
+            const toggle = document.getElementById('app-access-toggle');
+            const remember = document.getElementById('app-access-remember');
+            const error = document.getElementById('app-access-error');
+            const appWrapper = document.getElementById('stock-app-wrapper');
+
+            if (!gate || !form || !input) {
+                document.body.classList.remove('app-locked');
+                if (appWrapper) {
+                    appWrapper.removeAttribute('aria-hidden');
+                }
+                initializeStockApp();
+                return;
+            }
+
+            const storedPassword = (gate.dataset.password || '').trim();
+
+            if (!storedPassword) {
+                unlock({ gate });
+                return;
+            }
+
+            const hasRememberedAccess = safeGet(localStorage, REMEMBER_KEY) === '1';
+            const hasSessionAccess = safeGet(sessionStorage, SESSION_KEY) === '1';
+
+            if (hasRememberedAccess || hasSessionAccess) {
+                unlock({ gate, remember: hasRememberedAccess });
+                return;
+            }
+
+            gate.removeAttribute('hidden');
+            gate.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('app-locked');
+            if (appWrapper) {
+                appWrapper.setAttribute('aria-hidden', 'true');
+            }
+
+            form.addEventListener('submit', (event) => {
+                event.preventDefault();
+                const value = input.value.trim();
+
+                if (value === storedPassword) {
+                    const shouldRemember = remember ? remember.checked : false;
+                    unlock({ gate, remember: shouldRemember });
+                    return;
+                }
+
+                if (error) {
+                    error.textContent = 'Mot de passe incorrect. Veuillez réessayer.';
+                    error.removeAttribute('hidden');
+                }
+
+                input.value = '';
+                input.focus();
+            });
+
+            input.addEventListener('input', () => {
+                if (error && !error.hasAttribute('hidden')) {
+                    error.setAttribute('hidden', 'hidden');
+                }
+            });
+
+            if (toggle) {
+                toggle.addEventListener('click', () => {
+                    const isPassword = input.getAttribute('type') === 'password';
+                    input.setAttribute('type', isPassword ? 'text' : 'password');
+                    toggle.textContent = isPassword ? 'Masquer' : 'Afficher';
+                    toggle.setAttribute('aria-label', isPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
+                    input.focus();
+                });
+            }
+
+            setTimeout(() => input.focus(), 50);
+        }
+
+        function unlock({ gate, remember = false } = {}) {
+            if (remember) {
+                safeSet(localStorage, REMEMBER_KEY, '1');
+            } else {
+                safeRemove(localStorage, REMEMBER_KEY);
+            }
+
+            safeSet(sessionStorage, SESSION_KEY, '1');
+
+            if (gate) {
+                gate.setAttribute('hidden', 'hidden');
+                gate.setAttribute('aria-hidden', 'true');
+            }
+
+            document.body.classList.remove('app-locked');
+
+            const error = document.getElementById('app-access-error');
+            if (error) {
+                error.setAttribute('hidden', 'hidden');
+            }
+
+            const input = document.getElementById('app-access-password');
+            if (input) {
+                input.value = '';
+            }
+
+            const rememberCheckbox = document.getElementById('app-access-remember');
+            if (rememberCheckbox) {
+                rememberCheckbox.checked = false;
+            }
+
+            const appWrapper = document.getElementById('stock-app-wrapper');
+            if (appWrapper) {
+                appWrapper.removeAttribute('aria-hidden');
+            }
+
+            initializeStockApp();
+        }
+
+        return { init };
+    })();
+
+    document.addEventListener('DOMContentLoaded', AccessGate.init);
 </script>
 </body>
 </html>
