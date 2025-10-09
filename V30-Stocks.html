@@ -2313,7 +2313,7 @@
                 return;
             }
 
-            const storedPassword = (gate.dataset.password || '').trim();
+            const storedPassword = (gate.getAttribute('data-password') || '').trim();
 
             if (!storedPassword) {
                 unlock({ gate });
@@ -2361,7 +2361,8 @@
             });
 
             if (toggle) {
-                toggle.addEventListener('click', () => {
+                toggle.addEventListener('click', (event) => {
+                    event.preventDefault();
                     const isPassword = input.getAttribute('type') === 'password';
                     input.setAttribute('type', isPassword ? 'text' : 'password');
                     toggle.textContent = isPassword ? 'Masquer' : 'Afficher';
@@ -2415,7 +2416,11 @@
         return { init };
     })();
 
-    document.addEventListener('DOMContentLoaded', AccessGate.init);
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', AccessGate.init);
+    } else {
+        AccessGate.init();
+    }
 </script>
 </body>
 </html>
