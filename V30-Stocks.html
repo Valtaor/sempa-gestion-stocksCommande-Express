@@ -1,0 +1,2421 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Gestion des Stocks SEMPA v3.0</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* -------------------------------------------------------------
+           Design system : palette SEMPA (corporate & moderne)
+           ------------------------------------------------------------- */
+        :root {
+            color-scheme: light;
+            --color-bg: #f8f9fa;           /* Fond général */
+            --color-surface: #ffffff;      /* Cartes et panneaux */
+            --color-surface-alt: #f1f3f5;  /* Surfaces secondaires */
+            --color-border: #e0e4ea;       /* Bordures douces */
+            --color-border-strong: #c7cbd3;/* Bordures marquées */
+            --color-text: #212529;         /* Texte principal */
+            --color-muted: #6c757d;        /* Texte secondaire */
+            --color-accent: #ff9f1c;       /* Accent SEMPA */
+            --color-accent-hover: #f08100; /* Survol accent */
+            --color-success: #2ab27b;
+            --color-warning: #f6c343;
+            --color-danger: #e03131;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --shadow-sm: 0 12px 32px rgba(33, 37, 41, 0.08);
+            --shadow-hover: 0 16px 40px rgba(33, 37, 41, 0.12);
+            --transition: all 0.2s ease;
+            --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        html {
+            font-size: 16px;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: var(--color-bg);
+            font-family: var(--font-family);
+            color: var(--color-text);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body.app-locked {
+            overflow: hidden;
+        }
+
+        .app-access-gate {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background: radial-gradient(circle at top, rgba(255, 159, 28, 0.25), rgba(15, 23, 42, 0.82));
+            backdrop-filter: blur(8px);
+            z-index: 9999;
+        }
+
+        .app-access-gate[hidden] {
+            display: none;
+        }
+
+        .app-access-card {
+            width: min(440px, 100%);
+            padding: clamp(32px, 5vw, 40px);
+            border-radius: var(--radius-lg);
+            background: rgba(255, 255, 255, 0.96);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            display: grid;
+            gap: 24px;
+            text-align: left;
+        }
+
+        .app-access-card h1 {
+            font-size: clamp(1.4rem, 2vw, 1.75rem);
+            line-height: 1.2;
+        }
+
+        .app-access-card p {
+            color: var(--color-text);
+            line-height: 1.6;
+        }
+
+        .app-access-form {
+            display: grid;
+            gap: 16px;
+        }
+
+        .app-access-label {
+            font-weight: 600;
+            color: var(--color-text);
+        }
+
+        .app-access-input-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .app-access-input {
+            width: 100%;
+            padding: 14px 48px 14px 16px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--color-border);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .app-access-input:focus {
+            outline: none;
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 4px rgba(255, 159, 28, 0.25);
+        }
+
+        .app-access-toggle {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            padding: 6px 10px;
+            border: none;
+            border-radius: var(--radius-sm);
+            background: transparent;
+            color: var(--color-accent);
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .app-access-remember {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            color: var(--color-muted);
+        }
+
+        .app-access-remember input {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--color-accent);
+        }
+
+        .app-access-submit {
+            padding: 14px 20px;
+            border-radius: var(--radius-sm);
+            border: none;
+            background: var(--color-accent);
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .app-access-submit:hover {
+            background: var(--color-accent-hover);
+            transform: translateY(-1px);
+        }
+
+        .app-access-error {
+            padding: 10px 12px;
+            border-radius: var(--radius-sm);
+            background: rgba(224, 49, 49, 0.1);
+            color: var(--color-danger);
+            font-weight: 500;
+        }
+
+        .app-access-error[hidden] {
+            display: none;
+        }
+
+        h1, h2, h3, h4 {
+            margin: 0;
+            font-weight: 600;
+            color: var(--color-text);
+        }
+
+        p {
+            margin: 0;
+            color: var(--color-muted);
+        }
+
+        a {
+            color: inherit;
+        }
+
+        button {
+            font-family: inherit;
+        }
+
+        #stock-app-wrapper {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-error-banner {
+            display: none;
+            padding: 12px 24px;
+            background: rgba(224, 49, 49, 0.12);
+            color: var(--color-danger);
+            font-weight: 500;
+            border-bottom: 1px solid rgba(224, 49, 49, 0.25);
+            text-align: center;
+        }
+
+        .app-shell {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-header {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .header-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 24px;
+            padding: 20px clamp(24px, 5vw, 48px);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .brand-mark {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, var(--color-accent), #ffb54d);
+            display: grid;
+            place-items: center;
+            color: #fff;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+
+        .brand h1 {
+            font-size: 1.5rem;
+        }
+
+        .brand p {
+            margin-top: 4px;
+            font-size: 0.95rem;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .icon-button {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--color-border);
+            background: var(--color-surface);
+            color: var(--color-text);
+            cursor: pointer;
+            display: grid;
+            place-items: center;
+            transition: var(--transition);
+        }
+
+        .icon-button:hover {
+            border-color: var(--color-accent);
+            color: var(--color-accent);
+            box-shadow: inset 0 0 0 1px var(--color-accent);
+        }
+
+        .main-content {
+            display: block; /* Visible par défaut afin de conserver l'accès à l'UI même en cas d'erreur API */
+            padding: 32px clamp(24px, 5vw, 48px) 48px;
+        }
+
+        .content-max {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 32px;
+        }
+
+        .sempa-tabs {
+            display: inline-flex;
+            gap: 8px;
+            background: var(--color-surface);
+            padding: 8px;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--color-border);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .sempa-tab {
+            border: none;
+            padding: 10px 20px;
+            border-radius: var(--radius-md);
+            background: transparent;
+            color: var(--color-muted);
+            font-weight: 500;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .sempa-tab:hover {
+            color: var(--color-text);
+            background: rgba(255, 159, 28, 0.08);
+        }
+
+        .sempa-tab.active {
+            background: var(--color-accent);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(255, 159, 28, 0.3);
+        }
+
+        .sempa-content {
+            display: none;
+            gap: 24px;
+            flex-direction: column;
+        }
+
+        .sempa-content.active {
+            display: flex;
+        }
+
+        .section-block {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+        }
+
+        .section-subtitle {
+            font-size: 0.95rem;
+        }
+
+        .metrics-grid {
+            display: grid;
+            gap: 16px;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        }
+
+        .metric-card {
+            background: var(--color-surface);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            position: relative;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--color-border);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            transition: var(--transition);
+        }
+
+        .metric-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: linear-gradient(135deg, rgba(255, 159, 28, 0.08), rgba(255, 159, 28, 0));
+            opacity: 0;
+            transition: var(--transition);
+            pointer-events: none;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .metric-card:hover::after {
+            opacity: 1;
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: var(--color-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 600;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        }
+
+        .reports-card {
+            gap: 24px;
+        }
+
+        .reports-filters .date-input {
+            min-height: 44px;
+        }
+
+        .date-input {
+            background: #fff;
+        }
+
+        .report-quick-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .report-quick-actions .btn-ghost {
+            padding: 8px 14px;
+        }
+
+        .report-quick-actions .btn-ghost.active {
+            background: var(--color-accent);
+            color: #fff;
+            box-shadow: 0 8px 18px rgba(255, 159, 28, 0.25);
+        }
+
+        .metric-caption {
+            font-size: 0.85rem;
+            color: var(--color-muted);
+            margin-top: 6px;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin: 32px 0 16px;
+        }
+
+        .table-header h3 {
+            margin: 0;
+        }
+
+        .table-header .text-muted {
+            margin: 0;
+        }
+
+        .table-empty {
+            text-align: center;
+            color: var(--color-muted);
+            font-style: italic;
+        }
+
+        .card {
+            background: var(--color-surface);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            border: 1px solid var(--color-border);
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-hover);
+        }
+
+        .card h3 {
+            font-size: 1.1rem;
+        }
+
+        .dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .dot--success { background: var(--color-success); }
+        .dot--warning { background: var(--color-warning); }
+
+        .list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .list li {
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            background: var(--color-surface-alt);
+            border: 1px solid var(--color-border);
+            color: var(--color-text);
+            transition: var(--transition);
+        }
+
+        .list li:hover {
+            border-color: var(--color-accent);
+            box-shadow: inset 0 0 0 1px rgba(255, 159, 28, 0.35);
+        }
+
+        .list .empty-state {
+            text-align: center;
+            color: var(--color-muted);
+            font-style: italic;
+            border-style: dashed;
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            align-items: center;
+        }
+
+        .table-wrapper {
+            background: var(--color-surface);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--color-border);
+            box-shadow: var(--shadow-sm);
+            overflow: hidden;
+        }
+
+        .table-wrapper--flat {
+            box-shadow: none;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: var(--color-surface-alt);
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.08em;
+        }
+
+        th, td {
+            padding: 14px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        tbody tr:hover {
+            background: rgba(255, 159, 28, 0.05);
+            cursor: pointer;
+        }
+
+        .table-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+
+        .product-thumbnail {
+            width: 48px;
+            height: 48px;
+            object-fit: cover;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--color-border);
+            background: var(--color-surface-alt);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border-radius: 999px;
+            padding: 4px 10px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .badge.low {
+            background: rgba(224, 49, 49, 0.12);
+            color: var(--color-danger);
+        }
+
+        .badge.medium {
+            background: rgba(246, 195, 67, 0.18);
+            color: #ad7a07;
+        }
+
+        .badge.good {
+            background: rgba(42, 178, 123, 0.12);
+            color: var(--color-success);
+        }
+
+        .text-muted {
+            color: var(--color-muted);
+        }
+
+        .btn-primary,
+        .btn-ghost,
+        .btn-danger {
+            border: none;
+            border-radius: var(--radius-md);
+            padding: 10px 18px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-primary {
+            background: var(--color-accent);
+            color: #fff;
+            box-shadow: 0 8px 18px rgba(255, 159, 28, 0.35);
+        }
+
+        .btn-primary:hover {
+            background: var(--color-accent-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-ghost {
+            background: rgba(33, 37, 41, 0.04);
+            color: var(--color-text);
+        }
+
+        .btn-ghost:hover {
+            background: rgba(33, 37, 41, 0.08);
+        }
+
+        .btn-danger {
+            background: rgba(224, 49, 49, 0.12);
+            color: var(--color-danger);
+        }
+
+        .btn-danger:hover {
+            background: rgba(224, 49, 49, 0.22);
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            padding: 10px 14px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            color: var(--color-text);
+            background: #fff;
+            transition: var(--transition);
+        }
+
+        input::placeholder,
+        textarea::placeholder {
+            color: var(--color-muted);
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--color-accent);
+            box-shadow: 0 0 0 4px rgba(255, 159, 28, 0.18);
+        }
+
+        .select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-color: #fff;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='none' stroke='%236c757d' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M2 2l4 4 4-4'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 18px center;
+            background-size: 14px 8px;
+            padding-right: 48px;
+            cursor: pointer;
+        }
+
+        .select:focus {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='none' stroke='%23ff9f1c' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M2 2l4 4 4-4'/%3E%3C/svg%3E");
+        }
+
+        .select::-ms-expand {
+            display: none;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        label {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-weight: 500;
+            color: var(--color-text);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .form-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        .form-grid--two {
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+
+        .form-grid > .btn-primary {
+            justify-self: flex-start;
+            align-self: start;
+        }
+
+        .inline-form {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .inline-form label {
+            flex: 1;
+        }
+
+        .table-wrapper--compact table tbody tr td {
+            padding: 10px 14px;
+        }
+
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(17, 24, 39, 0.45);
+            display: grid;
+            place-items: center;
+            padding: 24px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        .modal-backdrop.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-panel {
+            width: min(960px, 100%);
+            max-height: calc(100vh - 48px);
+            background: var(--color-surface);
+            border-radius: var(--radius-lg);
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+            border: 1px solid var(--color-border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .modal-header {
+            padding: 24px 28px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .modal-header h2 {
+            font-size: 1.4rem;
+        }
+
+        .modal-body {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 32px;
+            padding: 28px;
+            overflow-y: auto;
+        }
+
+        .left-column {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .photo-uploader {
+            background: var(--color-surface-alt);
+            border: 1px dashed var(--color-border-strong);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .photo-uploader .preview {
+            width: 180px;
+            height: 180px;
+            border-radius: var(--radius-md);
+            background: rgba(33, 37, 41, 0.04);
+            display: grid;
+            place-items: center;
+            overflow: hidden;
+            border: 1px solid var(--color-border);
+        }
+
+        .photo-uploader .preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .photo-uploader .btn-ghost {
+            width: 100%;
+        }
+
+        .history-log {
+            background: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            box-shadow: var(--shadow-sm);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .history-log h4 {
+            font-size: 1.05rem;
+        }
+
+        .history-log ul {
+            max-height: 220px;
+            overflow-y: auto;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .history-log li {
+            padding: 10px 12px;
+            border-radius: var(--radius-md);
+            background: var(--color-surface-alt);
+            border: 1px solid var(--color-border);
+            font-size: 0.9rem;
+        }
+
+        .right-column {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        #product-form {
+            display: grid;
+            gap: 20px;
+        }
+
+        .form-grid--two label {
+            font-size: 0.95rem;
+        }
+
+        .form-section-divider {
+            border-top: 1px solid var(--color-border);
+            padding-top: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .checkbox-field {
+            flex-direction: row;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+        }
+
+        .checkbox-field input[type="checkbox"] {
+            width: auto;
+            accent-color: var(--color-accent);
+        }
+
+        .kit-components {
+            display: none;
+            margin-top: 16px;
+            gap: 16px;
+            grid-template-columns: 1fr;
+        }
+
+        #kit-component-search-results,
+        #kit-components-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        #kit-component-search-results {
+            max-height: 160px;
+            overflow-y: auto;
+            padding: 8px 0;
+            background: var(--color-surface-alt);
+            border-radius: var(--radius-lg);
+            border: 1px dashed var(--color-border);
+        }
+
+        #kit-component-search-results li,
+        #kit-components-list li {
+            border-radius: var(--radius-md);
+            border: 1px solid var(--color-border);
+            padding: 12px 14px;
+            background: var(--color-surface);
+        }
+
+        #kit-component-search-results li {
+            border: none;
+            border-radius: 0;
+            background: transparent;
+        }
+
+        #kit-component-search-results li + li {
+            border-top: 1px solid var(--color-border);
+        }
+
+        #kit-component-search-results li:hover {
+            border-color: var(--color-accent);
+            background: rgba(255, 159, 28, 0.08);
+        }
+
+        #kit-components-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        #kit-components-list li > div {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        #kit-components-list li span {
+            font-weight: 500;
+        }
+
+        #kit-components-list li input[type="number"] {
+            width: 70px;
+        }
+
+        #categories-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        #categories-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        #categories-list li span {
+            font-weight: 500;
+        }
+
+        #categories-list li .btn-danger {
+            padding: 6px 10px;
+            border-radius: var(--radius-sm);
+        }
+
+        .modal-actions {
+            padding: 20px 28px 28px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            border-top: 1px solid var(--color-border);
+            background: var(--color-surface);
+        }
+
+        .empty-state {
+            text-align: center;
+        }
+
+        @media (max-width: 1024px) {
+            .modal-body {
+                grid-template-columns: 1fr;
+                max-height: none;
+            }
+
+            .photo-uploader {
+                align-self: center;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header-inner {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .main-content {
+                padding: 24px;
+            }
+
+            thead {
+                display: none;
+            }
+
+            table, tbody, tr, td {
+                display: block;
+                width: 100%;
+            }
+
+            tr {
+                margin-bottom: 16px;
+                border: 1px solid var(--color-border);
+                border-radius: var(--radius-lg);
+                background: var(--color-surface);
+                box-shadow: var(--shadow-sm);
+            }
+
+            td {
+                border-bottom: none;
+                padding: 12px 16px;
+                position: relative;
+            }
+
+            td::before {
+                content: attr(data-label);
+                display: block;
+                font-weight: 600;
+                color: var(--color-muted);
+                margin-bottom: 6px;
+            }
+
+            .table-actions {
+                justify-content: flex-start;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                transition: none !important;
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+            }
+        }
+    </style>
+</head>
+<body class="app-locked">
+<div class="app-access-gate" id="app-access-gate" role="dialog" aria-modal="true" aria-labelledby="app-access-title" data-password="Sempa2024!">
+    <div class="app-access-card">
+        <div>
+            <h1 id="app-access-title">Accès réservé aux collaborateurs SEMPA</h1>
+            <p>Merci de saisir le mot de passe partagé pour consulter l'application de gestion des stocks. Ce contrôle limite l'accès aux personnes autorisées tout en conservant une expérience simple.</p>
+        </div>
+        <form class="app-access-form" id="app-access-form" novalidate>
+            <label class="app-access-label" for="app-access-password">Mot de passe</label>
+            <div class="app-access-input-group">
+                <input type="password" id="app-access-password" class="app-access-input" name="app-access-password" autocomplete="current-password" required placeholder="Entrez le mot de passe">
+                <button type="button" class="app-access-toggle" id="app-access-toggle" aria-controls="app-access-password" aria-label="Afficher le mot de passe">Afficher</button>
+            </div>
+            <label class="app-access-remember" for="app-access-remember">
+                <input type="checkbox" id="app-access-remember" name="app-access-remember"> Se souvenir de moi sur cet appareil
+            </label>
+            <p class="app-access-error" id="app-access-error" role="alert" hidden>Mot de passe incorrect. Veuillez réessayer.</p>
+            <button type="submit" class="app-access-submit">Accéder à l'application</button>
+        </form>
+        <p style="font-size: 0.9rem; color: var(--color-muted);">Besoin d'aide ? Contactez l'équipe SEMPA pour obtenir ou réinitialiser le mot de passe.</p>
+    </div>
+</div>
+<div id="stock-app-wrapper" aria-hidden="true">
+    <div id="app-error-banner" class="app-error-banner"></div>
+    <div class="app-shell">
+        <header class="app-header">
+            <div class="header-inner">
+                <div class="brand">
+                    <div class="brand-mark">S</div>
+                    <div>
+                        <h1>Gestion des Stocks v3.0</h1>
+                        <p>Visualisez et ajustez vos stocks instantanément.</p>
+                    </div>
+                </div>
+                <div class="header-actions" id="header-actions">
+                    <button id="theme-toggle" class="icon-button" type="button" aria-label="Basculer le thème">🌙</button>
+                    <button class="btn-primary" type="button" onclick="App.openModal()">+ Nouveau produit</button>
+                </div>
+            </div>
+        </header>
+        <main class="main-content" id="main-content">
+            <div class="content-max">
+                <nav class="sempa-tabs" aria-label="Navigation principale">
+                    <button class="sempa-tab active" type="button" data-tab="overview">Vue globale</button>
+                    <button class="sempa-tab" type="button" data-tab="inventory">Inventaire</button>
+                    <button class="sempa-tab" type="button" data-tab="movements">Mouvements</button>
+                    <button class="sempa-tab" type="button" data-tab="reports">Rapports &amp; analyses</button>
+                    <button class="sempa-tab" type="button" data-tab="categories">Catégories</button>
+                </nav>
+
+                <section class="sempa-content active" id="overview">
+                    <div class="section-block">
+                        <h2 class="section-title">Vue globale</h2>
+                        <p class="section-subtitle">Suivez vos indicateurs clés en temps réel.</p>
+                    </div>
+                    <div class="metrics-grid">
+                        <article class="metric-card">
+                            <div class="metric-label">Produits actifs</div>
+                            <div class="metric-value" id="total-products">0</div>
+                        </article>
+                        <article class="metric-card">
+                            <div class="metric-label">Alertes de stock</div>
+                            <div class="metric-value" id="alerts-count">0</div>
+                        </article>
+                        <article class="metric-card">
+                            <div class="metric-label">Unités disponibles</div>
+                            <div class="metric-value" id="total-units">0</div>
+                        </article>
+                        <article class="metric-card">
+                            <div class="metric-label">Valeur estimée</div>
+                            <div class="metric-value" id="total-value">0 €</div>
+                        </article>
+                    </div>
+                    <div class="section-block">
+                        <h2 class="section-title">Analyse des mouvements</h2>
+                        <p class="section-subtitle">Identifiez les tendances de vos produits.</p>
+                    </div>
+                    <div class="dashboard-grid">
+                        <div class="card">
+                            <h3><span class="dot dot--success"></span>Top 5 des Sorties (30 derniers jours)</h3>
+                            <ul class="list" id="best-sellers"><li class="empty-state">Chargement...</li></ul>
+                        </div>
+                        <div class="card">
+                            <h3><span class="dot dot--warning"></span>Produits dormants (Aucune sortie &gt; 90j)</h3>
+                            <ul class="list" id="slow-movers"><li class="empty-state">Chargement...</li></ul>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="sempa-content" id="inventory">
+                    <div class="section-header">
+                        <div class="section-block">
+                            <h2 class="section-title">Inventaire détaillé</h2>
+                            <p class="section-subtitle">Filtrez, analysez et exportez votre catalogue.</p>
+                        </div>
+                        <button class="btn-ghost" type="button" onclick="App.exportInventory()">Exporter l'inventaire</button>
+                    </div>
+                    <div class="filters-grid">
+                        <input type="search" id="product-search" class="search-input" placeholder="Rechercher par nom ou référence..." autocomplete="off">
+                        <select id="filter-category" class="select"><option value="">Toutes les catégories</option></select>
+                        <select id="filter-status" class="select"><option value="">Tous les statuts</option><option value="low">Critique</option><option value="medium">À surveiller</option><option value="good">Stable</option></select>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Photo</th>
+                                    <th>Produit</th>
+                                    <th>Référence</th>
+                                    <th>Stock</th>
+                                    <th>Seuil</th>
+                                    <th>Statut</th>
+                                    <th>Valeur</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="products-table"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="sempa-content" id="movements">
+                    <div class="section-header">
+                        <div class="section-block">
+                            <h2 class="section-title">Suivi des mouvements</h2>
+                            <p class="section-subtitle text-muted">Consignez chaque entrée, sortie ou ajustement.</p>
+                        </div>
+                    </div>
+                    <div class="dashboard-grid">
+                        <div class="card">
+                            <h3>Enregistrer un mouvement</h3>
+                            <form id="movement-form" class="form-grid">
+                                <label>Produit<select id="movement-product" class="select" required><option value="">Sélectionner un produit</option></select></label>
+                                <label>Type<select id="movement-type" class="select"><option value="in">Entrée</option><option value="out">Sortie</option><option value="adjust">Ajustement</option></select></label>
+                                <label>Quantité<input type="number" id="movement-quantity" min="1" value="1" required></label>
+                                <label>Raison<input type="text" id="movement-reason" placeholder="Ex: Réception commande, Vente..." required></label>
+                                <button class="btn-primary" type="submit">Valider le mouvement</button>
+                            </form>
+                        </div>
+                        <div class="card">
+                            <h3>Historique récent</h3>
+                            <div class="table-wrapper table-wrapper--flat">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Produit</th>
+                                            <th>Type</th>
+                                            <th>Quantité</th>
+                                            <th>Raison</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="movements-table"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="sempa-content" id="reports">
+                    <div class="section-block">
+                        <h2 class="section-title">Rapports &amp; analyses</h2>
+                        <p class="section-subtitle">Visualisez vos indicateurs clés et filtrez précisément vos mouvements.</p>
+                    </div>
+                    <div class="card reports-card">
+                        <h3>Filtres dynamiques</h3>
+                        <div class="filters-grid reports-filters">
+                            <input type="search" id="report-search" class="search-input" placeholder="Produit, référence ou mot-clé..." autocomplete="off">
+                            <select id="report-type" class="select">
+                                <option value="">Tous les types</option>
+                                <option value="in">Entrées</option>
+                                <option value="out">Sorties</option>
+                                <option value="adjust">Ajustements</option>
+                            </select>
+                            <select id="report-category" class="select">
+                                <option value="">Toutes les catégories</option>
+                            </select>
+                            <input type="date" id="report-start" class="date-input" aria-label="Date de début">
+                            <input type="date" id="report-end" class="date-input" aria-label="Date de fin">
+                        </div>
+                        <div class="report-quick-actions" role="group" aria-label="Raccourcis de période">
+                            <button class="btn-ghost" type="button" data-report-range="12m">12 derniers mois</button>
+                            <button class="btn-ghost" type="button" data-report-range="year-previous">Année précédente</button>
+                            <button class="btn-ghost" type="button" data-report-range="year-current">Année en cours</button>
+                            <button class="btn-ghost" type="button" data-report-range="90d">90 derniers jours</button>
+                            <button class="btn-ghost" type="button" data-report-range="30d">30 derniers jours</button>
+                            <button class="btn-ghost" type="button" data-report-range="clear">Réinitialiser</button>
+                        </div>
+                    </div>
+                    <div class="metrics-grid reports-metrics">
+                        <article class="metric-card">
+                            <div class="metric-label">Mouvements filtrés</div>
+                            <div class="metric-value" id="report-total-movements">0</div>
+                            <p class="metric-caption" id="report-unique-products">0 produit impacté</p>
+                        </article>
+                        <article class="metric-card">
+                            <div class="metric-label">Sorties (quantité)</div>
+                            <div class="metric-value" id="report-total-out-qty">0</div>
+                            <p class="metric-caption">Valeur estimée : <span id="report-total-out-value">0 €</span></p>
+                        </article>
+                        <article class="metric-card">
+                            <div class="metric-label">Entrées (quantité)</div>
+                            <div class="metric-value" id="report-total-in-qty">0</div>
+                            <p class="metric-caption">Coût estimé : <span id="report-total-in-value">0 €</span></p>
+                        </article>
+                        <article class="metric-card">
+                            <div class="metric-label">Impact net</div>
+                            <div class="metric-value" id="report-net-qty">0</div>
+                            <p class="metric-caption">Ajustements : <span id="report-adjust-qty">0</span></p>
+                        </article>
+                    </div>
+                    <div class="dashboard-grid">
+                        <div class="card">
+                            <h3>Top produits</h3>
+                            <ul class="list" id="report-top-products">
+                                <li class="empty-state">Aucune donnée disponible</li>
+                            </ul>
+                        </div>
+                        <div class="card">
+                            <h3>Répartition par type</h3>
+                            <ul class="list" id="report-type-breakdown">
+                                <li class="empty-state">Aucune donnée disponible</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="table-header">
+                        <h3>Résultats détaillés</h3>
+                        <p class="text-muted" id="report-results-info"></p>
+                    </div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Produit</th>
+                                    <th>Type</th>
+                                    <th>Quantité</th>
+                                    <th>Catégorie</th>
+                                    <th>Raison</th>
+                                </tr>
+                            </thead>
+                            <tbody id="report-table"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="sempa-content" id="categories">
+                    <div class="section-header">
+                        <div class="section-block">
+                            <h2 class="section-title">Gérer les catégories</h2>
+                            <p class="section-subtitle">Organisez votre catalogue et simplifiez les recherches.</p>
+                        </div>
+                    </div>
+                    <div class="dashboard-grid">
+                        <div class="card">
+                            <h3>Ajouter une catégorie</h3>
+                            <form id="add-category-form" class="inline-form">
+                                <label>Nom<input type="text" id="new-category-name" required placeholder="Ex: Visserie"></label>
+                                <button class="btn-primary" type="submit">Ajouter</button>
+                            </form>
+                        </div>
+                        <div class="card">
+                            <h3>Catégories existantes</h3>
+                            <ul class="list" id="categories-list"></ul>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <div class="modal-backdrop" id="product-modal">
+        <div class="modal-panel">
+            <div class="modal-header">
+                <h2 id="modal-title">Fiche Produit</h2>
+                <button type="button" class="btn-ghost" onclick="App.closeModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="left-column">
+                    <div class="photo-uploader">
+                        <div id="product-image-preview" class="preview"></div>
+                        <label for="product-image-upload" id="photo-upload-label" class="btn-ghost">Ajouter une photo</label>
+                        <input type="file" id="product-image-upload" accept="image/*" style="display:none">
+                    </div>
+                    <div class="history-log" id="product-history">
+                        <h4>Historique</h4>
+                        <ul id="product-history-log"><li class="empty-state">Aucun historique.</li></ul>
+                    </div>
+                </div>
+                <div class="right-column">
+                    <form id="product-form">
+                        <div class="form-grid form-grid--two">
+                            <label>Nom du produit<input type="text" id="product-name" required></label>
+                            <label>Référence<input type="text" id="product-reference"></label>
+                        </div>
+                        <div class="form-grid form-grid--two">
+                            <label>Stock actuel<input type="number" id="product-stock" min="0"></label>
+                            <label>Seuil d'alerte<input type="number" id="product-minstock" min="0"></label>
+                        </div>
+                        <div class="form-grid form-grid--two">
+                            <label>Prix d'achat (€ HT)<input type="number" id="product-purchase-price" min="0" step="0.01"></label>
+                            <label>Prix de vente (€ HT)<input type="number" id="product-sale-price" min="0" step="0.01"></label>
+                        </div>
+                        <label>Catégorie<select id="product-category" class="select"></select></label>
+                        <label>Description<textarea id="product-desc" rows="3"></textarea></label>
+                        <div class="form-section-divider">
+                            <label class="checkbox-field">
+                                <input type="checkbox" id="product-is-kit">Ce produit est un kit
+                            </label>
+                            <div id="kit-components-section" class="kit-components">
+                                <h4>Composants du kit</h4>
+                                <input type="search" id="kit-component-search" class="search-input" placeholder="Rechercher un composant...">
+                                <ul id="kit-component-search-results" class="list"></ul>
+                                <ul id="kit-components-list" class="list"></ul>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-ghost" type="button" onclick="App.closeModal()">Annuler</button>
+                <button class="btn-primary" type="button" onclick="App.saveProduct()">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    const App = (() => {
+        'use strict';
+        const API_BASE = 'https://sempa.fr/wp-json/sempa-stocks/v1';
+        const API_ENDPOINTS = {
+            products: (id = '') => `${API_BASE}/products/${id}`,
+            photo: (id) => `${API_BASE}/products/${id}/photo`,
+            history: (id) => `${API_BASE}/products/${id}/history`,
+            movements: () => `${API_BASE}/movements`,
+            categories: (id = '') => `${API_BASE}/categories/${id}`,
+        };
+        const PLACEHOLDER_SVG = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.5'><path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/><polyline points='17 8 12 3 7 8'/><line x1='12' y1='3' x2='12' y2='15'/></svg>`;
+        const STATUS_LABELS = { low: 'Critique', medium: 'À surveiller', good: 'Stable' };
+        
+        let state = { products: [], movements: [], categories: [], currentProductId: null, currentKitComponents: [] };
+        
+        async function fetchJson(url, options = {}) {
+            const fetchOptions = { ...options };
+            if (!(options.body instanceof FormData)) {
+                fetchOptions.headers = { 'Content-Type': 'application/json', ...options.headers };
+            }
+            if (typeof wpApiSettings !== 'undefined' && wpApiSettings.nonce) {
+                if (!fetchOptions.headers) fetchOptions.headers = {};
+                fetchOptions.headers['X-WP-Nonce'] = wpApiSettings.nonce;
+            }
+
+            try {
+                const response = await fetch(url, fetchOptions);
+                const text = await response.text();
+                let payload;
+                try {
+                    payload = text ? JSON.parse(text) : {};
+                } catch(e) {
+                    throw new Error("Réponse invalide du serveur.");
+                }
+
+                if (!response.ok) {
+                    let message = "Une erreur est survenue.";
+                    if (response.status === 403) message = "Permissions insuffisantes. Le rôle 'Éditeur' est requis.";
+                    else if (payload && payload.message) message = payload.message.replace(/<[^>]*>?/gm, '');
+                    throw new Error(message);
+                }
+                return payload;
+            } catch (error) {
+                console.error('Erreur API:', error);
+                throw error;
+            }
+        }
+
+        async function loadInitialData() {
+            try {
+                const [productsData, movementsData, categoriesData] = await Promise.all([
+                    fetchJson(API_ENDPOINTS.products()),
+                    fetchJson(API_ENDPOINTS.movements()),
+                    fetchJson(API_ENDPOINTS.categories())
+                ]);
+                state.products = (productsData.products || []).map(p => ({...p, id: Number(p.id)}));
+                state.movements = movementsData.movements || [];
+                state.categories = categoriesData || [];
+                document.getElementById('app-error-banner').style.display = 'none';
+                document.getElementById('main-content').style.display = 'block';
+            } catch (error) {
+                document.getElementById('app-error-banner').textContent = `Erreur de chargement : ${error.message}`;
+                document.getElementById('app-error-banner').style.display = 'block';
+            }
+        }
+        
+        async function refreshData() {
+            await loadInitialData();
+            renderAll();
+        }
+
+        function renderAll() {
+            renderProducts();
+            renderCategories();
+            renderMovements();
+            renderDashboard();
+            renderAdvancedDashboard();
+            renderReports();
+        }
+        
+        function getCategoryName(slug) {
+            const category = state.categories.find(c => c.slug === slug);
+            return category ? category.name : (slug || 'Sans catégorie');
+        }
+
+        function getStockStatus(stock, minStock) {
+            if (stock <= 0) return 'low';
+            if (stock <= minStock) return 'medium';
+            return 'good';
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount || 0);
+        }
+
+        function formatNumber(value) {
+            return new Intl.NumberFormat('fr-FR').format(Number(value) || 0);
+        }
+
+        function formatDateInputValue(date) {
+            if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function getFilteredProducts() {
+            const searchTerm = (document.getElementById('product-search')?.value || '').toLowerCase();
+            const categoryFilter = document.getElementById('filter-category')?.value || '';
+            const statusFilter = document.getElementById('filter-status')?.value || '';
+
+            return state.products.filter(p => {
+                const matchesSearch = p.name.toLowerCase().includes(searchTerm) ||
+                                    (p.reference && p.reference.toLowerCase().includes(searchTerm));
+                const matchesCategory = !categoryFilter || p.category === categoryFilter;
+                const productStatus = !p.is_kit ? getStockStatus(p.stock, p.minStock) : 'good';
+                const matchesStatus = !statusFilter || productStatus === statusFilter;
+
+                return matchesSearch && matchesCategory && matchesStatus;
+            });
+        }
+
+        function renderProducts() {
+            const tableBody = document.getElementById('products-table');
+            if(!tableBody) return;
+            const productsToDisplay = getFilteredProducts().sort((a, b) => a.name.localeCompare(b.name, 'fr'));
+            tableBody.innerHTML = productsToDisplay.map(p => {
+                const status = !p.is_kit ? getStockStatus(p.stock, p.minStock) : 'good';
+                return `
+                <tr onclick="App.openModal(${p.id})">
+                    <td data-label="Photo"><img src="${p.imageUrl || ''}" class="product-thumbnail" alt="${p.name}" onerror="this.style.display='none'"></td>
+                    <td data-label="Produit">${p.name}${p.is_kit ? ' (Kit)' : ''}</td>
+                    <td data-label="Référence">${p.reference || '—'}</td>
+                    <td data-label="Stock">${p.is_kit ? 'N/A' : p.stock}</td>
+                    <td data-label="Seuil">${p.minStock}</td>
+                    <td data-label="Statut">${!p.is_kit ? `<span class="badge ${status}">${STATUS_LABELS[status]}</span>` : 'N/A'}</td>
+                    <td data-label="Valeur">${formatCurrency(p.salePrice * p.stock)}</td>
+                    <td class="table-actions" onclick="event.stopPropagation()">
+                        <button class="btn-danger" type="button" onclick="App.deleteProduct(${p.id})">Supprimer</button>
+                    </td>
+                </tr>`;
+            }).join('');
+        }
+        
+        function renderCategories() {
+            const list = document.getElementById('categories-list');
+            const selects = document.querySelectorAll('#product-category, #filter-category, #report-category');
+            if (!list || !selects.length) return;
+            const optionsHTML = state.categories.map(c => `<option value="${c.slug}">${c.name}</option>`).join('');
+            selects.forEach(select => {
+                const currentVal = select.value;
+                select.innerHTML = (select.id === 'filter-category' ? '<option value="">Toutes les catégories</option>' : '') + optionsHTML;
+                if(currentVal) select.value = currentVal;
+            });
+            list.innerHTML = state.categories.map(c => `<li><span>${c.name}</span><button class="btn-danger" type="button" onclick="App.deleteCategory(${c.id})">X</button></li>`).join('') || '<li class="empty-state">Aucune catégorie.</li>';
+        }
+
+        function renderMovements() {
+            const tableBody = document.getElementById('movements-table');
+            const movementSelect = document.getElementById('movement-product');
+            if(!tableBody || !movementSelect) return;
+            tableBody.innerHTML = state.movements.slice(0, 50).map(m => {
+                const quantityDisplay = m.type === 'in' ? `+${m.quantity}` : m.type === 'out' ? `-${m.quantity}` : `${m.quantity}`;
+                return `<tr><td>${new Date(m.date).toLocaleDateString('fr-FR')}</td><td>${m.productName}</td><td>${m.type === 'in' ? 'Entrée' : m.type === 'out' ? 'Sortie' : 'Ajustement'}</td><td>${quantityDisplay}</td><td>${m.reason || '-'}</td></tr>`;
+            }).join('');
+            movementSelect.innerHTML = '<option value="">Sélectionner un produit</option>' + state.products.filter(p => !p.is_kit).sort((a,b)=>a.name.localeCompare(b.name, 'fr')).map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+        }
+        
+        function renderDashboard() {
+            const totalProducts = state.products.length;
+            const totalUnits = state.products.filter(p => !p.is_kit).reduce((sum, p) => sum + p.stock, 0);
+            const totalValue = state.products.filter(p => !p.is_kit).reduce((sum, p) => sum + (p.salePrice * p.stock), 0);
+            const alertsCount = state.products.filter(p => !p.is_kit && p.stock <= p.minStock).length;
+
+            document.getElementById('total-products').textContent = totalProducts;
+            document.getElementById('total-units').textContent = totalUnits;
+            document.getElementById('total-value').textContent = formatCurrency(totalValue);
+            document.getElementById('alerts-count').textContent = alertsCount;
+        }
+
+        function renderAdvancedDashboard() {
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+            const recentMovements = state.movements.filter(m => new Date(m.date) >= thirtyDaysAgo && m.type === 'out');
+            const productOutCount = {};
+            
+            recentMovements.forEach(m => {
+                productOutCount[m.productId] = (productOutCount[m.productId] || 0) + m.quantity;
+            });
+            
+            const bestSellers = Object.entries(productOutCount)
+                .sort(([,a], [,b]) => b - a)
+                .slice(0, 5)
+                .map(([productId, count]) => {
+                    const product = state.products.find(p => p.id == productId);
+                    return product ? { name: product.name, count } : null;
+                })
+                .filter(Boolean);
+            
+            const bestSellersList = document.getElementById('best-sellers');
+            bestSellersList.innerHTML = bestSellers.length ? 
+                bestSellers.map(p => `<li><span>${p.name}</span><strong>${p.count} unités</strong></li>`).join('') :
+                '<li class="empty-state">Aucune sortie récente</li>';
+
+            const ninetyDaysAgo = new Date();
+            ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+            
+            const slowMovers = state.products.filter(p => {
+                if (p.is_kit) return false;
+                const lastMovement = state.movements
+                    .filter(m => m.productId === p.id && m.type === 'out')
+                    .sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+                
+                return !lastMovement || new Date(lastMovement.date) < ninetyDaysAgo;
+            }).slice(0, 10);
+            
+            const slowMoversList = document.getElementById('slow-movers');
+            slowMoversList.innerHTML = slowMovers.length ?
+                slowMovers.map(p => `<li><span>${p.name}</span><small>Stock: ${p.stock}</small></li>`).join('') :
+                '<li class="empty-state">Aucun produit dormant</li>';
+        }
+
+        function clearReportQuickRange() {
+            document.querySelectorAll('[data-report-range]').forEach(btn => btn.classList.remove('active'));
+        }
+
+        function getReportFilters() {
+            const search = (document.getElementById('report-search')?.value || '').toLowerCase().trim();
+            const type = document.getElementById('report-type')?.value || '';
+            const category = document.getElementById('report-category')?.value || '';
+            const startValue = document.getElementById('report-start')?.value;
+            const endValue = document.getElementById('report-end')?.value;
+
+            let startDate = startValue ? new Date(`${startValue}T00:00:00`) : null;
+            let endDate = endValue ? new Date(`${endValue}T23:59:59`) : null;
+
+            if (startDate && endDate && startDate > endDate) {
+                const temp = startDate;
+                startDate = endDate;
+                endDate = temp;
+            }
+
+            return { search, type, category, startDate, endDate };
+        }
+
+        function getReportDataset() {
+            const filters = getReportFilters();
+            const productMap = new Map(state.products.map(p => [Number(p.id), p]));
+
+            return state.movements.map(m => {
+                const productId = Number(m.productId);
+                const product = productMap.get(productId) || null;
+                return { ...m, product, productId };
+            }).filter(item => {
+                const movementDate = new Date(item.date);
+                if (filters.startDate && movementDate < filters.startDate) return false;
+                if (filters.endDate && movementDate > filters.endDate) return false;
+
+                const matchesType = !filters.type || item.type === filters.type;
+                if (!matchesType) return false;
+
+                const productCategory = item.product ? item.product.category : '';
+                const matchesCategory = !filters.category || productCategory === filters.category;
+                if (!matchesCategory) return false;
+
+                if (!filters.search) return true;
+
+                const haystacks = [
+                    item.product ? item.product.name : '',
+                    item.product ? (item.product.reference || '') : '',
+                    item.productName || '',
+                    item.reason || ''
+                ].map(text => text.toLowerCase());
+
+                return haystacks.some(text => text.includes(filters.search));
+            });
+        }
+
+        function renderReports() {
+            const tableBody = document.getElementById('report-table');
+            const resultsInfo = document.getElementById('report-results-info');
+            const topProductsList = document.getElementById('report-top-products');
+            const typeBreakdownList = document.getElementById('report-type-breakdown');
+
+            if (!tableBody || !resultsInfo || !topProductsList || !typeBreakdownList) return;
+
+            const dataset = getReportDataset();
+            const total = dataset.length;
+
+            const summary = dataset.reduce((acc, movement) => {
+                const quantity = Number(movement.quantity) || 0;
+                const product = movement.product;
+                const label = product ? `${product.name}${product.reference ? ` (${product.reference})` : ''}` : (movement.productName || 'Produit inconnu');
+
+                acc.products.add(product ? product.id : label);
+                acc.typeMovements[movement.type] = (acc.typeMovements[movement.type] || 0) + 1;
+                acc.typeQuantities[movement.type] = (acc.typeQuantities[movement.type] || 0) + quantity;
+                acc.perProduct[label] = (acc.perProduct[label] || 0) + Math.abs(quantity);
+
+                switch (movement.type) {
+                    case 'out':
+                        acc.outQty += quantity;
+                        acc.outValue += (product ? product.salePrice || 0 : 0) * quantity;
+                        acc.netQty -= quantity;
+                        break;
+                    case 'in':
+                        acc.inQty += quantity;
+                        acc.inValue += (product ? (product.purchasePrice || product.salePrice || 0) : 0) * quantity;
+                        acc.netQty += quantity;
+                        break;
+                    case 'adjust':
+                        acc.adjustQty += quantity;
+                        acc.netQty += quantity;
+                        break;
+                    default:
+                        break;
+                }
+
+                return acc;
+            }, {
+                outQty: 0,
+                outValue: 0,
+                inQty: 0,
+                inValue: 0,
+                adjustQty: 0,
+                netQty: 0,
+                products: new Set(),
+                perProduct: {},
+                typeMovements: {},
+                typeQuantities: {}
+            });
+
+            const uniqueCount = summary.products.size;
+
+            document.getElementById('report-total-movements')?.textContent = formatNumber(total);
+            document.getElementById('report-unique-products')?.textContent = `${formatNumber(uniqueCount)} produit${uniqueCount > 1 ? 's' : ''} impacté${uniqueCount > 1 ? 's' : ''}`;
+            document.getElementById('report-total-out-qty')?.textContent = formatNumber(summary.outQty);
+            document.getElementById('report-total-out-value')?.textContent = formatCurrency(summary.outValue);
+            document.getElementById('report-total-in-qty')?.textContent = formatNumber(summary.inQty);
+            document.getElementById('report-total-in-value')?.textContent = formatCurrency(summary.inValue);
+
+            const netValue = summary.netQty;
+            const netElement = document.getElementById('report-net-qty');
+            if (netElement) {
+                const prefix = netValue > 0 ? '+' : '';
+                netElement.textContent = `${prefix}${formatNumber(netValue)}`;
+            }
+            document.getElementById('report-adjust-qty')?.textContent = formatNumber(summary.adjustQty);
+
+            const maxRows = 200;
+            if (total === 0) {
+                resultsInfo.textContent = 'Aucun mouvement pour ces filtres.';
+                tableBody.innerHTML = '<tr><td class="table-empty" colspan="6">Aucun mouvement trouvé</td></tr>';
+                topProductsList.innerHTML = '<li class="empty-state">Aucune donnée disponible</li>';
+                typeBreakdownList.innerHTML = '<li class="empty-state">Aucune donnée disponible</li>';
+                return;
+            }
+
+            resultsInfo.textContent = total > maxRows
+                ? `Affichage des ${maxRows} premiers mouvements sur ${formatNumber(total)}.`
+                : `${formatNumber(total)} mouvement${total > 1 ? 's' : ''} affiché${total > 1 ? 's' : ''}.`;
+
+            const TYPE_LABELS = { in: 'Entrée', out: 'Sortie', adjust: 'Ajustement' };
+
+            tableBody.innerHTML = dataset
+                .sort((a, b) => new Date(b.date) - new Date(a.date))
+                .slice(0, maxRows)
+                .map(movement => {
+                    const quantity = Number(movement.quantity) || 0;
+                    const quantityDisplay = movement.type === 'out'
+                        ? `-${formatNumber(quantity)}`
+                        : movement.type === 'in'
+                            ? `+${formatNumber(quantity)}`
+                            : formatNumber(quantity);
+                    const date = new Date(movement.date);
+                    const productName = movement.product ? movement.product.name : (movement.productName || 'Produit inconnu');
+                    const category = movement.product ? getCategoryName(movement.product.category) : '—';
+                    const reason = movement.reason ? movement.reason : '—';
+
+                    return `
+                        <tr>
+                            <td>${date.toLocaleDateString('fr-FR')}</td>
+                            <td>${productName}</td>
+                            <td>${TYPE_LABELS[movement.type] || movement.type}</td>
+                            <td>${quantityDisplay}</td>
+                            <td>${category}</td>
+                            <td>${reason}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+            const topProducts = Object.entries(summary.perProduct)
+                .sort(([, a], [, b]) => b - a)
+                .slice(0, 5);
+
+            topProductsList.innerHTML = topProducts.length
+                ? topProducts.map(([label, qty]) => `<li><span>${label}</span><strong>${formatNumber(qty)} unité${qty > 1 ? 's' : ''}</strong></li>`).join('')
+                : '<li class="empty-state">Aucune donnée disponible</li>';
+
+            const breakdown = ['out', 'in', 'adjust'].map(type => ({
+                type,
+                label: type === 'out' ? 'Sorties' : type === 'in' ? 'Entrées' : 'Ajustements',
+                movements: summary.typeMovements[type] || 0,
+                quantity: summary.typeQuantities[type] || 0
+            })).filter(item => item.movements > 0);
+
+            typeBreakdownList.innerHTML = breakdown.length
+                ? breakdown.map(item => `<li><span>${item.label}</span><strong>${formatNumber(item.movements)} mouvement${item.movements > 1 ? 's' : ''} • ${formatNumber(item.quantity)} unité${item.quantity > 1 ? 's' : ''}</strong></li>`).join('')
+                : '<li class="empty-state">Aucune donnée disponible</li>';
+        }
+
+        function setReportRange(range) {
+            const startInput = document.getElementById('report-start');
+            const endInput = document.getElementById('report-end');
+            if (!startInput || !endInput) return;
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            let startDate = null;
+            let endDate = null;
+
+            switch (range) {
+                case '30d': {
+                    endDate = new Date(today);
+                    startDate = new Date(today);
+                    startDate.setDate(startDate.getDate() - 29);
+                    break;
+                }
+                case '90d': {
+                    endDate = new Date(today);
+                    startDate = new Date(today);
+                    startDate.setDate(startDate.getDate() - 89);
+                    break;
+                }
+                case '12m': {
+                    endDate = new Date(today);
+                    startDate = new Date(today);
+                    startDate.setFullYear(startDate.getFullYear() - 1);
+                    startDate.setDate(startDate.getDate() + 1);
+                    break;
+                }
+                case 'year-current': {
+                    startDate = new Date(today.getFullYear(), 0, 1);
+                    endDate = new Date(today);
+                    break;
+                }
+                case 'year-previous': {
+                    const year = today.getFullYear() - 1;
+                    startDate = new Date(year, 0, 1);
+                    endDate = new Date(year, 11, 31);
+                    break;
+                }
+                case 'clear':
+                    startDate = null;
+                    endDate = null;
+                    break;
+                default:
+                    break;
+            }
+
+            if (startDate) {
+                startInput.value = formatDateInputValue(startDate);
+            } else {
+                startInput.value = '';
+            }
+
+            if (endDate) {
+                endInput.value = formatDateInputValue(endDate);
+            } else {
+                endInput.value = '';
+            }
+
+            document.querySelectorAll('[data-report-range]').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.reportRange === range && range !== 'clear');
+            });
+
+            renderReports();
+        }
+
+        async function openModal(productId = null) {
+            const modal = document.getElementById('product-modal');
+            document.getElementById('product-form').reset();
+            state.currentProductId = productId;
+            state.currentKitComponents = [];
+            
+            const product = productId ? await fetchJson(API_ENDPOINTS.products(productId)) : null;
+            const preview = document.getElementById('product-image-preview');
+            const label = document.getElementById('photo-upload-label');
+            
+            if (product) {
+                document.getElementById('product-name').value = product.name;
+                document.getElementById('product-reference').value = product.reference;
+                document.getElementById('product-stock').value = product.stock;
+                document.getElementById('product-minstock').value = product.minStock;
+                document.getElementById('product-purchase-price').value = product.purchasePrice;
+                document.getElementById('product-sale-price').value = product.salePrice;
+                document.getElementById('product-category').value = product.category;
+                document.getElementById('product-desc').value = product.description;
+                document.getElementById('product-is-kit').checked = product.is_kit;
+                
+                preview.innerHTML = product.imageUrl ? `<img src="${product.imageUrl}" alt="Aperçu">` : PLACEHOLDER_SVG;
+                label.textContent = product.imageUrl ? "Changer la photo" : "Ajouter une photo";
+                state.currentKitComponents = product.components || [];
+                fetchAndDisplayHistory(productId);
+            } else {
+                 preview.innerHTML = PLACEHOLDER_SVG;
+                 label.textContent = "Ajouter une photo";
+                 document.getElementById('product-history-log').innerHTML = '<li class="empty-state">Aucun historique.</li>';
+            }
+
+            toggleKitSection();
+            renderKitComponents();
+            modal.classList.add('open');
+        }
+
+        function closeModal() { 
+            document.getElementById('product-modal').classList.remove('open'); 
+        }
+
+        async function fetchAndDisplayHistory(productId) {
+             const historyLog = document.getElementById('product-history-log');
+            if(!historyLog) return;
+            try {
+                const history = await fetchJson(API_ENDPOINTS.history(productId));
+                historyLog.innerHTML = history.length ? history.map(h => `<li>${h.action}<small>${new Date(h.timestamp).toLocaleString('fr-FR')} par ${h.user_name}</small></li>`).join('') : '<li class="empty-state">Aucun historique.</li>';
+            } catch (error) { historyLog.innerHTML = '<li class="empty-state">Erreur chargement.</li>'; }
+        }
+
+        async function saveProduct() {
+            const form = document.getElementById('product-form');
+            const payload = {
+                name: form.querySelector('#product-name').value.trim(),
+                reference: form.querySelector('#product-reference').value.trim(),
+                stock: parseInt(form.querySelector('#product-stock').value, 10) || 0,
+                minStock: parseInt(form.querySelector('#product-minstock').value, 10) || 1,
+                purchasePrice: parseFloat(form.querySelector('#product-purchase-price').value) || 0,
+                salePrice: parseFloat(form.querySelector('#product-sale-price').value) || 0,
+                category: form.querySelector('#product-category').value,
+                description: form.querySelector('#product-desc').value.trim(),
+                is_kit: form.querySelector('#product-is-kit').checked,
+                components: state.currentKitComponents,
+            };
+            if (!payload.name) return alert('Le nom du produit est obligatoire.');
+
+            const isUpdate = Boolean(state.currentProductId);
+            const url = isUpdate ? API_ENDPOINTS.products(state.currentProductId) : API_ENDPOINTS.products();
+            const method = isUpdate ? 'PUT' : 'POST';
+
+            try {
+                const savedProduct = await fetchJson(url, { method, body: JSON.stringify(payload) });
+                const newProductId = savedProduct.id || state.currentProductId;
+                const photoFile = document.getElementById('product-image-upload').files[0];
+                if (photoFile && newProductId) {
+                    await uploadPhoto(newProductId, photoFile);
+                }
+                await refreshData();
+                closeModal();
+            } catch (error) { alert("Erreur: " + error.message); }
+        }
+        
+        async function uploadPhoto(productId, file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            try {
+                await fetch(API_ENDPOINTS.photo(productId), { 
+                    method: 'POST', 
+                    body: formData, 
+                    headers: (typeof wpApiSettings !== 'undefined' && wpApiSettings.nonce) ? { 'X-WP-Nonce': wpApiSettings.nonce } : {} 
+                });
+            } catch (error) {
+                alert("La photo n'a pas pu être envoyée : " + error.message);
+            }
+        }
+
+        async function deleteProduct(productId) {
+            if (!confirm(`Voulez-vous vraiment supprimer ce produit ?`)) return;
+            try {
+                await fetchJson(API_ENDPOINTS.products(productId), { method: 'DELETE' });
+                await refreshData();
+            } catch (error) { alert("Erreur: " + error.message); }
+        }
+
+        function toggleKitSection() {
+            const isKit = document.getElementById('product-is-kit').checked;
+            const kitSection = document.getElementById('kit-components-section');
+            kitSection.style.display = isKit ? 'grid' : 'none';
+        }
+
+        function handleComponentSearch(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const resultsContainer = document.getElementById('kit-component-search-results');
+            
+            if (searchTerm.length < 2) {
+                resultsContainer.innerHTML = '';
+                return;
+            }
+            
+            const filtered = state.products.filter(p => 
+                !p.is_kit && 
+                p.name.toLowerCase().includes(searchTerm) &&
+                !state.currentKitComponents.some(comp => comp.id === p.id)
+            );
+            
+            resultsContainer.innerHTML = filtered.map(p => 
+                `<li onclick="App.addComponentToKit(${p.id})" style="cursor:pointer">${p.name} (${p.reference || 'Sans référence'})</li>`
+            ).join('') || '<li class="empty-state">Aucun produit trouvé</li>';
+        }
+
+        function addComponentToKit(productId) {
+            const product = state.products.find(p => p.id === productId);
+            if (product && !state.currentKitComponents.some(comp => comp.id === productId)) {
+                state.currentKitComponents.push({
+                    id: productId,
+                    name: product.name,
+                    reference: product.reference,
+                    quantity: 1
+                });
+                renderKitComponents();
+            }
+            document.getElementById('kit-component-search').value = '';
+            document.getElementById('kit-component-search-results').innerHTML = '';
+        }
+
+        function renderKitComponents() {
+            const list = document.getElementById('kit-components-list');
+            list.innerHTML = state.currentKitComponents.map(comp => `
+                <li>
+                    <span>${comp.name} (${comp.reference || 'Sans référence'})</span>
+                    <div style="display:flex;gap:8px;align-items:center">
+                        <input type="number" value="${comp.quantity}" min="1" 
+                               onchange="App.updateComponentQuantity(${comp.id}, this.value)" 
+                               style="width:60px">
+                        <button class="btn-danger" onclick="App.removeComponent(${comp.id})">×</button>
+                    </div>
+                </li>
+            `).join('') || '<li class="empty-state">Aucun composant ajouté</li>';
+        }
+
+        function updateComponentQuantity(componentId, quantity) {
+            const comp = state.currentKitComponents.find(c => c.id === componentId);
+            if (comp) {
+                comp.quantity = parseInt(quantity) || 1;
+            }
+        }
+
+        function removeComponent(componentId) {
+            state.currentKitComponents = state.currentKitComponents.filter(c => c.id !== componentId);
+            renderKitComponents();
+        }
+
+        async function addCategory(e) {
+            e.preventDefault();
+            const nameInput = document.getElementById('new-category-name');
+            const name = nameInput.value.trim();
+            
+            if (!name) return;
+            
+            try {
+                await fetchJson(API_ENDPOINTS.categories(), {
+                    method: 'POST',
+                    body: JSON.stringify({ name })
+                });
+                nameInput.value = '';
+                await refreshData();
+            } catch (error) {
+                alert("Erreur: " + error.message);
+            }
+        }
+
+        async function deleteCategory(categoryId) {
+            if (!confirm('Supprimer cette catégorie ?')) return;
+            
+            try {
+                await fetchJson(API_ENDPOINTS.categories(categoryId), { method: 'DELETE' });
+                await refreshData();
+            } catch (error) {
+                alert("Erreur: " + error.message);
+            }
+        }
+
+        async function addStockMovement(e) {
+            e.preventDefault();
+            const form = e.target;
+            const productId = document.getElementById('movement-product').value;
+            const type = document.getElementById('movement-type').value;
+            const quantity = document.getElementById('movement-quantity').value;
+            const reason = document.getElementById('movement-reason').value;
+            
+            if (!productId || !quantity || !reason) {
+                alert('Veuillez remplir tous les champs');
+                return;
+            }
+            
+            const product = state.products.find(p => p.id == productId);
+            if (!product) return;
+            
+            try {
+                await fetchJson(API_ENDPOINTS.movements(), {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        productId: parseInt(productId),
+                        productName: product.name,
+                        type: type,
+                        quantity: parseInt(quantity),
+                        reason: reason
+                    })
+                });
+                
+                form.reset();
+                await refreshData();
+            } catch (error) {
+                alert("Erreur: " + error.message);
+            }
+        }
+
+        function filterProducts() {
+            renderProducts();
+        }
+
+        function exportInventory() {
+            const csvContent = [
+                ['Nom', 'Référence', 'Stock', 'Seuil', 'Statut', 'Prix Achat', 'Prix Vente', 'Valeur Stock', 'Catégorie'],
+                ...state.products.map(p => [
+                    p.name + (p.is_kit ? ' (Kit)' : ''),
+                    p.reference || '',
+                    p.is_kit ? 'N/A' : p.stock,
+                    p.minStock,
+                    p.is_kit ? 'N/A' : STATUS_LABELS[getStockStatus(p.stock, p.minStock)],
+                    p.purchasePrice,
+                    p.salePrice,
+                    p.is_kit ? 0 : p.salePrice * p.stock,
+                    getCategoryName(p.category)
+                ])
+            ].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `inventaire_sempa_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function applyTheme(theme) {
+            const wrapper = document.getElementById('stock-app-wrapper');
+            const toggle = document.getElementById('theme-toggle');
+            
+            if (theme === 'dark') {
+                wrapper.classList.add('dark-theme');
+                toggle.innerHTML = '☀️';
+                localStorage.setItem('sempa_theme', 'dark');
+            } else {
+                wrapper.classList.remove('dark-theme');
+                toggle.innerHTML = '🌙';
+                localStorage.setItem('sempa_theme', 'light');
+            }
+        }
+
+        function bindEvents() {
+            document.getElementById('theme-toggle')?.addEventListener('click', () => applyTheme(document.getElementById('stock-app-wrapper').classList.contains('dark-theme') ? 'light' : 'dark'));
+            document.querySelectorAll('.sempa-tab').forEach(tab => tab.addEventListener('click', (e) => {
+                document.querySelector('.sempa-tab.active')?.classList.remove('active');
+                document.querySelector('.sempa-content.active')?.classList.remove('active');
+                e.currentTarget.classList.add('active');
+                document.getElementById(e.currentTarget.dataset.tab)?.classList.add('active');
+            }));
+            
+            const addCategoryForm = document.getElementById('add-category-form');
+            if(addCategoryForm) addCategoryForm.addEventListener('submit', addCategory);
+            
+            const movementForm = document.getElementById('movement-form');
+            if(movementForm) movementForm.addEventListener('submit', addStockMovement);
+            
+            const productSearch = document.getElementById('product-search');
+            if(productSearch) productSearch.addEventListener('input', filterProducts);
+            
+            const categoryFilter = document.getElementById('filter-category');
+            if(categoryFilter) categoryFilter.addEventListener('change', filterProducts);
+            
+            const statusFilter = document.getElementById('filter-status');
+            if(statusFilter) statusFilter.addEventListener('change', filterProducts);
+
+            document.getElementById('product-is-kit')?.addEventListener('change', toggleKitSection);
+            document.getElementById('kit-component-search')?.addEventListener('input', handleComponentSearch);
+
+            const reportSearch = document.getElementById('report-search');
+            if (reportSearch) reportSearch.addEventListener('input', () => renderReports());
+
+            const reportType = document.getElementById('report-type');
+            if (reportType) reportType.addEventListener('change', () => renderReports());
+
+            const reportCategory = document.getElementById('report-category');
+            if (reportCategory) reportCategory.addEventListener('change', () => renderReports());
+
+            const reportStart = document.getElementById('report-start');
+            if (reportStart) reportStart.addEventListener('change', () => { clearReportQuickRange(); renderReports(); });
+
+            const reportEnd = document.getElementById('report-end');
+            if (reportEnd) reportEnd.addEventListener('change', () => { clearReportQuickRange(); renderReports(); });
+
+            document.querySelectorAll('[data-report-range]').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    event.preventDefault();
+                    setReportRange(button.dataset.reportRange);
+                });
+            });
+
+            document.getElementById('product-image-upload')?.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        document.getElementById('product-image-preview').innerHTML = `<img src="${e.target.result}" alt="Aperçu">`;
+                        document.getElementById('photo-upload-label').textContent = "Changer la photo";
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+
+        async function init() {
+            bindEvents();
+            await loadInitialData();
+            renderAll();
+            applyTheme(localStorage.getItem('sempa_theme') || 'light');
+        }
+
+    return {
+        init, openModal, closeModal, saveProduct, deleteProduct,
+        addCategory, deleteCategory, removeComponent, exportInventory,
+        updateComponentQuantity, addComponentToKit, handleComponentSearch
+    };
+    })();
+
+    let sempaAppInitialized = false;
+
+    function initializeStockApp() {
+        if (sempaAppInitialized) {
+            return;
+        }
+
+        sempaAppInitialized = true;
+        App.init();
+    }
+
+    const AccessGate = (() => {
+        const SESSION_KEY = 'sempa_stock_access_granted';
+        const REMEMBER_KEY = 'sempa_stock_access_remembered';
+
+        function safeGet(storage, key) {
+            try {
+                return storage.getItem(key);
+            } catch (error) {
+                console.warn('Stockage web indisponible :', error);
+                return null;
+            }
+        }
+
+        function safeSet(storage, key, value) {
+            try {
+                storage.setItem(key, value);
+            } catch (error) {
+                console.warn('Impossible d\'enregistrer la session locale :', error);
+            }
+        }
+
+        function safeRemove(storage, key) {
+            try {
+                storage.removeItem(key);
+            } catch (error) {
+                console.warn('Impossible de nettoyer la session locale :', error);
+            }
+        }
+
+        function init() {
+            const gate = document.getElementById('app-access-gate');
+            const form = document.getElementById('app-access-form');
+            const input = document.getElementById('app-access-password');
+            const toggle = document.getElementById('app-access-toggle');
+            const remember = document.getElementById('app-access-remember');
+            const error = document.getElementById('app-access-error');
+            const appWrapper = document.getElementById('stock-app-wrapper');
+
+            if (!gate || !form || !input) {
+                document.body.classList.remove('app-locked');
+                if (appWrapper) {
+                    appWrapper.removeAttribute('aria-hidden');
+                }
+                initializeStockApp();
+                return;
+            }
+
+            const storedPassword = (gate.dataset.password || '').trim();
+
+            if (!storedPassword) {
+                unlock({ gate });
+                return;
+            }
+
+            const hasRememberedAccess = safeGet(localStorage, REMEMBER_KEY) === '1';
+            const hasSessionAccess = safeGet(sessionStorage, SESSION_KEY) === '1';
+
+            if (hasRememberedAccess || hasSessionAccess) {
+                unlock({ gate, remember: hasRememberedAccess });
+                return;
+            }
+
+            gate.removeAttribute('hidden');
+            gate.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('app-locked');
+            if (appWrapper) {
+                appWrapper.setAttribute('aria-hidden', 'true');
+            }
+
+            form.addEventListener('submit', (event) => {
+                event.preventDefault();
+                const value = input.value.trim();
+
+                if (value === storedPassword) {
+                    const shouldRemember = remember ? remember.checked : false;
+                    unlock({ gate, remember: shouldRemember });
+                    return;
+                }
+
+                if (error) {
+                    error.textContent = 'Mot de passe incorrect. Veuillez réessayer.';
+                    error.removeAttribute('hidden');
+                }
+
+                input.value = '';
+                input.focus();
+            });
+
+            input.addEventListener('input', () => {
+                if (error && !error.hasAttribute('hidden')) {
+                    error.setAttribute('hidden', 'hidden');
+                }
+            });
+
+            if (toggle) {
+                toggle.addEventListener('click', () => {
+                    const isPassword = input.getAttribute('type') === 'password';
+                    input.setAttribute('type', isPassword ? 'text' : 'password');
+                    toggle.textContent = isPassword ? 'Masquer' : 'Afficher';
+                    toggle.setAttribute('aria-label', isPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
+                    input.focus();
+                });
+            }
+
+            setTimeout(() => input.focus(), 50);
+        }
+
+        function unlock({ gate, remember = false } = {}) {
+            if (remember) {
+                safeSet(localStorage, REMEMBER_KEY, '1');
+            } else {
+                safeRemove(localStorage, REMEMBER_KEY);
+            }
+
+            safeSet(sessionStorage, SESSION_KEY, '1');
+
+            if (gate) {
+                gate.setAttribute('hidden', 'hidden');
+                gate.setAttribute('aria-hidden', 'true');
+            }
+
+            document.body.classList.remove('app-locked');
+
+            const error = document.getElementById('app-access-error');
+            if (error) {
+                error.setAttribute('hidden', 'hidden');
+            }
+
+            const input = document.getElementById('app-access-password');
+            if (input) {
+                input.value = '';
+            }
+
+            const rememberCheckbox = document.getElementById('app-access-remember');
+            if (rememberCheckbox) {
+                rememberCheckbox.checked = false;
+            }
+
+            const appWrapper = document.getElementById('stock-app-wrapper');
+            if (appWrapper) {
+                appWrapper.removeAttribute('aria-hidden');
+            }
+
+            initializeStockApp();
+        }
+
+        return { init };
+    })();
+
+    document.addEventListener('DOMContentLoaded', AccessGate.init);
+</script>
+</body>
+</html>
