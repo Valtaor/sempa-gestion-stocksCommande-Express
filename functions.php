@@ -847,4 +847,6 @@ final class Sempa_Utils
     }
 }
 
-Sempa_App::boot();
+add_action('after_setup_theme', function () {
+    Sempa_App::boot();
+});
