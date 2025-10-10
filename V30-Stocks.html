@@ -1752,12 +1752,22 @@
 
             const uniqueCount = summary.products.size;
 
-            document.getElementById('report-total-movements')?.textContent = formatNumber(total);
-            document.getElementById('report-unique-products')?.textContent = `${formatNumber(uniqueCount)} produit${uniqueCount > 1 ? 's' : ''} impacté${uniqueCount > 1 ? 's' : ''}`;
-            document.getElementById('report-total-out-qty')?.textContent = formatNumber(summary.outQty);
-            document.getElementById('report-total-out-value')?.textContent = formatCurrency(summary.outValue);
-            document.getElementById('report-total-in-qty')?.textContent = formatNumber(summary.inQty);
-            document.getElementById('report-total-in-value')?.textContent = formatCurrency(summary.inValue);
+            const updateText = (id, value) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.textContent = value;
+                }
+            };
+
+            updateText('report-total-movements', formatNumber(total));
+            updateText(
+                'report-unique-products',
+                `${formatNumber(uniqueCount)} produit${uniqueCount > 1 ? 's' : ''} impacté${uniqueCount > 1 ? 's' : ''}`
+            );
+            updateText('report-total-out-qty', formatNumber(summary.outQty));
+            updateText('report-total-out-value', formatCurrency(summary.outValue));
+            updateText('report-total-in-qty', formatNumber(summary.inQty));
+            updateText('report-total-in-value', formatCurrency(summary.inValue));
 
             const netValue = summary.netQty;
             const netElement = document.getElementById('report-net-qty');
@@ -1765,7 +1775,7 @@
                 const prefix = netValue > 0 ? '+' : '';
                 netElement.textContent = `${prefix}${formatNumber(netValue)}`;
             }
-            document.getElementById('report-adjust-qty')?.textContent = formatNumber(summary.adjustQty);
+            updateText('report-adjust-qty', formatNumber(summary.adjustQty));
 
             const maxRows = 200;
             if (total === 0) {
