@@ -13,8 +13,15 @@ require_once ABSPATH . 'wp-admin/includes/media.php';
 
 final class Sempa_App
 {
+    private static bool $booted = false;
+
     public static function boot(): void
     {
+        if (self::$booted) {
+            return;
+        }
+
+        self::$booted = true;
         Sempa_Theme::register();
         Sempa_Order_Route::register();
         Sempa_Contact_Route::register();
@@ -29,7 +36,12 @@ final class Sempa_Theme
 {
     public static function register(): void
     {
-        add_action('after_setup_theme', [__CLASS__, 'load_text_domain']);
+        if (did_action('after_setup_theme')) {
+            self::load_text_domain();
+        } else {
+            add_action('after_setup_theme', [__CLASS__, 'load_text_domain']);
+        }
+
         add_action('wp_enqueue_scripts', [__CLASS__, 'enqueue_styles'], 100);
         add_filter('uncode_activate_menu_badges', '__return_true');
     }
@@ -237,7 +249,7 @@ final class Sempa_Stock_Permissions
 
 final class Sempa_Stock_Routes
 {
-    private const NAMESPACE = 'sempa-stocks/v1';
+    private const ROUTE_NAMESPACE = 'sempa-stocks/v1';
 
     public static function register(): void
     {
@@ -246,7 +258,7 @@ final class Sempa_Stock_Routes
 
     public static function register_routes(): void
     {
-        register_rest_route(self::NAMESPACE, '/products', [
+        register_rest_route(self::ROUTE_NAMESPACE, '/products', [
             [
                 'methods' => WP_REST_Server::READABLE,
                 'callback' => [__CLASS__, 'get_products'],
@@ -259,7 +271,7 @@ final class Sempa_Stock_Routes
             ],
         ]);
 
-        register_rest_route(self::NAMESPACE, '/products/(?P<id>\d+)', [
+        register_rest_route(self::ROUTE_NAMESPACE, '/products/(?P<id>\d+)', [
             'args' => [
                 'id' => [
                     'validate_callback' => [__CLASS__, 'validate_positive_int'],
@@ -282,7 +294,7 @@ final class Sempa_Stock_Routes
             ],
         ]);
 
-        register_rest_route(self::NAMESPACE, '/products/(?P<id>\d+)/photo', [
+        register_rest_route(self::ROUTE_NAMESPACE, '/products/(?P<id>\d+)/photo', [
             'methods' => WP_REST_Server::CREATABLE,
             'callback' => [__CLASS__, 'upload_photo'],
             'permission_callback' => [Sempa_Stock_Permissions::class, 'require_or_filter'],
@@ -293,7 +305,7 @@ final class Sempa_Stock_Routes
             ],
         ]);
 
-        register_rest_route(self::NAMESPACE, '/products/(?P<id>\d+)/history', [
+        register_rest_route(self::ROUTE_NAMESPACE, '/products/(?P<id>\d+)/history', [
             'methods' => WP_REST_Server::READABLE,
             'callback' => [__CLASS__, 'get_history'],
             'permission_callback' => [Sempa_Stock_Permissions::class, 'allow_public_reads'],
@@ -304,7 +316,7 @@ final class Sempa_Stock_Routes
             ],
         ]);
 
-        register_rest_route(self::NAMESPACE, '/movements', [
+        register_rest_route(self::ROUTE_NAMESPACE, '/movements', [
             [
                 'methods' => WP_REST_Server::READABLE,
                 'callback' => [__CLASS__, 'get_movements'],
@@ -317,7 +329,7 @@ final class Sempa_Stock_Routes
             ],
         ]);
 
-        register_rest_route(self::NAMESPACE, '/categories', [
+        register_rest_route(self::ROUTE_NAMESPACE, '/categories', [
             [
                 'methods' => WP_REST_Server::READABLE,
                 'callback' => [__CLASS__, 'get_categories'],
@@ -330,7 +342,7 @@ final class Sempa_Stock_Routes
             ],
         ]);
 
-        register_rest_route(self::NAMESPACE, '/categories/(?P<id>\d+)', [
+        register_rest_route(self::ROUTE_NAMESPACE, '/categories/(?P<id>\d+)', [
             'args' => [
                 'id' => [
                     'validate_callback' => [__CLASS__, 'validate_positive_int'],
@@ -839,12 +851,21 @@ final class Sempa_Utils
         foreach ($slugs as $slug) {
             $page = get_page_by_path($slug);
             if ($page) {
-                return apply_filters('sempa_stock_app_url', get_permalink($page), $page);
+                $filtered = apply_filters('sempa_stock_app_url', get_permalink($page), $page);
+                if (is_string($filtered) && $filtered !== '') {
+                    return $filtered;
+                }
             }
         }
 
-        return apply_filters('sempa_stock_app_url', $default, null);
+        $filtered_default = apply_filters('sempa_stock_app_url', $default, null);
+
+        return is_string($filtered_default) && $filtered_default !== '' ? $filtered_default : $default;
     }
 }
 
-Sempa_App::boot();
+if (did_action('after_setup_theme')) {
+    Sempa_App::boot();
+} else {
+    add_action('after_setup_theme', [Sempa_App::class, 'boot'], 0);
+}
