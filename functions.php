@@ -10,6 +10,7 @@ if (!defined('ABSPATH')) {
 require_once ABSPATH . 'wp-admin/includes/image.php';
 require_once ABSPATH . 'wp-admin/includes/file.php';
 require_once ABSPATH . 'wp-admin/includes/media.php';
+require_once __DIR__ . '/includes/functions_stocks.php';
 
 final class Sempa_App
 {
@@ -22,6 +23,8 @@ final class Sempa_App
         Sempa_Stock_Permissions::register();
         Sempa_Stock_Routes::register();
         Sempa_Login_Redirect::register();
+        Sempa_Stocks_App::register();
+        Sempa_Stocks_Login::register();
     }
 }
 
@@ -830,6 +833,7 @@ final class Sempa_Utils
     {
         $default = home_url('/gestion-stocks-sempa/');
         $slugs = [
+            'stocks',
             'gestion-stocks-sempa',
             'gestion-stocks',
             'app-gestion-stocks',
