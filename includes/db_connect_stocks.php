@@ -12,9 +12,9 @@ if (!class_exists('Sempa_Stocks_DB')) {
         private const DB_PASSWORD = '14Juillet@';
         private const DB_PORT = 3306;
 
-        private static ?\wpdb $instance = null;
+        private static $instance = null;
 
-        public static function instance(): \wpdb
+        public static function instance()
         {
             if (self::$instance instanceof \wpdb) {
                 return self::$instance;
@@ -33,7 +33,7 @@ if (!class_exists('Sempa_Stocks_DB')) {
             return self::$instance;
         }
 
-        public static function table(string $name): string
+        public static function table(string $name)
         {
             return $name;
         }

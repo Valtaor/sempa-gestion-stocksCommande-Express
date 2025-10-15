@@ -10,9 +10,9 @@ final class Sempa_Stocks_App
     private const NONCE_ACTION = 'sempa_stocks_nonce';
     private const SCRIPT_HANDLE = 'semparc-gestion-stocks';
     private const STYLE_HANDLE = 'semparc-stocks-style';
-    private static ?string $nonce_value = null;
+    private static $nonce_value = null;
 
-    public static function register(): void
+    public static function register()
     {
         add_action('wp_enqueue_scripts', [__CLASS__, 'enqueue_assets']);
         add_action('wp_ajax_sempa_stocks_dashboard', [__CLASS__, 'ajax_dashboard']);
@@ -28,12 +28,12 @@ final class Sempa_Stocks_App
         add_action('init', [__CLASS__, 'register_export_route']);
     }
 
-    public static function register_export_route(): void
+    public static function register_export_route()
     {
         add_action('admin_post_sempa_stocks_export', [__CLASS__, 'stream_csv_export']);
     }
 
-    public static function enqueue_assets(): void
+    public static function enqueue_assets()
     {
         if (!self::is_stocks_template()) {
             return;
@@ -77,7 +77,7 @@ final class Sempa_Stocks_App
         ]);
     }
 
-    public static function ajax_dashboard(): void
+    public static function ajax_dashboard()
     {
         self::ensure_secure_request();
 
@@ -98,7 +98,7 @@ final class Sempa_Stocks_App
         ]);
     }
 
-    public static function ajax_products(): void
+    public static function ajax_products()
     {
         self::ensure_secure_request();
 
@@ -110,7 +110,7 @@ final class Sempa_Stocks_App
         ]);
     }
 
-    public static function ajax_save_product(): void
+    public static function ajax_save_product()
     {
         self::ensure_secure_request();
 
@@ -169,7 +169,7 @@ final class Sempa_Stocks_App
         ]);
     }
 
-    public static function ajax_delete_product(): void
+    public static function ajax_delete_product()
     {
         self::ensure_secure_request();
 
@@ -187,7 +187,7 @@ final class Sempa_Stocks_App
         wp_send_json_success();
     }
 
-    public static function ajax_movements(): void
+    public static function ajax_movements()
     {
         self::ensure_secure_request();
 
@@ -199,7 +199,7 @@ final class Sempa_Stocks_App
         ]);
     }
 
-    public static function ajax_record_movement(): void
+    public static function ajax_record_movement()
     {
         self::ensure_secure_request();
 
@@ -270,14 +270,14 @@ final class Sempa_Stocks_App
         ]);
     }
 
-    public static function ajax_export_csv(): void
+    public static function ajax_export_csv()
     {
         self::ensure_secure_request();
 
         self::stream_csv_export();
     }
 
-    public static function stream_csv_export(): void
+    public static function stream_csv_export()
     {
         if (!self::current_user_allowed()) {
             wp_die(__('Accès refusé.', 'sempa'), 403);
@@ -325,7 +325,7 @@ final class Sempa_Stocks_App
         exit;
     }
 
-    public static function ajax_reference_data(): void
+    public static function ajax_reference_data()
     {
         self::ensure_secure_request();
 
@@ -339,7 +339,7 @@ final class Sempa_Stocks_App
         ]);
     }
 
-    public static function ajax_save_category(): void
+    public static function ajax_save_category()
     {
         self::ensure_secure_request();
         $name = isset($_POST['nom']) ? sanitize_text_field(wp_unslash($_POST['nom'])) : '';
@@ -371,7 +371,7 @@ final class Sempa_Stocks_App
         ]);
     }
 
-    public static function ajax_save_supplier(): void
+    public static function ajax_save_supplier()
     {
         self::ensure_secure_request();
 
@@ -408,7 +408,7 @@ final class Sempa_Stocks_App
         ]);
     }
 
-    private static function ensure_secure_request(): void
+    private static function ensure_secure_request()
     {
         if (!self::current_user_allowed()) {
             wp_send_json_error(['message' => __('Authentification requise.', 'sempa')], 403);
@@ -417,7 +417,7 @@ final class Sempa_Stocks_App
         check_ajax_referer(self::NONCE_ACTION, 'nonce');
     }
 
-    private static function current_user_allowed(): bool
+    private static function current_user_allowed()
     {
         if (!is_user_logged_in()) {
             return false;
@@ -433,7 +433,7 @@ final class Sempa_Stocks_App
         return in_array(strtolower($user->user_email), $allowed, true);
     }
 
-    private static function read_request_body(): array
+    private static function read_request_body()
     {
         if (!empty($_POST)) {
             return wp_unslash($_POST);
@@ -448,13 +448,13 @@ final class Sempa_Stocks_App
         return is_array($decoded) ? $decoded : [];
     }
 
-    private static function sanitize_decimal($value): float
+    private static function sanitize_decimal($value)
     {
         $value = is_string($value) ? str_replace(',', '.', $value) : $value;
         return (float) $value;
     }
 
-    private static function sanitize_date(string $value): string
+    private static function sanitize_date(string $value)
     {
         if ($value === '') {
             return '';
@@ -468,7 +468,7 @@ final class Sempa_Stocks_App
         return wp_date('Y-m-d', $timestamp);
     }
 
-    private static function maybe_handle_upload(int $product_id): ?string
+    private static function maybe_handle_upload(int $product_id)
     {
         if (empty($_FILES['document'])) {
             return null;
@@ -509,7 +509,7 @@ final class Sempa_Stocks_App
         return 'uploads-stocks/' . $filename;
     }
 
-    private static function format_product(array $product): array
+    private static function format_product(array $product)
     {
         if (!$product) {
             return [];
@@ -535,7 +535,7 @@ final class Sempa_Stocks_App
         ];
     }
 
-    private static function format_alert(array $alert): array
+    private static function format_alert(array $alert)
     {
         return [
             'id' => (int) ($alert['id'] ?? 0),
@@ -546,7 +546,7 @@ final class Sempa_Stocks_App
         ];
     }
 
-    private static function format_movement(array $movement): array
+    private static function format_movement(array $movement)
     {
         return [
             'id' => (int) ($movement['id'] ?? 0),
@@ -563,7 +563,7 @@ final class Sempa_Stocks_App
         ];
     }
 
-    private static function format_category(array $category): array
+    private static function format_category(array $category)
     {
         return [
             'id' => (int) ($category['id'] ?? 0),
@@ -573,7 +573,7 @@ final class Sempa_Stocks_App
         ];
     }
 
-    private static function format_supplier(array $supplier): array
+    private static function format_supplier(array $supplier)
     {
         return [
             'id' => (int) ($supplier['id'] ?? 0),
@@ -584,12 +584,12 @@ final class Sempa_Stocks_App
         ];
     }
 
-    public static function user_is_allowed(): bool
+    public static function user_is_allowed()
     {
         return self::current_user_allowed();
     }
 
-    public static function nonce(): string
+    public static function nonce()
     {
         if (!self::$nonce_value) {
             self::$nonce_value = wp_create_nonce(self::NONCE_ACTION);
@@ -598,7 +598,7 @@ final class Sempa_Stocks_App
         return self::$nonce_value;
     }
 
-    private static function is_stocks_template(): bool
+    private static function is_stocks_template()
     {
         if (is_admin()) {
             return false;
@@ -628,7 +628,7 @@ final class Sempa_Stocks_App
 
 final class Sempa_Stocks_Login
 {
-    public static function register(): void
+    public static function register()
     {
         add_action('login_enqueue_scripts', [__CLASS__, 'enqueue_styles']);
         add_filter('login_message', [__CLASS__, 'login_message']);
@@ -636,7 +636,7 @@ final class Sempa_Stocks_Login
         add_filter('login_headertext', [__CLASS__, 'login_title']);
     }
 
-    public static function enqueue_styles(): void
+    public static function enqueue_styles()
     {
         $css = 'body.login {background: #f8f8f8;} .login h1 a {background-image: none !important; font-size: 32px; font-weight: 700; color: #f4a412 !important; text-indent: 0; width: auto;} .login form {border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); border: 1px solid #f4a41233;} .login #backtoblog a, .login #nav a {color: #f4a412;} .wp-core-ui .button-primary {background: #f4a412; border-color: #f4a412; text-shadow: none; box-shadow: none;} .wp-core-ui .button-primary:hover {background: #d98f0f; border-color: #d98f0f;} .login-message {text-align: center; background: #ffffff; padding: 16px; border-radius: 8px; border-left: 4px solid #f4a412; color: #333;}';
         wp_enqueue_style('sempa-login-styles', false);
@@ -649,12 +649,12 @@ final class Sempa_Stocks_Login
         return $greeting . $message;
     }
 
-    public static function login_url(): string
+    public static function login_url()
     {
         return home_url('/stocks');
     }
 
-    public static function login_title(): string
+    public static function login_title()
     {
         return 'SEMPA';
     }

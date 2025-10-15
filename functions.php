@@ -19,7 +19,7 @@ if (file_exists($commandes_file)) {
 
 final class Sempa_App
 {
-    public static function boot(): void
+    public static function boot()
     {
         Sempa_Theme::register();
         Sempa_Order_Route::register();
@@ -36,19 +36,19 @@ final class Sempa_App
 
 final class Sempa_Theme
 {
-    public static function register(): void
+    public static function register()
     {
         add_action('after_setup_theme', [__CLASS__, 'load_text_domain']);
         add_action('wp_enqueue_scripts', [__CLASS__, 'enqueue_styles'], 100);
         add_filter('uncode_activate_menu_badges', '__return_true');
     }
 
-    public static function load_text_domain(): void
+    public static function load_text_domain()
     {
         load_child_theme_textdomain('uncode', get_stylesheet_directory() . '/languages');
     }
 
-    public static function enqueue_styles(): void
+    public static function enqueue_styles()
     {
         $production_mode = function_exists('ot_get_option') ? ot_get_option('_uncode_production') : 'off';
         $resources_version = ($production_mode === 'on') ? null : wp_rand();
@@ -65,12 +65,12 @@ final class Sempa_Theme
 
 final class Sempa_Order_Route
 {
-    public static function register(): void
+    public static function register()
     {
         add_action('rest_api_init', [__CLASS__, 'register_route']);
     }
 
-    public static function register_route(): void
+    public static function register_route()
     {
         register_rest_route('sempa/v1', '/enregistrer-commande', [
             'methods' => WP_REST_Server::CREATABLE,
@@ -79,7 +79,7 @@ final class Sempa_Order_Route
         ]);
     }
 
-    public static function handle(WP_REST_Request $request): WP_REST_Response
+    public static function handle(WP_REST_Request $request)
     {
         global $wpdb;
 
@@ -127,12 +127,12 @@ final class Sempa_Order_Route
 
 final class Sempa_Contact_Route
 {
-    public static function register(): void
+    public static function register()
     {
         add_action('rest_api_init', [__CLASS__, 'register_route']);
     }
 
-    public static function register_route(): void
+    public static function register_route()
     {
         register_rest_route('sempa/v1', '/enregistrer-contact', [
             'methods' => WP_REST_Server::CREATABLE,
@@ -141,7 +141,7 @@ final class Sempa_Contact_Route
         ]);
     }
 
-    public static function handle(WP_REST_Request $request): WP_REST_Response
+    public static function handle(WP_REST_Request $request)
     {
         global $wpdb;
 
@@ -186,7 +186,7 @@ final class Sempa_Contact_Route
 
 final class Sempa_RankMath
 {
-    public static function register(): void
+    public static function register()
     {
         add_filter('rank_math/sitemap/portfolio/enabled', '__return_false');
         add_filter('rank_math/sitemap/post_tag/enabled', '__return_false');
@@ -199,12 +199,12 @@ final class Sempa_Stock_Role
 {
     private const ROLE_KEY = 'gestionnaire_de_stock';
 
-    public static function register(): void
+    public static function register()
     {
         add_action('init', [__CLASS__, 'ensure_role_exists']);
     }
 
-    public static function ensure_role_exists(): void
+    public static function ensure_role_exists()
     {
         if (get_role(self::ROLE_KEY)) {
             return;
@@ -225,7 +225,7 @@ final class Sempa_Stock_Permissions
 {
     public const NAMESPACE_PREFIX = '/sempa-stocks/v1';
 
-    public static function register(): void
+    public static function register()
     {
         add_filter('rest_authentication_errors', [__CLASS__, 'allow_public_cookie_errors'], 150, 3);
     }
@@ -253,7 +253,7 @@ final class Sempa_Stock_Permissions
         return $result;
     }
 
-    public static function allow_public_reads($request = null): bool
+    public static function allow_public_reads($request = null)
     {
         unset($request);
         return true;
@@ -274,12 +274,12 @@ final class Sempa_Stock_Routes
 {
     private const ROUTE_NAMESPACE = 'sempa-stocks/v1';
 
-    public static function register(): void
+    public static function register()
     {
         add_action('rest_api_init', [__CLASS__, 'register_routes']);
     }
 
-    public static function register_routes(): void
+    public static function register_routes()
     {
         register_rest_route(self::ROUTE_NAMESPACE, '/products', [
             [
@@ -379,7 +379,7 @@ final class Sempa_Stock_Routes
         ]);
     }
 
-    public static function validate_positive_int($value): bool
+    public static function validate_positive_int($value)
     {
         return is_numeric($value) && (int) $value > 0;
     }
@@ -595,7 +595,7 @@ final class Sempa_Stock_Routes
         return rest_ensure_response(['status' => 'success']);
     }
 
-    public static function get_movements(): WP_REST_Response
+    public static function get_movements()
     {
         global $wpdb;
 
@@ -730,7 +730,7 @@ final class Sempa_Stock_Routes
         ]);
     }
 
-    public static function get_categories(): WP_REST_Response
+    public static function get_categories()
     {
         global $wpdb;
 
@@ -783,7 +783,7 @@ final class Sempa_Stock_Routes
         return rest_ensure_response(['status' => 'success']);
     }
 
-    private static function hydrate_components(array $product, \wpdb $wpdb): array
+    private static function hydrate_components(array $product, \wpdb $wpdb)
     {
         if (empty($product['is_kit'])) {
             return $product;
@@ -800,7 +800,7 @@ final class Sempa_Stock_Routes
 
 final class Sempa_Login_Redirect
 {
-    public static function register(): void
+    public static function register()
     {
         add_filter('login_redirect', [__CLASS__, 'maybe_redirect'], 10, 3);
     }
@@ -838,7 +838,7 @@ final class Sempa_Login_Redirect
 
 final class Sempa_Utils
 {
-    public static function parse_currency($value): float
+    public static function parse_currency($value)
     {
         $sanitized = preg_replace('/[^0-9,.]/', '', (string) $value);
         $sanitized = str_replace(',', '.', $sanitized);
@@ -846,7 +846,7 @@ final class Sempa_Utils
         return (float) $sanitized;
     }
 
-    public static function normalize_product(array $product): array
+    public static function normalize_product(array $product)
     {
         $product['id'] = isset($product['id']) ? (int) $product['id'] : 0;
         $product['stock'] = isset($product['stock']) ? (int) $product['stock'] : 0;
@@ -869,7 +869,7 @@ final class Sempa_Utils
         return $product;
     }
 
-    public static function get_stock_app_url(): string
+    public static function get_stock_app_url()
     {
         $default = home_url('/gestion-stocks-sempa/');
         $slugs = [
