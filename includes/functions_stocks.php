@@ -73,6 +73,13 @@ final class Sempa_Stocks_App
                 'unknownError' => __('Une erreur inattendue est survenue.', 'sempa'),
                 'saved' => __('Produit enregistré avec succès.', 'sempa'),
                 'deleted' => __('Produit supprimé.', 'sempa'),
+                'allCategories' => __('Toutes les catégories', 'sempa'),
+                'allSuppliers' => __('Tous les fournisseurs', 'sempa'),
+                'noAlerts' => __('Aucune alerte critique', 'sempa'),
+                'noRecent' => __('Aucun mouvement récent', 'sempa'),
+                'productActions' => __('Actions produit', 'sempa'),
+                'noProducts' => __('Aucun produit trouvé', 'sempa'),
+                'noMovements' => __('Aucun mouvement enregistré', 'sempa'),
             ],
         ]);
     }

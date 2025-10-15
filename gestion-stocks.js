@@ -32,6 +32,10 @@
     const movementForm = document.querySelector('#stock-movement-form');
     const searchInput = document.querySelector('#stocks-search');
     const productMeta = document.querySelector('#stocks-product-meta');
+    const filterCategory = document.querySelector('#stocks-filter-category');
+    const filterSupplier = document.querySelector('#stocks-filter-supplier');
+    const filterStatus = document.querySelector('#stocks-filter-status');
+    const clearFiltersButton = document.querySelector('#stocks-clear-filters');
 
     const exports = document.querySelectorAll('[data-trigger="export"], #stocks-export');
     exports.forEach((element) => {
@@ -57,6 +61,13 @@
         hidePanel(productPanel);
     });
 
+    document.querySelectorAll('[data-dismiss="product"]').forEach((button) => {
+        button.addEventListener('click', () => {
+            resetProductForm();
+            hidePanel(productPanel);
+        });
+    });
+
     document.querySelector('#stocks-open-movement-form')?.addEventListener('click', () => {
         openMovementForm();
     });
@@ -64,6 +75,13 @@
     document.querySelector('#stocks-cancel-movement')?.addEventListener('click', () => {
         movementForm?.reset();
         hidePanel(movementPanel);
+    });
+
+    document.querySelectorAll('[data-dismiss="movement"]').forEach((button) => {
+        button.addEventListener('click', () => {
+            movementForm?.reset();
+            hidePanel(movementPanel);
+        });
     });
 
     if (productForm) {
@@ -118,6 +136,31 @@
             renderProducts(searchInput.value);
         });
     }
+
+    filterCategory?.addEventListener('change', () => {
+        renderProducts(searchInput?.value || '');
+    });
+
+    filterSupplier?.addEventListener('change', () => {
+        renderProducts(searchInput?.value || '');
+    });
+
+    filterStatus?.addEventListener('change', () => {
+        renderProducts(searchInput?.value || '');
+    });
+
+    clearFiltersButton?.addEventListener('click', () => {
+        if (filterCategory) {
+            filterCategory.value = '';
+        }
+        if (filterSupplier) {
+            filterSupplier.value = '';
+        }
+        if (filterStatus) {
+            filterStatus.value = '';
+        }
+        renderProducts(searchInput?.value || '');
+    });
 
     function loadAll() {
         Promise.all([
@@ -175,44 +218,54 @@
             return;
         }
 
-        if (data.totals) {
-            const totals = data.totals;
-            setMetricValue(document.querySelector('[data-dashboard="produits"]'), (totals.produits ?? 0).toString());
-            setMetricValue(document.querySelector('[data-dashboard="unites"]'), (totals.unites ?? 0).toString());
-            setMetricValue(document.querySelector('[data-dashboard="valeur"]'), formatCurrency(totals.valeur));
-        }
+        const totals = data.totals || {};
+        setMetricValue(document.querySelector('[data-dashboard="produits"]'), (totals.produits ?? 0).toString());
+        setMetricValue(document.querySelector('[data-dashboard="valeur"]'), formatCurrency(totals.valeur));
 
-        if (Array.isArray(data.alerts)) {
+        const alerts = Array.isArray(data.alerts) ? data.alerts : [];
+        const recent = Array.isArray(data.recent) ? data.recent : [];
+        const noAlertsText = SempaStocksData?.strings?.noAlerts || 'Aucune alerte critique';
+        const noRecentText = SempaStocksData?.strings?.noRecent || 'Aucun mouvement récent';
+
+        setMetricValue(document.querySelector('[data-dashboard="alertes"]'), alerts.length.toString());
+        setMetricValue(document.querySelector('[data-dashboard="mouvements"]'), recent.length.toString());
+
+        if (alertsList) {
             alertsList.innerHTML = '';
-            if (!data.alerts.length) {
-                alertsList.innerHTML = `<li class="empty">${escapeHtml('Aucune alerte.')}</li>`;
+            if (!alerts.length) {
+                alertsList.innerHTML = `<li class="empty">${escapeHtml(noAlertsText)}</li>`;
             } else {
-                data.alerts.forEach((alert) => {
+                alerts.forEach((alert) => {
                     const status = stockStatus(alert.stock_actuel, alert.stock_minimum);
                     const current = Number(alert.stock_actuel ?? 0);
                     const minimum = Number(alert.stock_minimum ?? 0);
+                    const severity = status === 'critical' ? 'urgent' : status === 'warning' ? 'warning' : 'normal';
+                    const severityLabel = status === 'critical' ? 'URGENT' : status === 'warning' ? 'AVERTISSEMENT' : 'INFO';
                     const li = document.createElement('li');
-                    li.className = `alert-item alert-item--${status}`;
+                    li.className = `alerts-item alerts-item--${status}`;
                     li.innerHTML = `
-                        <div class="alert-item__main">
-                            <strong>${escapeHtml(alert.reference)}</strong>
-                            <span class="alert-item__designation">${escapeHtml(alert.designation)}</span>
-                        </div>
-                        <div class="alert-item__meta">
-                            <span class="status-pill status-pill--${status}">${escapeHtml(statusLabel(status))}</span>
-                            <span class="alert-item__count">${current} / ${minimum}</span>
+                        <span class="alerts-item__severity alerts-item__severity--${severity}">${escapeHtml(severityLabel)}</span>
+                        <div class="alerts-item__body">
+                            <div class="alerts-item__title">
+                                <strong>${escapeHtml(alert.reference)}</strong>
+                                <span class="alerts-item__designation">${escapeHtml(alert.designation)}</span>
+                            </div>
+                            <div class="alerts-item__meta">
+                                <span class="status-badge status-badge--${statusClassName(status)}">${escapeHtml(statusLabel(status))}</span>
+                                <span class="alerts-item__count">${current} / ${minimum}</span>
+                            </div>
                         </div>`;
                     alertsList.appendChild(li);
                 });
             }
         }
 
-        if (Array.isArray(data.recent)) {
+        if (recentList) {
             recentList.innerHTML = '';
-            if (!data.recent.length) {
-                recentList.innerHTML = `<li class="empty">${escapeHtml('Aucun mouvement récent.')}</li>`;
+            if (!recent.length) {
+                recentList.innerHTML = `<li class="empty">${escapeHtml(noRecentText)}</li>`;
             } else {
-                data.recent.forEach((movement) => {
+                recent.forEach((movement) => {
                     const tone = movementTone(movement.type_mouvement);
                     const label = labelMovement(movement.type_mouvement);
                     const quantity = movement.quantite ?? 0;
@@ -220,13 +273,16 @@
                     li.className = 'recent-item';
                     li.dataset.type = tone;
                     li.innerHTML = `
-                        <div class="recent-item__header">
-                            <span class="recent-item__title">${escapeHtml(movement.reference)} – ${escapeHtml(movement.designation)}</span>
-                        </div>
-                        <div class="recent-item__meta">
-                            <span class="movement-chip movement-chip--${tone}">${escapeHtml(label)}</span>
-                            <span class="recent-item__quantity">${escapeHtml(String(quantity))}</span>
-                            <span class="recent-item__date">${escapeHtml(formatDate(movement.date_mouvement))}</span>
+                        <div class="recent-item__marker" aria-hidden="true"></div>
+                        <div class="recent-item__content">
+                            <div class="recent-item__header">
+                                <span class="recent-item__title">${escapeHtml(movement.reference)} – ${escapeHtml(movement.designation)}</span>
+                                <time class="recent-item__date" datetime="${escapeAttribute(movement.date_mouvement || '')}">${escapeHtml(formatRelativeDate(movement.date_mouvement))}</time>
+                            </div>
+                            <div class="recent-item__meta">
+                                <span class="movement-chip movement-chip--${tone}">${escapeHtml(label)}</span>
+                                <span class="recent-item__quantity">${escapeHtml(String(quantity))}</span>
+                            </div>
                         </div>`;
                     recentList.appendChild(li);
                 });
@@ -239,7 +295,12 @@
             return;
         }
 
-        const query = search.trim().toLowerCase();
+        const searchValue = (typeof search === 'string' && search.length >= 0 ? search : '') || (searchInput?.value || '');
+        const query = searchValue.trim().toLowerCase();
+        const categoryFilter = filterCategory?.value?.toLowerCase() || '';
+        const supplierFilter = filterSupplier?.value?.toLowerCase() || '';
+        const statusFilter = filterStatus?.value || '';
+
         const rows = state.products
             .filter((product) => {
                 if (!query) {
@@ -249,6 +310,23 @@
                     (product.reference || '').toLowerCase().includes(query) ||
                     (product.designation || '').toLowerCase().includes(query)
                 );
+            })
+            .filter((product) => {
+                const productCategory = (product.categorie || '').toLowerCase();
+                const productSupplier = (product.fournisseur || '').toLowerCase();
+                const status = stockStatus(product.stock_actuel, product.stock_minimum);
+
+                if (categoryFilter && productCategory !== categoryFilter) {
+                    return false;
+                }
+                if (supplierFilter && productSupplier !== supplierFilter) {
+                    return false;
+                }
+                if (statusFilter && status !== statusFilter) {
+                    return false;
+                }
+
+                return true;
             })
             .map((product) => {
                 const documentUrl = product.document_pdf
@@ -260,28 +338,41 @@
                 const stockMinimum = Number(product.stock_minimum ?? 0);
                 const status = stockStatus(stockActual, stockMinimum);
                 const value = formatCurrency((Number(product.prix_achat) || 0) * stockActual);
+                const meta = [product.categorie, product.fournisseur].filter(Boolean).join(' • ');
                 const tr = document.createElement('tr');
                 tr.dataset.id = product.id;
                 tr.dataset.status = status;
                 tr.innerHTML = `
-                    <td>${escapeHtml(product.reference)}</td>
                     <td>
-                        <span class="designation">${escapeHtml(product.designation)}</span>
-                        ${documentUrl ? `<a class="file-link" href="${escapeAttribute(documentUrl)}" target="_blank" rel="noopener">PDF</a>` : ''}
-                    </td>
-                    <td>${escapeHtml(product.categorie)}</td>
-                    <td>${escapeHtml(product.fournisseur)}</td>
-                    <td>
-                        <div class="stock-cell">
-                            <span class="stock-cell__value">${stockActual}</span>
-                            <span class="status-pill status-pill--${status}">${escapeHtml(statusLabel(status))}</span>
+                        <div class="product-cell">
+                            <span class="product-cell__name">${escapeHtml(product.designation)}</span>
+                            <span class="product-cell__meta">${escapeHtml(meta || '—')}</span>
                         </div>
                     </td>
-                    <td>${stockMinimum}</td>
-                    <td>${value}</td>
+                    <td>
+                        <div class="product-ref">
+                            <span class="product-ref__code">${escapeHtml(product.reference)}</span>
+                            ${documentUrl ? `<a class="product-ref__doc" href="${escapeAttribute(documentUrl)}" target="_blank" rel="noopener">PDF</a>` : ''}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="stock-level">
+                            <span class="stock-level__value">${stockActual}</span>
+                            <span class="stock-level__hint">${escapeHtml(`Min ${stockMinimum}`)}</span>
+                            <span class="stock-level__value-secondary">${escapeHtml(value)}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="status-badge status-badge--${statusClassName(status)}">${escapeHtml(statusLabel(status))}</span>
+                    </td>
                     <td class="actions">
-                        <button type="button" class="link" data-action="edit">${escapeHtml('Modifier')}</button>
-                        <button type="button" class="link danger" data-action="delete">${escapeHtml('Supprimer')}</button>
+                        <details class="actions-menu">
+                            <summary class="actions-trigger" aria-label="${escapeAttribute(SempaStocksData?.strings?.productActions || 'Actions produit')}"><span aria-hidden="true">⋮</span></summary>
+                            <div class="actions-menu__content">
+                                <button type="button" data-action="edit">${escapeHtml('Modifier')}</button>
+                                <button type="button" data-action="delete">${escapeHtml('Supprimer')}</button>
+                            </div>
+                        </details>
                     </td>`;
                 return tr;
             });
@@ -289,7 +380,7 @@
         productTable.innerHTML = '';
         if (!rows.length) {
             const row = document.createElement('tr');
-            row.innerHTML = `<td colspan="8" class="empty">${escapeHtml('Aucun produit trouvé')}</td>`;
+            row.innerHTML = `<td colspan="5" class="empty">${escapeHtml(SempaStocksData?.strings?.noProducts || 'Aucun produit trouvé')}</td>`;
             productTable.appendChild(row);
         } else {
             rows.forEach((row) => productTable.appendChild(row));
@@ -304,7 +395,7 @@
         movementTable.innerHTML = '';
         if (!state.movements.length) {
             const row = document.createElement('tr');
-            row.innerHTML = `<td colspan="6" class="empty">${escapeHtml('Aucun mouvement enregistré')}</td>`;
+            row.innerHTML = `<td colspan="6" class="empty">${escapeHtml(SempaStocksData?.strings?.noMovements || 'Aucun mouvement enregistré')}</td>`;
             movementTable.appendChild(row);
             return;
         }
@@ -356,6 +447,42 @@
             });
             if (currentSupplier) {
                 supplierSelect.value = currentSupplier;
+            }
+        }
+
+        if (filterCategory) {
+            const currentFilter = filterCategory.value;
+            filterCategory.innerHTML = '';
+            const placeholder = document.createElement('option');
+            placeholder.value = '';
+            placeholder.textContent = (SempaStocksData?.strings?.allCategories) || 'Toutes les catégories';
+            filterCategory.appendChild(placeholder);
+            state.categories.forEach((category) => {
+                const option = document.createElement('option');
+                option.value = (category.nom || '').toLowerCase();
+                option.textContent = category.nom;
+                filterCategory.appendChild(option);
+            });
+            if (currentFilter) {
+                filterCategory.value = currentFilter;
+            }
+        }
+
+        if (filterSupplier) {
+            const currentFilter = filterSupplier.value;
+            filterSupplier.innerHTML = '';
+            const placeholder = document.createElement('option');
+            placeholder.value = '';
+            placeholder.textContent = (SempaStocksData?.strings?.allSuppliers) || 'Tous les fournisseurs';
+            filterSupplier.appendChild(placeholder);
+            state.suppliers.forEach((supplier) => {
+                const option = document.createElement('option');
+                option.value = (supplier.nom || '').toLowerCase();
+                option.textContent = supplier.nom;
+                filterSupplier.appendChild(option);
+            });
+            if (currentFilter) {
+                filterSupplier.value = currentFilter;
             }
         }
 
@@ -543,11 +670,22 @@
     function statusLabel(status) {
         switch (status) {
             case 'critical':
-                return 'Urgent';
+                return 'Rupture';
             case 'warning':
-                return 'À surveiller';
+                return 'Stock faible';
             default:
-                return 'Normal';
+                return 'En stock';
+        }
+    }
+
+    function statusClassName(status) {
+        switch (status) {
+            case 'critical':
+                return 'out';
+            case 'warning':
+                return 'low';
+            default:
+                return 'in-stock';
         }
     }
 
@@ -598,6 +736,43 @@
         }
         const date = new Date(value.replace(' ', 'T'));
         return date.toLocaleString('fr-FR');
+    }
+
+    function formatRelativeDate(value) {
+        if (!value) {
+            return '';
+        }
+        const date = new Date(value.replace(' ', 'T'));
+        if (Number.isNaN(date.getTime())) {
+            return '';
+        }
+        const now = new Date();
+        const diffSeconds = Math.round((date.getTime() - now.getTime()) / 1000);
+        const absSeconds = Math.abs(diffSeconds);
+        const table = [
+            { limit: 60, divisor: 1, unit: 'second' },
+            { limit: 3600, divisor: 60, unit: 'minute' },
+            { limit: 86400, divisor: 3600, unit: 'hour' },
+            { limit: 604800, divisor: 86400, unit: 'day' },
+            { limit: 2629800, divisor: 604800, unit: 'week' },
+            { limit: 31557600, divisor: 2629800, unit: 'month' },
+            { limit: Infinity, divisor: 31557600, unit: 'year' },
+        ];
+
+        for (const entry of table) {
+            if (absSeconds < entry.limit) {
+                const valueToFormat = Math.round(diffSeconds / entry.divisor);
+                if (typeof Intl !== 'undefined' && typeof Intl.RelativeTimeFormat !== 'undefined') {
+                    const rtf = new Intl.RelativeTimeFormat('fr', { numeric: 'auto' });
+                    return rtf.format(valueToFormat, entry.unit);
+                }
+                const absoluteString = Math.abs(valueToFormat).toString();
+                const suffix = diffSeconds < 0 ? 'il y a' : 'dans';
+                return `${suffix} ${absoluteString} ${entry.unit}`;
+            }
+        }
+
+        return formatDate(value);
     }
 
     function formatCurrency(value) {
@@ -659,6 +834,10 @@
                     })
                     .catch(showError);
             }
+        }
+        const menu = target.closest('details');
+        if (menu) {
+            menu.open = false;
         }
     });
 
