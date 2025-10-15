@@ -176,20 +176,32 @@
         }
 
         if (data.totals) {
-            document.querySelector('[data-dashboard="produits"]').textContent = (data.totals.produits || 0).toString();
-            document.querySelector('[data-dashboard="unites"]').textContent = (data.totals.unites || 0).toString();
-            const value = parseFloat(data.totals.valeur || 0);
-            document.querySelector('[data-dashboard="valeur"]').textContent = `${value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+            const totals = data.totals;
+            setMetricValue(document.querySelector('[data-dashboard="produits"]'), (totals.produits ?? 0).toString());
+            setMetricValue(document.querySelector('[data-dashboard="unites"]'), (totals.unites ?? 0).toString());
+            setMetricValue(document.querySelector('[data-dashboard="valeur"]'), formatCurrency(totals.valeur));
         }
 
         if (Array.isArray(data.alerts)) {
             alertsList.innerHTML = '';
             if (!data.alerts.length) {
-                alertsList.innerHTML = `<li class="empty">${escapeHtml('Aucune alerte.')} </li>`;
+                alertsList.innerHTML = `<li class="empty">${escapeHtml('Aucune alerte.')}</li>`;
             } else {
                 data.alerts.forEach((alert) => {
+                    const status = stockStatus(alert.stock_actuel, alert.stock_minimum);
+                    const current = Number(alert.stock_actuel ?? 0);
+                    const minimum = Number(alert.stock_minimum ?? 0);
                     const li = document.createElement('li');
-                    li.innerHTML = `<strong>${escapeHtml(alert.reference)}</strong> – ${escapeHtml(alert.designation)}<span>${alert.stock_actuel}/${alert.stock_minimum}</span>`;
+                    li.className = `alert-item alert-item--${status}`;
+                    li.innerHTML = `
+                        <div class="alert-item__main">
+                            <strong>${escapeHtml(alert.reference)}</strong>
+                            <span class="alert-item__designation">${escapeHtml(alert.designation)}</span>
+                        </div>
+                        <div class="alert-item__meta">
+                            <span class="status-pill status-pill--${status}">${escapeHtml(statusLabel(status))}</span>
+                            <span class="alert-item__count">${current} / ${minimum}</span>
+                        </div>`;
                     alertsList.appendChild(li);
                 });
             }
@@ -201,8 +213,21 @@
                 recentList.innerHTML = `<li class="empty">${escapeHtml('Aucun mouvement récent.')}</li>`;
             } else {
                 data.recent.forEach((movement) => {
+                    const tone = movementTone(movement.type_mouvement);
+                    const label = labelMovement(movement.type_mouvement);
+                    const quantity = movement.quantite ?? 0;
                     const li = document.createElement('li');
-                    li.innerHTML = `<span class="title">${escapeHtml(movement.reference)} – ${escapeHtml(movement.designation)}</span><span class="meta">${escapeHtml(movement.type_mouvement)} · ${movement.quantite} · ${formatDate(movement.date_mouvement)}</span>`;
+                    li.className = 'recent-item';
+                    li.dataset.type = tone;
+                    li.innerHTML = `
+                        <div class="recent-item__header">
+                            <span class="recent-item__title">${escapeHtml(movement.reference)} – ${escapeHtml(movement.designation)}</span>
+                        </div>
+                        <div class="recent-item__meta">
+                            <span class="movement-chip movement-chip--${tone}">${escapeHtml(label)}</span>
+                            <span class="recent-item__quantity">${escapeHtml(String(quantity))}</span>
+                            <span class="recent-item__date">${escapeHtml(formatDate(movement.date_mouvement))}</span>
+                        </div>`;
                     recentList.appendChild(li);
                 });
             }
@@ -231,8 +256,13 @@
                         ? product.document_pdf
                         : SempaStocksData.uploadsUrl + product.document_pdf.replace(/^uploads-stocks\//, ''))
                     : '';
+                const stockActual = Number(product.stock_actuel ?? 0);
+                const stockMinimum = Number(product.stock_minimum ?? 0);
+                const status = stockStatus(stockActual, stockMinimum);
+                const value = formatCurrency((Number(product.prix_achat) || 0) * stockActual);
                 const tr = document.createElement('tr');
                 tr.dataset.id = product.id;
+                tr.dataset.status = status;
                 tr.innerHTML = `
                     <td>${escapeHtml(product.reference)}</td>
                     <td>
@@ -241,9 +271,14 @@
                     </td>
                     <td>${escapeHtml(product.categorie)}</td>
                     <td>${escapeHtml(product.fournisseur)}</td>
-                    <td>${product.stock_actuel ?? 0}</td>
-                    <td>${product.stock_minimum ?? 0}</td>
-                    <td>${formatCurrency(product.prix_achat * product.stock_actuel)}</td>
+                    <td>
+                        <div class="stock-cell">
+                            <span class="stock-cell__value">${stockActual}</span>
+                            <span class="status-pill status-pill--${status}">${escapeHtml(statusLabel(status))}</span>
+                        </div>
+                    </td>
+                    <td>${stockMinimum}</td>
+                    <td>${value}</td>
                     <td class="actions">
                         <button type="button" class="link" data-action="edit">${escapeHtml('Modifier')}</button>
                         <button type="button" class="link danger" data-action="delete">${escapeHtml('Supprimer')}</button>
@@ -276,11 +311,15 @@
 
         state.movements.forEach((movement) => {
             const tr = document.createElement('tr');
+            const tone = movementTone(movement.type_mouvement);
+            const label = labelMovement(movement.type_mouvement);
+            const quantity = movement.quantite ?? 0;
+            tr.dataset.type = tone;
             tr.innerHTML = `
-                <td>${formatDate(movement.date_mouvement)}</td>
+                <td>${escapeHtml(formatDate(movement.date_mouvement))}</td>
                 <td>${escapeHtml(movement.reference)} – ${escapeHtml(movement.designation)}</td>
-                <td>${escapeHtml(labelMovement(movement.type_mouvement))}</td>
-                <td>${movement.quantite}</td>
+                <td><span class="movement-chip movement-chip--${tone}">${escapeHtml(label)}</span></td>
+                <td><span class="movement-qty">${escapeHtml(String(quantity))}</span></td>
                 <td>${movement.ancien_stock ?? 0} ➜ ${movement.nouveau_stock ?? 0}</td>
                 <td>${escapeHtml(movement.motif || '')}</td>`;
             movementTable.appendChild(tr);
@@ -487,6 +526,57 @@
                 }
             })
             .catch(showError);
+    }
+
+    function stockStatus(current, minimum) {
+        const stock = Number(current ?? 0);
+        const min = Number(minimum ?? 0);
+        if (stock <= 0) {
+            return 'critical';
+        }
+        if (min > 0 && stock <= min) {
+            return 'warning';
+        }
+        return 'normal';
+    }
+
+    function statusLabel(status) {
+        switch (status) {
+            case 'critical':
+                return 'Urgent';
+            case 'warning':
+                return 'À surveiller';
+            default:
+                return 'Normal';
+        }
+    }
+
+    function movementTone(type) {
+        switch (type) {
+            case 'entree':
+                return 'entry';
+            case 'sortie':
+                return 'exit';
+            case 'ajustement':
+                return 'adjust';
+            default:
+                return 'neutral';
+        }
+    }
+
+    function setMetricValue(element, text) {
+        if (!element) {
+            return;
+        }
+        const value = text == null ? '' : String(text);
+        if (element.textContent !== value) {
+            element.textContent = value;
+            element.classList.remove('is-updated');
+            void element.offsetWidth;
+            element.classList.add('is-updated');
+        } else {
+            element.textContent = value;
+        }
     }
 
     function labelMovement(type) {
