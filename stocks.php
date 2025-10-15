@@ -28,6 +28,7 @@ $nonce = class_exists('Sempa_Stocks_App') ? Sempa_Stocks_App::nonce() : wp_creat
     <?php else : ?>
         <header class="stocks-header">
             <div>
+                <span class="stocks-badge"><?php esc_html_e('SEMPA', 'sempa'); ?></span>
                 <h1><?php esc_html_e('Gestion des stocks SEMPA', 'sempa'); ?></h1>
                 <p><?php esc_html_e('Tableau de bord centralisé pour les produits, mouvements et rapports.', 'sempa'); ?></p>
             </div>
