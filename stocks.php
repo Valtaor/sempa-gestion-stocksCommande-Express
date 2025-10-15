@@ -27,29 +27,40 @@ $nonce = class_exists('Sempa_Stocks_App') ? Sempa_Stocks_App::nonce() : wp_creat
         </section>
     <?php else : ?>
         <header class="stocks-header">
-            <div>
-                <span class="stocks-badge"><?php esc_html_e('SEMPA', 'sempa'); ?></span>
-                <h1><?php esc_html_e('Gestion des stocks SEMPA', 'sempa'); ?></h1>
-                <p><?php esc_html_e('Tableau de bord centralisé pour les produits, mouvements et rapports.', 'sempa'); ?></p>
+            <div class="stocks-header__brand">
+                <img src="<?php echo esc_url(trailingslashit(get_stylesheet_directory_uri()) . 'logo-since-b.svg'); ?>" alt="<?php esc_attr_e('Logo SEMPA', 'sempa'); ?>" class="stocks-header__logo" loading="lazy" />
+                <div class="stocks-header__titles">
+                    <span class="stocks-badge"><?php esc_html_e('SEMPA', 'sempa'); ?></span>
+                    <h1><?php esc_html_e('Gestion des stocks SEMPA', 'sempa'); ?></h1>
+                    <p><?php esc_html_e('Tableau de bord centralisé pour les produits, mouvements et rapports.', 'sempa'); ?></p>
+                </div>
             </div>
-            <div class="stocks-actions">
-                <a class="button export" href="#" id="stocks-export" data-export="1"><?php esc_html_e('Exporter le stock (CSV)', 'sempa'); ?></a>
-                <button type="button" id="stocks-refresh" class="button secondary"><?php esc_html_e('Actualiser', 'sempa'); ?></button>
+            <div class="stocks-header__meta">
+                <div class="stocks-header__search">
+                    <input type="search" id="stocks-search" aria-label="<?php esc_attr_e('Rechercher un produit par référence ou désignation', 'sempa'); ?>" placeholder="<?php esc_attr_e('Rechercher un produit…', 'sempa'); ?>" />
+                </div>
+                <div class="stocks-header__actions stocks-actions">
+                    <a class="button secondary" href="#" id="stocks-export" data-export="1"><?php esc_html_e('Exporter le stock (CSV)', 'sempa'); ?></a>
+                    <button type="button" id="stocks-refresh" class="button success"><?php esc_html_e('Actualiser', 'sempa'); ?></button>
+                </div>
             </div>
         </header>
 
         <section class="stocks-dashboard" aria-labelledby="stocks-dashboard-title">
             <h2 id="stocks-dashboard-title"><?php esc_html_e('Synthèse des stocks', 'sempa'); ?></h2>
             <div class="dashboard-cards" id="stocks-dashboard-cards">
-                <article class="card">
+                <article class="card card--products">
+                    <span class="card-icon" aria-hidden="true"></span>
                     <h3><?php esc_html_e('Produits actifs', 'sempa'); ?></h3>
                     <p class="value" data-dashboard="produits">0</p>
                 </article>
-                <article class="card">
+                <article class="card card--stock">
+                    <span class="card-icon" aria-hidden="true"></span>
                     <h3><?php esc_html_e('Unités en stock', 'sempa'); ?></h3>
                     <p class="value" data-dashboard="unites">0</p>
                 </article>
-                <article class="card">
+                <article class="card card--value">
+                    <span class="card-icon" aria-hidden="true"></span>
                     <h3><?php esc_html_e('Valeur d\'achat estimée', 'sempa'); ?></h3>
                     <p class="value" data-dashboard="valeur">0 €</p>
                 </article>
@@ -73,7 +84,6 @@ $nonce = class_exists('Sempa_Stocks_App') ? Sempa_Stocks_App::nonce() : wp_creat
                     <p><?php esc_html_e('Ajoutez, éditez ou supprimez les produits de votre catalogue.', 'sempa'); ?></p>
                 </div>
                 <div class="section-actions">
-                    <input type="search" id="stocks-search" placeholder="<?php esc_attr_e('Rechercher par référence ou désignation…', 'sempa'); ?>" />
                     <button type="button" class="button primary" id="stocks-open-product-form"><?php esc_html_e('Nouvel article', 'sempa'); ?></button>
                 </div>
             </div>
@@ -168,7 +178,7 @@ $nonce = class_exists('Sempa_Stocks_App') ? Sempa_Stocks_App::nonce() : wp_creat
                 </div>
                 <div class="form-actions">
                     <button type="submit" class="button primary"><?php esc_html_e('Enregistrer', 'sempa'); ?></button>
-                    <button type="button" class="button" id="stocks-cancel-product"><?php esc_html_e('Annuler', 'sempa'); ?></button>
+                    <button type="button" class="button ghost" id="stocks-cancel-product"><?php esc_html_e('Annuler', 'sempa'); ?></button>
                 </div>
             </form>
             <aside class="meta" id="stocks-product-meta"></aside>
@@ -232,7 +242,7 @@ $nonce = class_exists('Sempa_Stocks_App') ? Sempa_Stocks_App::nonce() : wp_creat
                 </div>
                 <div class="form-actions">
                     <button type="submit" class="button primary"><?php esc_html_e('Enregistrer le mouvement', 'sempa'); ?></button>
-                    <button type="button" class="button" id="stocks-cancel-movement"><?php esc_html_e('Annuler', 'sempa'); ?></button>
+                    <button type="button" class="button ghost" id="stocks-cancel-movement"><?php esc_html_e('Annuler', 'sempa'); ?></button>
                 </div>
             </form>
         </section>
