@@ -438,4 +438,4 @@ if ($current_user instanceof WP_User && $current_user->exists()) {
         </div>
     <?php endif; ?>
 </div>
-<?php wp_footer(); ?>
+<?php get_footer(); ?>

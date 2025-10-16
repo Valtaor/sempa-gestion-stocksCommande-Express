@@ -21,6 +21,12 @@
     --sp-transition: 0.2s ease;
 }
 
+body.page-template-stocks .site-footer,
+body.page-template-page-templatesstocks-php .site-footer,
+body.page-template-page-templatesstocks .site-footer {
+    display: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
         animation-duration: 0.01ms !important;

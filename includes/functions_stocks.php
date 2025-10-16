@@ -688,9 +688,15 @@ final class Sempa_Stocks_Login
 
     public static function enqueue_styles()
     {
+        $handle = 'sempa-login-styles';
         $css = 'body.login {background: #f8f8f8;} .login h1 a {background-image: none !important; font-size: 32px; font-weight: 700; color: #f4a412 !important; text-indent: 0; width: auto;} .login form {border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); border: 1px solid #f4a41233;} .login #backtoblog a, .login #nav a {color: #f4a412;} .wp-core-ui .button-primary {background: #f4a412; border-color: #f4a412; text-shadow: none; box-shadow: none;} .wp-core-ui .button-primary:hover {background: #d98f0f; border-color: #d98f0f;} .login-message {text-align: center; background: #ffffff; padding: 16px; border-radius: 8px; border-left: 4px solid #f4a412; color: #333;}';
-        wp_enqueue_style('sempa-login-styles', false);
-        wp_add_inline_style('sempa-login-styles', $css);
+
+        if (!wp_style_is($handle, 'registered')) {
+            wp_register_style($handle, false, [], null);
+        }
+
+        wp_enqueue_style($handle);
+        wp_add_inline_style($handle, $css);
     }
 
     public static function login_message($message)
