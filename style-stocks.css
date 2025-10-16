@@ -1311,7 +1311,6 @@ textarea {
 
 .stocks-locked {
     display: flex;
-    align-items: center;
     justify-content: center;
     padding: 6rem 1rem;
 }
@@ -1535,7 +1534,6 @@ textarea {
 
     .stockpilot-header__tools {
         width: 100%;
-        justify-content: flex-start;
     }
 
     .stockpilot-metrics {

@@ -197,7 +197,7 @@ final class Sempa_RankMath
 
 final class Sempa_Stock_Role
 {
-    private const ROLE_KEY = 'gestionnaire_de_stock';
+    const ROLE_KEY = 'gestionnaire_de_stock';
 
     public static function register()
     {

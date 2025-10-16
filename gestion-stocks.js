@@ -368,7 +368,6 @@
                 const condition = getProductCondition(product);
                 const tr = document.createElement('tr');
                 tr.dataset.id = product.id;
-                tr.dataset.status = status;
                 tr.innerHTML = `
                     <td>
                         <div class="product-cell">
@@ -432,15 +431,11 @@
 
         state.movements.forEach((movement) => {
             const tr = document.createElement('tr');
-            const tone = movementTone(movement.type_mouvement);
-            const label = labelMovement(movement.type_mouvement);
-            const quantity = movement.quantite ?? 0;
-            tr.dataset.type = tone;
             tr.innerHTML = `
-                <td>${escapeHtml(formatDate(movement.date_mouvement))}</td>
+                <td>${formatDate(movement.date_mouvement)}</td>
                 <td>${escapeHtml(movement.reference)} – ${escapeHtml(movement.designation)}</td>
-                <td><span class="movement-chip movement-chip--${tone}">${escapeHtml(label)}</span></td>
-                <td><span class="movement-qty">${escapeHtml(String(quantity))}</span></td>
+                <td>${escapeHtml(labelMovement(movement.type_mouvement))}</td>
+                <td>${movement.quantite}</td>
                 <td>${movement.ancien_stock ?? 0} ➜ ${movement.nouveau_stock ?? 0}</td>
                 <td>${escapeHtml(movement.motif || '')}</td>`;
             movementTable.appendChild(tr);
