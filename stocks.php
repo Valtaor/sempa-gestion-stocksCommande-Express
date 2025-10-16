@@ -1,4 +1,3 @@
-<?php
 /**
  * Template Name: Gestion des stocks SEMPA
  * Template Post Type: page
@@ -93,7 +92,6 @@ if ($current_user instanceof WP_User && $current_user->exists()) {
                     <div class="stockpilot-header__tools">
                         <label for="stocks-search" class="screen-reader-text"><?php esc_html_e('Rechercher un produit', 'sempa'); ?></label>
                         <div class="header-search">
-                            <span aria-hidden="true" class="header-search__icon"></span>
                             <input type="search" id="stocks-search" aria-label="<?php esc_attr_e('Rechercher un produit par référence ou désignation', 'sempa'); ?>" placeholder="<?php esc_attr_e('Rechercher un produit…', 'sempa'); ?>" />
                         </div>
                         <div class="stockpilot-header__actions">
@@ -198,6 +196,11 @@ if ($current_user instanceof WP_User && $current_user->exists()) {
                             <div class="toolbar-actions">
                                 <button type="button" class="button button--ghost" id="stocks-clear-filters"><?php esc_html_e('Réinitialiser', 'sempa'); ?></button>
                             </div>
+                            <div class="toolbar-segment" role="group" aria-label="<?php esc_attr_e('Type de matériel', 'sempa'); ?>">
+                                <button type="button" class="segment-button is-active" data-condition-view="all" aria-pressed="true"><?php esc_html_e('Tout', 'sempa'); ?></button>
+                                <button type="button" class="segment-button" data-condition-view="neuf" aria-pressed="false"><?php esc_html_e('Matériel neuf', 'sempa'); ?></button>
+                                <button type="button" class="segment-button" data-condition-view="reconditionne" aria-pressed="false"><?php esc_html_e('Reconditionné', 'sempa'); ?></button>
+                            </div>
                         </div>
                         <div class="table-wrapper table-wrapper--elevated">
                             <table class="stocks-table stocks-table--products" id="stocks-products-table">
@@ -207,12 +210,13 @@ if ($current_user instanceof WP_User && $current_user->exists()) {
                                         <th scope="col"><?php esc_html_e('Référence', 'sempa'); ?></th>
                                         <th scope="col"><?php esc_html_e('Stock', 'sempa'); ?></th>
                                         <th scope="col"><?php esc_html_e('Statut', 'sempa'); ?></th>
+                                        <th scope="col"><?php esc_html_e('Condition', 'sempa'); ?></th>
                                         <th scope="col" class="actions">&nbsp;</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td colspan="5" class="empty"><?php esc_html_e('Chargement des produits…', 'sempa'); ?></td>
+                                        <td colspan="6" class="empty"><?php esc_html_e('Chargement des produits…', 'sempa'); ?></td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -356,17 +360,26 @@ if ($current_user instanceof WP_User && $current_user->exists()) {
                                     <input type="number" name="stock_minimum" min="0" />
                                 </label>
                                 <label>
-                                    <span><?php esc_html_e('Stock maximum', 'sempa'); ?></span>
-                                    <input type="number" name="stock_maximum" min="0" />
-                                </label>
-                                <label>
                                     <span><?php esc_html_e('Emplacement', 'sempa'); ?></span>
                                     <input type="text" name="emplacement" />
                                 </label>
                                 <label>
-                                    <span><?php esc_html_e('Date d\'entrée', 'sempa'); ?></span>
+                                    <span><?php esc_html_e('Date d’entrée', 'sempa'); ?></span>
                                     <input type="date" name="date_entree" />
                                 </label>
+                                <fieldset class="condition-field">
+                                    <legend><?php esc_html_e('Condition du matériel', 'sempa'); ?></legend>
+                                    <div class="condition-toggle">
+                                        <label>
+                                            <input type="radio" name="condition_materiel" value="neuf" checked />
+                                            <span><?php esc_html_e('Matériel neuf', 'sempa'); ?></span>
+                                        </label>
+                                        <label>
+                                            <input type="radio" name="condition_materiel" value="reconditionne" />
+                                            <span><?php esc_html_e('Reconditionné', 'sempa'); ?></span>
+                                        </label>
+                                    </div>
+                                </fieldset>
                                 <label class="file">
                                     <span><?php esc_html_e('Document (PDF ou image)', 'sempa'); ?></span>
                                     <input type="file" name="document" accept=".pdf,image/*" />
@@ -425,5 +438,4 @@ if ($current_user instanceof WP_User && $current_user->exists()) {
         </div>
     <?php endif; ?>
 </div>
-<?php
-get_footer();
+<?php wp_footer(); ?>

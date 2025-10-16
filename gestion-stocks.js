@@ -10,6 +10,7 @@
         movements: [],
         categories: [],
         suppliers: [],
+        conditionView: 'all',
     };
 
     const selectors = {
@@ -36,6 +37,7 @@
     const filterSupplier = document.querySelector('#stocks-filter-supplier');
     const filterStatus = document.querySelector('#stocks-filter-status');
     const clearFiltersButton = document.querySelector('#stocks-clear-filters');
+    const conditionButtons = document.querySelectorAll('[data-condition-view]');
 
     const exports = document.querySelectorAll('[data-trigger="export"], #stocks-export');
     exports.forEach((element) => {
@@ -162,6 +164,23 @@
         renderProducts(searchInput?.value || '');
     });
 
+    if (conditionButtons.length) {
+        conditionButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                const view = button.dataset.conditionView || 'all';
+                if (view === state.conditionView) {
+                    return;
+                }
+                state.conditionView = view;
+                conditionButtons.forEach((item) => {
+                    item.classList.toggle('is-active', item === button);
+                    item.setAttribute('aria-pressed', item === button ? 'true' : 'false');
+                });
+                renderProducts(searchInput?.value || '');
+            });
+        });
+    }
+
     function loadAll() {
         Promise.all([
             request('sempa_stocks_dashboard'),
@@ -174,7 +193,7 @@
                     renderDashboard(dashboardData.data);
                 }
                 if (productData?.success) {
-                    state.products = productData.data.products || [];
+                    state.products = (productData.data.products || []).map(normalizeProduct);
                     renderProducts();
                     updateMovementSelect();
                 }
@@ -300,6 +319,7 @@
         const categoryFilter = filterCategory?.value?.toLowerCase() || '';
         const supplierFilter = filterSupplier?.value?.toLowerCase() || '';
         const statusFilter = filterStatus?.value || '';
+        const conditionView = state.conditionView || 'all';
 
         const rows = state.products
             .filter((product) => {
@@ -328,6 +348,12 @@
 
                 return true;
             })
+            .filter((product) => {
+                if (conditionView === 'all') {
+                    return true;
+                }
+                return getProductCondition(product) === conditionView;
+            })
             .map((product) => {
                 const documentUrl = product.document_pdf
                     ? (product.document_pdf.startsWith('http')
@@ -339,6 +365,7 @@
                 const status = stockStatus(stockActual, stockMinimum);
                 const value = formatCurrency((Number(product.prix_achat) || 0) * stockActual);
                 const meta = [product.categorie, product.fournisseur].filter(Boolean).join(' • ');
+                const condition = getProductCondition(product);
                 const tr = document.createElement('tr');
                 tr.dataset.id = product.id;
                 tr.dataset.status = status;
@@ -365,6 +392,9 @@
                     <td>
                         <span class="status-badge status-badge--${statusClassName(status)}">${escapeHtml(statusLabel(status))}</span>
                     </td>
+                    <td>
+                        <span class="condition-chip condition-chip--${condition}">${escapeHtml(conditionLabel(condition))}</span>
+                    </td>
                     <td class="actions">
                         <details class="actions-menu">
                             <summary class="actions-trigger" aria-label="${escapeAttribute(SempaStocksData?.strings?.productActions || 'Actions produit')}"><span aria-hidden="true">⋮</span></summary>
@@ -380,7 +410,7 @@
         productTable.innerHTML = '';
         if (!rows.length) {
             const row = document.createElement('tr');
-            row.innerHTML = `<td colspan="5" class="empty">${escapeHtml(SempaStocksData?.strings?.noProducts || 'Aucun produit trouvé')}</td>`;
+            row.innerHTML = `<td colspan="6" class="empty">${escapeHtml(SempaStocksData?.strings?.noProducts || 'Aucun produit trouvé')}</td>`;
             productTable.appendChild(row);
         } else {
             rows.forEach((row) => productTable.appendChild(row));
@@ -528,13 +558,21 @@
             productForm.querySelector('[name="prix_vente"]').value = product.prix_vente || '';
             productForm.querySelector('[name="stock_actuel"]').value = product.stock_actuel || 0;
             productForm.querySelector('[name="stock_minimum"]').value = product.stock_minimum || 0;
-            productForm.querySelector('[name="stock_maximum"]').value = product.stock_maximum || 0;
             productForm.querySelector('[name="emplacement"]').value = product.emplacement || '';
             productForm.querySelector('[name="date_entree"]').value = product.date_entree || '';
             productForm.querySelector('[name="notes"]').value = product.notes || '';
+            const condition = getProductCondition(product);
+            const conditionInput = productForm.querySelector(`[name="condition_materiel"][value="${condition}"]`);
+            if (conditionInput) {
+                conditionInput.checked = true;
+            }
             renderMeta(product);
         } else if (productMeta) {
             productMeta.innerHTML = '';
+            const defaultCondition = productForm.querySelector('[name="condition_materiel"][value="neuf"]');
+            if (defaultCondition) {
+                defaultCondition.checked = true;
+            }
         }
         showPanel(productPanel);
     }
@@ -543,6 +581,10 @@
         if (productForm) {
             productForm.reset();
             productForm.querySelector('[name="id"]').value = '';
+            const defaultCondition = productForm.querySelector('[name="condition_materiel"][value="neuf"]');
+            if (defaultCondition) {
+                defaultCondition.checked = true;
+            }
         }
         if (productMeta) {
             productMeta.innerHTML = '';
@@ -553,7 +595,7 @@
         request('sempa_stocks_save_product', formData)
             .then((response) => {
                 if (response?.success && response.data?.product) {
-                    const product = response.data.product;
+                    const product = normalizeProduct(response.data.product);
                     const index = state.products.findIndex((item) => item.id === product.id);
                     if (index >= 0) {
                         state.products[index] = product;
@@ -592,13 +634,63 @@
                 ? product.document_pdf
                 : SempaStocksData.uploadsUrl + product.document_pdf.replace(/^uploads-stocks\//, ''))
             : '';
+        const condition = conditionLabel(getProductCondition(product));
         productMeta.innerHTML = `
             <ul>
                 <li><strong>${escapeHtml('Créé par')} :</strong> ${escapeHtml(product.ajoute_par || '—')}</li>
                 <li><strong>${escapeHtml('Entrée')} :</strong> ${product.date_entree || '—'}</li>
                 <li><strong>${escapeHtml('Modifié')} :</strong> ${product.date_modification || '—'}</li>
+                <li><strong>${escapeHtml('Condition')} :</strong> ${escapeHtml(condition)}</li>
                 ${documentUrl ? `<li><a href="${escapeAttribute(documentUrl)}" target="_blank" rel="noopener">${escapeHtml('Voir le document')}</a></li>` : ''}
             </ul>`;
+    }
+
+    function normalizeProduct(product = {}) {
+        const normalized = { ...product };
+        normalized.condition_materiel = getProductCondition(product);
+        return normalized;
+    }
+
+    function getProductCondition(product = {}) {
+        const direct = sanitizeCondition(product.condition_materiel || product.condition || product.conditionMateriel);
+        if (direct) {
+            return direct;
+        }
+
+        const legacy = sanitizeCondition(product.type_materiel || product.typeMateriel);
+        if (legacy) {
+            return legacy;
+        }
+
+        const category = (product.categorie || '').toLowerCase();
+        if (category.includes('recond') || category.includes('occasion')) {
+            return 'reconditionne';
+        }
+
+        return 'neuf';
+    }
+
+    function sanitizeCondition(value) {
+        if (!value) {
+            return '';
+        }
+        let stringValue = String(value).toLowerCase();
+        try {
+            stringValue = stringValue.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        } catch (error) {
+            stringValue = stringValue.replace(/[éèê]/g, 'e');
+        }
+        if (['reconditionne', 'refurbished', 'occasion'].includes(stringValue)) {
+            return 'reconditionne';
+        }
+        if (['neuf', 'new'].includes(stringValue)) {
+            return 'neuf';
+        }
+        return '';
+    }
+
+    function conditionLabel(condition) {
+        return condition === 'reconditionne' ? 'Reconditionné' : 'Matériel neuf';
     }
 
     function createCategory() {
