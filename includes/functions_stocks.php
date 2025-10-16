@@ -73,6 +73,13 @@ final class Sempa_Stocks_App
                 'unknownError' => __('Une erreur inattendue est survenue.', 'sempa'),
                 'saved' => __('Produit enregistré avec succès.', 'sempa'),
                 'deleted' => __('Produit supprimé.', 'sempa'),
+                'allCategories' => __('Toutes les catégories', 'sempa'),
+                'allSuppliers' => __('Tous les fournisseurs', 'sempa'),
+                'noAlerts' => __('Aucune alerte critique', 'sempa'),
+                'noRecent' => __('Aucun mouvement récent', 'sempa'),
+                'productActions' => __('Actions produit', 'sempa'),
+                'noProducts' => __('Aucun produit trouvé', 'sempa'),
+                'noMovements' => __('Aucun mouvement enregistré', 'sempa'),
             ],
         ]);
     }
@@ -119,6 +126,8 @@ final class Sempa_Stocks_App
         $user = wp_get_current_user();
         $id = isset($data['id']) ? absint($data['id']) : 0;
 
+        self::ensure_condition_column($db);
+
         $payload = [
             'reference' => sanitize_text_field($data['reference'] ?? ''),
             'designation' => sanitize_text_field($data['designation'] ?? ''),
@@ -128,10 +137,10 @@ final class Sempa_Stocks_App
             'prix_vente' => self::sanitize_decimal($data['prix_vente'] ?? 0),
             'stock_actuel' => isset($data['stock_actuel']) ? (int) $data['stock_actuel'] : 0,
             'stock_minimum' => isset($data['stock_minimum']) ? (int) $data['stock_minimum'] : 0,
-            'stock_maximum' => isset($data['stock_maximum']) ? (int) $data['stock_maximum'] : 0,
             'emplacement' => sanitize_text_field($data['emplacement'] ?? ''),
             'date_entree' => self::sanitize_date($data['date_entree'] ?? ''),
             'notes' => sanitize_textarea_field($data['notes'] ?? ''),
+            'condition_materiel' => self::sanitize_condition($data['condition_materiel'] ?? ''),
             'ajoute_par' => $user->user_email,
         ];
 
@@ -297,7 +306,7 @@ final class Sempa_Stocks_App
 
         $output = fopen('php://output', 'w');
         fputcsv($output, [
-            'ID', 'Référence', 'Désignation', 'Catégorie', 'Fournisseur', 'Prix achat', 'Prix vente', 'Stock actuel', 'Stock minimum', 'Stock maximum', 'Emplacement', 'Date entrée', 'Date modification', 'Notes', 'Document', 'Ajouté par',
+            'ID', 'Référence', 'Désignation', 'Catégorie', 'Fournisseur', 'Prix achat', 'Prix vente', 'Stock actuel', 'Stock minimum', 'Condition matériel', 'Emplacement', 'Date entrée', 'Date modification', 'Notes', 'Document', 'Ajouté par',
         ]);
 
         foreach ($products ?: [] as $product) {
@@ -311,7 +320,7 @@ final class Sempa_Stocks_App
                 $product['prix_vente'],
                 $product['stock_actuel'],
                 $product['stock_minimum'],
-                $product['stock_maximum'],
+                $product['condition_materiel'] ?? '',
                 $product['emplacement'],
                 $product['date_entree'],
                 $product['date_modification'],
@@ -509,6 +518,47 @@ final class Sempa_Stocks_App
         return 'uploads-stocks/' . $filename;
     }
 
+    private static function sanitize_condition($value)
+    {
+        $value = strtolower(sanitize_text_field((string) $value));
+        $normalized = self::strip_accents($value);
+
+        if (in_array($normalized, ['reconditionne', 'refurbished', 'occasion'], true)) {
+            return 'reconditionne';
+        }
+
+        if (in_array($normalized, ['neuf', 'new'], true)) {
+            return 'neuf';
+        }
+
+        return 'neuf';
+    }
+
+    private static function ensure_condition_column($db)
+    {
+        if (!($db instanceof \wpdb)) {
+            return;
+        }
+
+        $table = Sempa_Stocks_DB::table('stocks_sempa');
+        $column = $db->get_var($db->prepare('SHOW COLUMNS FROM ' . $table . ' LIKE %s', 'condition_materiel'));
+
+        if (!$column) {
+            $db->query('ALTER TABLE ' . $table . " ADD COLUMN condition_materiel VARCHAR(20) NOT NULL DEFAULT 'neuf'");
+        }
+    }
+
+    private static function strip_accents(string $value)
+    {
+        if (function_exists('remove_accents')) {
+            return remove_accents($value);
+        }
+
+        $normalized = iconv('UTF-8', 'ASCII//TRANSLIT', $value);
+
+        return $normalized ? strtolower($normalized) : $value;
+    }
+
     private static function format_product(array $product)
     {
         if (!$product) {
@@ -525,13 +575,13 @@ final class Sempa_Stocks_App
             'prix_vente' => (float) ($product['prix_vente'] ?? 0),
             'stock_actuel' => (int) ($product['stock_actuel'] ?? 0),
             'stock_minimum' => (int) ($product['stock_minimum'] ?? 0),
-            'stock_maximum' => (int) ($product['stock_maximum'] ?? 0),
             'emplacement' => $product['emplacement'] ?? '',
             'date_entree' => $product['date_entree'] ?? '',
             'date_modification' => $product['date_modification'] ?? '',
             'notes' => $product['notes'] ?? '',
             'document_pdf' => $product['document_pdf'] ?? '',
             'ajoute_par' => $product['ajoute_par'] ?? '',
+            'condition_materiel' => $product['condition_materiel'] ?? '',
         ];
     }
 
