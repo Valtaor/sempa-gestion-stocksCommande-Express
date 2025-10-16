@@ -10,7 +10,6 @@
         movements: [],
         categories: [],
         suppliers: [],
-        conditionView: 'all',
     };
 
     const selectors = {
@@ -33,11 +32,6 @@
     const movementForm = document.querySelector('#stock-movement-form');
     const searchInput = document.querySelector('#stocks-search');
     const productMeta = document.querySelector('#stocks-product-meta');
-    const filterCategory = document.querySelector('#stocks-filter-category');
-    const filterSupplier = document.querySelector('#stocks-filter-supplier');
-    const filterStatus = document.querySelector('#stocks-filter-status');
-    const clearFiltersButton = document.querySelector('#stocks-clear-filters');
-    const conditionButtons = document.querySelectorAll('[data-condition-view]');
 
     const exports = document.querySelectorAll('[data-trigger="export"], #stocks-export');
     exports.forEach((element) => {
@@ -63,13 +57,6 @@
         hidePanel(productPanel);
     });
 
-    document.querySelectorAll('[data-dismiss="product"]').forEach((button) => {
-        button.addEventListener('click', () => {
-            resetProductForm();
-            hidePanel(productPanel);
-        });
-    });
-
     document.querySelector('#stocks-open-movement-form')?.addEventListener('click', () => {
         openMovementForm();
     });
@@ -77,13 +64,6 @@
     document.querySelector('#stocks-cancel-movement')?.addEventListener('click', () => {
         movementForm?.reset();
         hidePanel(movementPanel);
-    });
-
-    document.querySelectorAll('[data-dismiss="movement"]').forEach((button) => {
-        button.addEventListener('click', () => {
-            movementForm?.reset();
-            hidePanel(movementPanel);
-        });
     });
 
     if (productForm) {
@@ -139,48 +119,6 @@
         });
     }
 
-    filterCategory?.addEventListener('change', () => {
-        renderProducts(searchInput?.value || '');
-    });
-
-    filterSupplier?.addEventListener('change', () => {
-        renderProducts(searchInput?.value || '');
-    });
-
-    filterStatus?.addEventListener('change', () => {
-        renderProducts(searchInput?.value || '');
-    });
-
-    clearFiltersButton?.addEventListener('click', () => {
-        if (filterCategory) {
-            filterCategory.value = '';
-        }
-        if (filterSupplier) {
-            filterSupplier.value = '';
-        }
-        if (filterStatus) {
-            filterStatus.value = '';
-        }
-        renderProducts(searchInput?.value || '');
-    });
-
-    if (conditionButtons.length) {
-        conditionButtons.forEach((button) => {
-            button.addEventListener('click', () => {
-                const view = button.dataset.conditionView || 'all';
-                if (view === state.conditionView) {
-                    return;
-                }
-                state.conditionView = view;
-                conditionButtons.forEach((item) => {
-                    item.classList.toggle('is-active', item === button);
-                    item.setAttribute('aria-pressed', item === button ? 'true' : 'false');
-                });
-                renderProducts(searchInput?.value || '');
-            });
-        });
-    }
-
     function loadAll() {
         Promise.all([
             request('sempa_stocks_dashboard'),
@@ -193,7 +131,7 @@
                     renderDashboard(dashboardData.data);
                 }
                 if (productData?.success) {
-                    state.products = (productData.data.products || []).map(normalizeProduct);
+                    state.products = productData.data.products || [];
                     renderProducts();
                     updateMovementSelect();
                 }
@@ -237,72 +175,34 @@
             return;
         }
 
-        const totals = data.totals || {};
-        setMetricValue(document.querySelector('[data-dashboard="produits"]'), (totals.produits ?? 0).toString());
-        setMetricValue(document.querySelector('[data-dashboard="valeur"]'), formatCurrency(totals.valeur));
+        if (data.totals) {
+            document.querySelector('[data-dashboard="produits"]').textContent = (data.totals.produits || 0).toString();
+            document.querySelector('[data-dashboard="unites"]').textContent = (data.totals.unites || 0).toString();
+            const value = parseFloat(data.totals.valeur || 0);
+            document.querySelector('[data-dashboard="valeur"]').textContent = `${value.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+        }
 
-        const alerts = Array.isArray(data.alerts) ? data.alerts : [];
-        const recent = Array.isArray(data.recent) ? data.recent : [];
-        const noAlertsText = SempaStocksData?.strings?.noAlerts || 'Aucune alerte critique';
-        const noRecentText = SempaStocksData?.strings?.noRecent || 'Aucun mouvement récent';
-
-        setMetricValue(document.querySelector('[data-dashboard="alertes"]'), alerts.length.toString());
-        setMetricValue(document.querySelector('[data-dashboard="mouvements"]'), recent.length.toString());
-
-        if (alertsList) {
+        if (Array.isArray(data.alerts)) {
             alertsList.innerHTML = '';
-            if (!alerts.length) {
-                alertsList.innerHTML = `<li class="empty">${escapeHtml(noAlertsText)}</li>`;
+            if (!data.alerts.length) {
+                alertsList.innerHTML = `<li class="empty">${escapeHtml('Aucune alerte.')} </li>`;
             } else {
-                alerts.forEach((alert) => {
-                    const status = stockStatus(alert.stock_actuel, alert.stock_minimum);
-                    const current = Number(alert.stock_actuel ?? 0);
-                    const minimum = Number(alert.stock_minimum ?? 0);
-                    const severity = status === 'critical' ? 'urgent' : status === 'warning' ? 'warning' : 'normal';
-                    const severityLabel = status === 'critical' ? 'URGENT' : status === 'warning' ? 'AVERTISSEMENT' : 'INFO';
+                data.alerts.forEach((alert) => {
                     const li = document.createElement('li');
-                    li.className = `alerts-item alerts-item--${status}`;
-                    li.innerHTML = `
-                        <span class="alerts-item__severity alerts-item__severity--${severity}">${escapeHtml(severityLabel)}</span>
-                        <div class="alerts-item__body">
-                            <div class="alerts-item__title">
-                                <strong>${escapeHtml(alert.reference)}</strong>
-                                <span class="alerts-item__designation">${escapeHtml(alert.designation)}</span>
-                            </div>
-                            <div class="alerts-item__meta">
-                                <span class="status-badge status-badge--${statusClassName(status)}">${escapeHtml(statusLabel(status))}</span>
-                                <span class="alerts-item__count">${current} / ${minimum}</span>
-                            </div>
-                        </div>`;
+                    li.innerHTML = `<strong>${escapeHtml(alert.reference)}</strong> – ${escapeHtml(alert.designation)}<span>${alert.stock_actuel}/${alert.stock_minimum}</span>`;
                     alertsList.appendChild(li);
                 });
             }
         }
 
-        if (recentList) {
+        if (Array.isArray(data.recent)) {
             recentList.innerHTML = '';
-            if (!recent.length) {
-                recentList.innerHTML = `<li class="empty">${escapeHtml(noRecentText)}</li>`;
+            if (!data.recent.length) {
+                recentList.innerHTML = `<li class="empty">${escapeHtml('Aucun mouvement récent.')}</li>`;
             } else {
-                recent.forEach((movement) => {
-                    const tone = movementTone(movement.type_mouvement);
-                    const label = labelMovement(movement.type_mouvement);
-                    const quantity = movement.quantite ?? 0;
+                data.recent.forEach((movement) => {
                     const li = document.createElement('li');
-                    li.className = 'recent-item';
-                    li.dataset.type = tone;
-                    li.innerHTML = `
-                        <div class="recent-item__marker" aria-hidden="true"></div>
-                        <div class="recent-item__content">
-                            <div class="recent-item__header">
-                                <span class="recent-item__title">${escapeHtml(movement.reference)} – ${escapeHtml(movement.designation)}</span>
-                                <time class="recent-item__date" datetime="${escapeAttribute(movement.date_mouvement || '')}">${escapeHtml(formatRelativeDate(movement.date_mouvement))}</time>
-                            </div>
-                            <div class="recent-item__meta">
-                                <span class="movement-chip movement-chip--${tone}">${escapeHtml(label)}</span>
-                                <span class="recent-item__quantity">${escapeHtml(String(quantity))}</span>
-                            </div>
-                        </div>`;
+                    li.innerHTML = `<span class="title">${escapeHtml(movement.reference)} – ${escapeHtml(movement.designation)}</span><span class="meta">${escapeHtml(movement.type_mouvement)} · ${movement.quantite} · ${formatDate(movement.date_mouvement)}</span>`;
                     recentList.appendChild(li);
                 });
             }
@@ -314,13 +214,7 @@
             return;
         }
 
-        const searchValue = (typeof search === 'string' && search.length >= 0 ? search : '') || (searchInput?.value || '');
-        const query = searchValue.trim().toLowerCase();
-        const categoryFilter = filterCategory?.value?.toLowerCase() || '';
-        const supplierFilter = filterSupplier?.value?.toLowerCase() || '';
-        const statusFilter = filterStatus?.value || '';
-        const conditionView = state.conditionView || 'all';
-
+        const query = search.trim().toLowerCase();
         const rows = state.products
             .filter((product) => {
                 if (!query) {
@@ -331,78 +225,28 @@
                     (product.designation || '').toLowerCase().includes(query)
                 );
             })
-            .filter((product) => {
-                const productCategory = (product.categorie || '').toLowerCase();
-                const productSupplier = (product.fournisseur || '').toLowerCase();
-                const status = stockStatus(product.stock_actuel, product.stock_minimum);
-
-                if (categoryFilter && productCategory !== categoryFilter) {
-                    return false;
-                }
-                if (supplierFilter && productSupplier !== supplierFilter) {
-                    return false;
-                }
-                if (statusFilter && status !== statusFilter) {
-                    return false;
-                }
-
-                return true;
-            })
-            .filter((product) => {
-                if (conditionView === 'all') {
-                    return true;
-                }
-                return getProductCondition(product) === conditionView;
-            })
             .map((product) => {
                 const documentUrl = product.document_pdf
                     ? (product.document_pdf.startsWith('http')
                         ? product.document_pdf
                         : SempaStocksData.uploadsUrl + product.document_pdf.replace(/^uploads-stocks\//, ''))
                     : '';
-                const stockActual = Number(product.stock_actuel ?? 0);
-                const stockMinimum = Number(product.stock_minimum ?? 0);
-                const status = stockStatus(stockActual, stockMinimum);
-                const value = formatCurrency((Number(product.prix_achat) || 0) * stockActual);
-                const meta = [product.categorie, product.fournisseur].filter(Boolean).join(' • ');
-                const condition = getProductCondition(product);
                 const tr = document.createElement('tr');
                 tr.dataset.id = product.id;
-                tr.dataset.status = status;
                 tr.innerHTML = `
+                    <td>${escapeHtml(product.reference)}</td>
                     <td>
-                        <div class="product-cell">
-                            <span class="product-cell__name">${escapeHtml(product.designation)}</span>
-                            <span class="product-cell__meta">${escapeHtml(meta || '—')}</span>
-                        </div>
+                        <span class="designation">${escapeHtml(product.designation)}</span>
+                        ${documentUrl ? `<a class="file-link" href="${escapeAttribute(documentUrl)}" target="_blank" rel="noopener">PDF</a>` : ''}
                     </td>
-                    <td>
-                        <div class="product-ref">
-                            <span class="product-ref__code">${escapeHtml(product.reference)}</span>
-                            ${documentUrl ? `<a class="product-ref__doc" href="${escapeAttribute(documentUrl)}" target="_blank" rel="noopener">PDF</a>` : ''}
-                        </div>
-                    </td>
-                    <td>
-                        <div class="stock-level">
-                            <span class="stock-level__value">${stockActual}</span>
-                            <span class="stock-level__hint">${escapeHtml(`Min ${stockMinimum}`)}</span>
-                            <span class="stock-level__value-secondary">${escapeHtml(value)}</span>
-                        </div>
-                    </td>
-                    <td>
-                        <span class="status-badge status-badge--${statusClassName(status)}">${escapeHtml(statusLabel(status))}</span>
-                    </td>
-                    <td>
-                        <span class="condition-chip condition-chip--${condition}">${escapeHtml(conditionLabel(condition))}</span>
-                    </td>
+                    <td>${escapeHtml(product.categorie)}</td>
+                    <td>${escapeHtml(product.fournisseur)}</td>
+                    <td>${product.stock_actuel ?? 0}</td>
+                    <td>${product.stock_minimum ?? 0}</td>
+                    <td>${formatCurrency(product.prix_achat * product.stock_actuel)}</td>
                     <td class="actions">
-                        <details class="actions-menu">
-                            <summary class="actions-trigger" aria-label="${escapeAttribute(SempaStocksData?.strings?.productActions || 'Actions produit')}"><span aria-hidden="true">⋮</span></summary>
-                            <div class="actions-menu__content">
-                                <button type="button" data-action="edit">${escapeHtml('Modifier')}</button>
-                                <button type="button" data-action="delete">${escapeHtml('Supprimer')}</button>
-                            </div>
-                        </details>
+                        <button type="button" class="link" data-action="edit">${escapeHtml('Modifier')}</button>
+                        <button type="button" class="link danger" data-action="delete">${escapeHtml('Supprimer')}</button>
                     </td>`;
                 return tr;
             });
@@ -410,7 +254,7 @@
         productTable.innerHTML = '';
         if (!rows.length) {
             const row = document.createElement('tr');
-            row.innerHTML = `<td colspan="6" class="empty">${escapeHtml(SempaStocksData?.strings?.noProducts || 'Aucun produit trouvé')}</td>`;
+            row.innerHTML = `<td colspan="8" class="empty">${escapeHtml('Aucun produit trouvé')}</td>`;
             productTable.appendChild(row);
         } else {
             rows.forEach((row) => productTable.appendChild(row));
@@ -425,22 +269,18 @@
         movementTable.innerHTML = '';
         if (!state.movements.length) {
             const row = document.createElement('tr');
-            row.innerHTML = `<td colspan="6" class="empty">${escapeHtml(SempaStocksData?.strings?.noMovements || 'Aucun mouvement enregistré')}</td>`;
+            row.innerHTML = `<td colspan="6" class="empty">${escapeHtml('Aucun mouvement enregistré')}</td>`;
             movementTable.appendChild(row);
             return;
         }
 
         state.movements.forEach((movement) => {
             const tr = document.createElement('tr');
-            const tone = movementTone(movement.type_mouvement);
-            const label = labelMovement(movement.type_mouvement);
-            const quantity = movement.quantite ?? 0;
-            tr.dataset.type = tone;
             tr.innerHTML = `
-                <td>${escapeHtml(formatDate(movement.date_mouvement))}</td>
+                <td>${formatDate(movement.date_mouvement)}</td>
                 <td>${escapeHtml(movement.reference)} – ${escapeHtml(movement.designation)}</td>
-                <td><span class="movement-chip movement-chip--${tone}">${escapeHtml(label)}</span></td>
-                <td><span class="movement-qty">${escapeHtml(String(quantity))}</span></td>
+                <td>${escapeHtml(labelMovement(movement.type_mouvement))}</td>
+                <td>${movement.quantite}</td>
                 <td>${movement.ancien_stock ?? 0} ➜ ${movement.nouveau_stock ?? 0}</td>
                 <td>${escapeHtml(movement.motif || '')}</td>`;
             movementTable.appendChild(tr);
@@ -477,42 +317,6 @@
             });
             if (currentSupplier) {
                 supplierSelect.value = currentSupplier;
-            }
-        }
-
-        if (filterCategory) {
-            const currentFilter = filterCategory.value;
-            filterCategory.innerHTML = '';
-            const placeholder = document.createElement('option');
-            placeholder.value = '';
-            placeholder.textContent = (SempaStocksData?.strings?.allCategories) || 'Toutes les catégories';
-            filterCategory.appendChild(placeholder);
-            state.categories.forEach((category) => {
-                const option = document.createElement('option');
-                option.value = (category.nom || '').toLowerCase();
-                option.textContent = category.nom;
-                filterCategory.appendChild(option);
-            });
-            if (currentFilter) {
-                filterCategory.value = currentFilter;
-            }
-        }
-
-        if (filterSupplier) {
-            const currentFilter = filterSupplier.value;
-            filterSupplier.innerHTML = '';
-            const placeholder = document.createElement('option');
-            placeholder.value = '';
-            placeholder.textContent = (SempaStocksData?.strings?.allSuppliers) || 'Tous les fournisseurs';
-            filterSupplier.appendChild(placeholder);
-            state.suppliers.forEach((supplier) => {
-                const option = document.createElement('option');
-                option.value = (supplier.nom || '').toLowerCase();
-                option.textContent = supplier.nom;
-                filterSupplier.appendChild(option);
-            });
-            if (currentFilter) {
-                filterSupplier.value = currentFilter;
             }
         }
 
@@ -558,21 +362,13 @@
             productForm.querySelector('[name="prix_vente"]').value = product.prix_vente || '';
             productForm.querySelector('[name="stock_actuel"]').value = product.stock_actuel || 0;
             productForm.querySelector('[name="stock_minimum"]').value = product.stock_minimum || 0;
+            productForm.querySelector('[name="stock_maximum"]').value = product.stock_maximum || 0;
             productForm.querySelector('[name="emplacement"]').value = product.emplacement || '';
             productForm.querySelector('[name="date_entree"]').value = product.date_entree || '';
             productForm.querySelector('[name="notes"]').value = product.notes || '';
-            const condition = getProductCondition(product);
-            const conditionInput = productForm.querySelector(`[name="condition_materiel"][value="${condition}"]`);
-            if (conditionInput) {
-                conditionInput.checked = true;
-            }
             renderMeta(product);
         } else if (productMeta) {
             productMeta.innerHTML = '';
-            const defaultCondition = productForm.querySelector('[name="condition_materiel"][value="neuf"]');
-            if (defaultCondition) {
-                defaultCondition.checked = true;
-            }
         }
         showPanel(productPanel);
     }
@@ -581,10 +377,6 @@
         if (productForm) {
             productForm.reset();
             productForm.querySelector('[name="id"]').value = '';
-            const defaultCondition = productForm.querySelector('[name="condition_materiel"][value="neuf"]');
-            if (defaultCondition) {
-                defaultCondition.checked = true;
-            }
         }
         if (productMeta) {
             productMeta.innerHTML = '';
@@ -595,7 +387,7 @@
         request('sempa_stocks_save_product', formData)
             .then((response) => {
                 if (response?.success && response.data?.product) {
-                    const product = normalizeProduct(response.data.product);
+                    const product = response.data.product;
                     const index = state.products.findIndex((item) => item.id === product.id);
                     if (index >= 0) {
                         state.products[index] = product;
@@ -634,63 +426,13 @@
                 ? product.document_pdf
                 : SempaStocksData.uploadsUrl + product.document_pdf.replace(/^uploads-stocks\//, ''))
             : '';
-        const condition = conditionLabel(getProductCondition(product));
         productMeta.innerHTML = `
             <ul>
                 <li><strong>${escapeHtml('Créé par')} :</strong> ${escapeHtml(product.ajoute_par || '—')}</li>
                 <li><strong>${escapeHtml('Entrée')} :</strong> ${product.date_entree || '—'}</li>
                 <li><strong>${escapeHtml('Modifié')} :</strong> ${product.date_modification || '—'}</li>
-                <li><strong>${escapeHtml('Condition')} :</strong> ${escapeHtml(condition)}</li>
                 ${documentUrl ? `<li><a href="${escapeAttribute(documentUrl)}" target="_blank" rel="noopener">${escapeHtml('Voir le document')}</a></li>` : ''}
             </ul>`;
-    }
-
-    function normalizeProduct(product = {}) {
-        const normalized = { ...product };
-        normalized.condition_materiel = getProductCondition(product);
-        return normalized;
-    }
-
-    function getProductCondition(product = {}) {
-        const direct = sanitizeCondition(product.condition_materiel || product.condition || product.conditionMateriel);
-        if (direct) {
-            return direct;
-        }
-
-        const legacy = sanitizeCondition(product.type_materiel || product.typeMateriel);
-        if (legacy) {
-            return legacy;
-        }
-
-        const category = (product.categorie || '').toLowerCase();
-        if (category.includes('recond') || category.includes('occasion')) {
-            return 'reconditionne';
-        }
-
-        return 'neuf';
-    }
-
-    function sanitizeCondition(value) {
-        if (!value) {
-            return '';
-        }
-        let stringValue = String(value).toLowerCase();
-        try {
-            stringValue = stringValue.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        } catch (error) {
-            stringValue = stringValue.replace(/[éèê]/g, 'e');
-        }
-        if (['reconditionne', 'refurbished', 'occasion'].includes(stringValue)) {
-            return 'reconditionne';
-        }
-        if (['neuf', 'new'].includes(stringValue)) {
-            return 'neuf';
-        }
-        return '';
-    }
-
-    function conditionLabel(condition) {
-        return condition === 'reconditionne' ? 'Reconditionné' : 'Matériel neuf';
     }
 
     function createCategory() {
@@ -747,68 +489,6 @@
             .catch(showError);
     }
 
-    function stockStatus(current, minimum) {
-        const stock = Number(current ?? 0);
-        const min = Number(minimum ?? 0);
-        if (stock <= 0) {
-            return 'critical';
-        }
-        if (min > 0 && stock <= min) {
-            return 'warning';
-        }
-        return 'normal';
-    }
-
-    function statusLabel(status) {
-        switch (status) {
-            case 'critical':
-                return 'Rupture';
-            case 'warning':
-                return 'Stock faible';
-            default:
-                return 'En stock';
-        }
-    }
-
-    function statusClassName(status) {
-        switch (status) {
-            case 'critical':
-                return 'out';
-            case 'warning':
-                return 'low';
-            default:
-                return 'in-stock';
-        }
-    }
-
-    function movementTone(type) {
-        switch (type) {
-            case 'entree':
-                return 'entry';
-            case 'sortie':
-                return 'exit';
-            case 'ajustement':
-                return 'adjust';
-            default:
-                return 'neutral';
-        }
-    }
-
-    function setMetricValue(element, text) {
-        if (!element) {
-            return;
-        }
-        const value = text == null ? '' : String(text);
-        if (element.textContent !== value) {
-            element.textContent = value;
-            element.classList.remove('is-updated');
-            void element.offsetWidth;
-            element.classList.add('is-updated');
-        } else {
-            element.textContent = value;
-        }
-    }
-
     function labelMovement(type) {
         switch (type) {
             case 'entree':
@@ -828,43 +508,6 @@
         }
         const date = new Date(value.replace(' ', 'T'));
         return date.toLocaleString('fr-FR');
-    }
-
-    function formatRelativeDate(value) {
-        if (!value) {
-            return '';
-        }
-        const date = new Date(value.replace(' ', 'T'));
-        if (Number.isNaN(date.getTime())) {
-            return '';
-        }
-        const now = new Date();
-        const diffSeconds = Math.round((date.getTime() - now.getTime()) / 1000);
-        const absSeconds = Math.abs(diffSeconds);
-        const table = [
-            { limit: 60, divisor: 1, unit: 'second' },
-            { limit: 3600, divisor: 60, unit: 'minute' },
-            { limit: 86400, divisor: 3600, unit: 'hour' },
-            { limit: 604800, divisor: 86400, unit: 'day' },
-            { limit: 2629800, divisor: 604800, unit: 'week' },
-            { limit: 31557600, divisor: 2629800, unit: 'month' },
-            { limit: Infinity, divisor: 31557600, unit: 'year' },
-        ];
-
-        for (const entry of table) {
-            if (absSeconds < entry.limit) {
-                const valueToFormat = Math.round(diffSeconds / entry.divisor);
-                if (typeof Intl !== 'undefined' && typeof Intl.RelativeTimeFormat !== 'undefined') {
-                    const rtf = new Intl.RelativeTimeFormat('fr', { numeric: 'auto' });
-                    return rtf.format(valueToFormat, entry.unit);
-                }
-                const absoluteString = Math.abs(valueToFormat).toString();
-                const suffix = diffSeconds < 0 ? 'il y a' : 'dans';
-                return `${suffix} ${absoluteString} ${entry.unit}`;
-            }
-        }
-
-        return formatDate(value);
     }
 
     function formatCurrency(value) {
@@ -926,10 +569,6 @@
                     })
                     .catch(showError);
             }
-        }
-        const menu = target.closest('details');
-        if (menu) {
-            menu.open = false;
         }
     });
 
