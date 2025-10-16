@@ -40,8 +40,13 @@ if ($current_user instanceof WP_User && $current_user->exists()) {
                 <h1><?php esc_html_e('Accès réservé', 'sempa'); ?></h1>
                 <p><?php esc_html_e('Cette application est réservée à l\'équipe SEMPA. Merci de vous connecter avec un compte autorisé.', 'sempa'); ?></p>
                 <?php wp_login_form([
+                    'label_username' => __('Identifiant ou adresse e-mail', 'sempa'),
+                    'label_password' => __('Mot de passe', 'sempa'),
+                    'label_remember' => __('Se souvenir de moi', 'sempa'),
                     'label_log_in' => __('Se connecter', 'sempa'),
+                    'remember' => true,
                     'redirect' => home_url('/stocks'),
+                    'form_id' => 'stockpilot-login-form',
                 ]); ?>
             </div>
         </section>

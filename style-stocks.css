@@ -1,15 +1,16 @@
 :root {
-    --sp-color-primary: #2563eb;
-    --sp-color-primary-dark: #1d4ed8;
-    --sp-color-secondary: #059669;
+    --sp-color-primary: #f4a412;
+    --sp-color-primary-dark: #d4880e;
+    --sp-color-secondary: #1f2937;
+    --sp-color-success: #0f9d58;
     --sp-color-accent: #dc2626;
-    --sp-color-warning: #d97706;
+    --sp-color-warning: #f97316;
     --sp-color-surface: #ffffff;
-    --sp-color-surface-alt: #f1f5f9;
-    --sp-color-background: #f8fafc;
-    --sp-color-border: #e2e8f0;
-    --sp-color-text: #1e293b;
-    --sp-color-muted: #64748b;
+    --sp-color-surface-alt: #f5f6fb;
+    --sp-color-background: #f1f2f6;
+    --sp-color-border: #e5e7eb;
+    --sp-color-text: #101828;
+    --sp-color-muted: #667085;
     --sp-radius-lg: 20px;
     --sp-radius-md: 14px;
     --sp-radius-sm: 10px;
@@ -103,7 +104,7 @@
 
 .button--secondary:hover,
 .button--secondary:focus-visible {
-    background: #047857;
+    background: #111827;
 }
 
 .button--ghost {
@@ -117,7 +118,7 @@
 .button--ghost:focus-visible {
     color: var(--sp-color-text);
     border-color: var(--sp-color-primary);
-    background: rgba(37, 99, 235, 0.08);
+    background: rgba(244, 164, 18, 0.12);
 }
 
 .button--ghost[data-dismiss] {
@@ -132,12 +133,28 @@
 }
 
 .stockpilot-sidebar {
-    background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+    background: linear-gradient(180deg, #101828 0%, #0f172a 60%, #0b1220 100%);
     color: rgba(255, 255, 255, 0.88);
     padding: 2.5rem 2rem;
     display: flex;
     flex-direction: column;
     gap: 2.5rem;
+    position: relative;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.stockpilot-sidebar::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(244, 164, 18, 0.14), rgba(244, 164, 18, 0.05) 35%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.stockpilot-sidebar > * {
+    position: relative;
+    z-index: 1;
 }
 
 .stockpilot-sidebar__brand {
@@ -192,12 +209,12 @@
 
 .stockpilot-sidebar__nav li a:hover,
 .stockpilot-sidebar__nav li a:focus-visible {
-    background: rgba(37, 99, 235, 0.16);
+    background: rgba(244, 164, 18, 0.16);
     color: #ffffff;
 }
 
 .stockpilot-sidebar__nav li.is-active a {
-    background: rgba(37, 99, 235, 0.24);
+    background: rgba(244, 164, 18, 0.24);
     color: #ffffff;
 }
 
@@ -215,7 +232,7 @@
     position: absolute;
     inset: 0.45rem;
     border-radius: 0.65rem;
-    background: linear-gradient(135deg, rgba(37, 99, 235, 0.6), rgba(37, 99, 235, 0.9));
+    background: linear-gradient(135deg, rgba(244, 164, 18, 0.6), rgba(244, 164, 18, 0.9));
 }
 
 .stockpilot-sidebar__user {
@@ -315,7 +332,7 @@
     border-radius: 999px;
     padding: 0.75rem 1.1rem 0.75rem 2.6rem;
     border: 1px solid var(--sp-color-border);
-    background: var(--sp-color-background);
+    background: var(--sp-color-surface);
     color: var(--sp-color-text);
     transition: border-color var(--sp-transition), box-shadow var(--sp-transition);
 }
@@ -323,7 +340,7 @@
 .header-search input:focus-visible {
     outline: none;
     border-color: var(--sp-color-primary);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+    box-shadow: 0 0 0 3px rgba(244, 164, 18, 0.22);
 }
 
 .header-search__icon {
@@ -401,7 +418,7 @@
     gap: 0.4rem;
     padding: 0.4rem 0.9rem;
     border-radius: 999px;
-    background: rgba(37, 99, 235, 0.08);
+    background: rgba(244, 164, 18, 0.12);
     color: var(--sp-color-primary);
     font-weight: 600;
     font-size: 0.75rem;
@@ -460,7 +477,7 @@
     width: 2.2rem;
     height: 2.2rem;
     border-radius: 0.9rem;
-    background: rgba(37, 99, 235, 0.12);
+    background: rgba(244, 164, 18, 0.18);
 }
 
 .metric-card__value {
@@ -628,7 +645,7 @@
 .recent-item__marker {
     width: 12px;
     border-radius: 999px;
-    background: linear-gradient(180deg, rgba(37, 99, 235, 0.4), rgba(37, 99, 235, 0.1));
+    background: linear-gradient(180deg, rgba(244, 164, 18, 0.42), rgba(244, 164, 18, 0.08));
     position: relative;
 }
 
@@ -645,7 +662,7 @@
 }
 
 .recent-item[data-type='entry'] .recent-item__marker::after {
-    background: var(--sp-color-secondary);
+    background: var(--sp-color-success);
 }
 
 .recent-item[data-type='exit'] .recent-item__marker::after {
@@ -697,13 +714,13 @@
     border-radius: 999px;
     font-size: 0.75rem;
     font-weight: 600;
-    background: rgba(37, 99, 235, 0.12);
+    background: rgba(244, 164, 18, 0.18);
     color: var(--sp-color-primary);
 }
 
 .movement-chip--entry {
-    background: rgba(5, 150, 105, 0.12);
-    color: var(--sp-color-secondary);
+    background: rgba(15, 157, 88, 0.14);
+    color: var(--sp-color-success);
 }
 
 .movement-chip--exit {
@@ -757,13 +774,13 @@
     border: 1px solid var(--sp-color-border);
     padding: 0.55rem 0.8rem;
     color: var(--sp-color-text);
-    background: var(--sp-color-background);
+    background: var(--sp-color-surface);
 }
 
 .toolbar-field select:focus-visible {
     outline: none;
     border-color: var(--sp-color-primary);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+    box-shadow: 0 0 0 3px rgba(244, 164, 18, 0.22);
 }
 
 .toolbar-actions {
@@ -809,7 +826,7 @@
 }
 
 .stocks-table tbody tr:hover {
-    background: rgba(37, 99, 235, 0.04);
+    background: rgba(244, 164, 18, 0.08);
 }
 
 .stocks-table td.actions {
@@ -848,7 +865,7 @@
     align-items: center;
     padding: 0.3rem 0.7rem;
     border-radius: 999px;
-    background: rgba(37, 99, 235, 0.12);
+    background: rgba(244, 164, 18, 0.18);
     color: var(--sp-color-primary);
     font-size: 0.75rem;
     font-weight: 600;
@@ -936,7 +953,7 @@
 
 .actions-menu__content button:hover,
 .actions-menu__content button:focus-visible {
-    background: rgba(37, 99, 235, 0.08);
+    background: rgba(244, 164, 18, 0.12);
     outline: none;
 }
 
@@ -1005,14 +1022,21 @@
 .form-grid {
     display: grid;
     gap: 1.2rem;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    align-items: start;
 }
 
-label > span {
+.form-grid label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.form-grid label > span {
     display: block;
     font-size: 0.85rem;
     font-weight: 600;
-    margin-bottom: 0.4rem;
 }
 
 input[type='text'],
@@ -1026,7 +1050,7 @@ textarea {
     border: 1px solid var(--sp-color-border);
     padding: 0.55rem 0.8rem;
     color: var(--sp-color-text);
-    background: var(--sp-color-background);
+    background: var(--sp-color-surface);
     transition: border-color var(--sp-transition), box-shadow var(--sp-transition);
 }
 
@@ -1035,7 +1059,7 @@ select:focus-visible,
 textarea:focus-visible {
     outline: none;
     border-color: var(--sp-color-primary);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+    box-shadow: 0 0 0 3px rgba(244, 164, 18, 0.22);
 }
 
 textarea {
@@ -1045,13 +1069,31 @@ textarea {
 .field-with-action {
     display: flex;
     gap: 0.6rem;
+    align-items: center;
+    width: 100%;
+}
+
+.field-with-action select,
+.field-with-action input,
+.field-with-action textarea {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.field-with-action .link-button {
+    flex: 0 0 auto;
+    white-space: nowrap;
 }
 
 .link-button {
-    background: rgba(37, 99, 235, 0.08);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    background: rgba(244, 164, 18, 0.12);
     border-radius: var(--sp-radius-sm);
     padding: 0.55rem 0.9rem;
-    border: none;
+    border: 1px solid transparent;
     color: var(--sp-color-primary);
     font-weight: 600;
     cursor: pointer;
@@ -1059,7 +1101,8 @@ textarea {
 
 .link-button:hover,
 .link-button:focus-visible {
-    background: rgba(37, 99, 235, 0.15);
+    background: rgba(244, 164, 18, 0.2);
+    border-color: var(--sp-color-primary);
 }
 
 .form-actions {
@@ -1138,13 +1181,13 @@ textarea {
     border-radius: 999px;
     font-size: 0.75rem;
     font-weight: 600;
-    background: rgba(37, 99, 235, 0.08);
+    background: rgba(244, 164, 18, 0.12);
     color: var(--sp-color-primary);
 }
 
 .automation-status--active {
-    background: rgba(5, 150, 105, 0.12);
-    color: var(--sp-color-secondary);
+    background: rgba(15, 157, 88, 0.14);
+    color: var(--sp-color-success);
 }
 
 .automation-status--planned {
@@ -1171,6 +1214,105 @@ textarea {
 
 .stocks-locked__inner h1 {
     margin-bottom: 1rem;
+}
+
+.stocks-locked__inner p {
+    margin: 0;
+    color: var(--sp-color-muted);
+}
+
+#stockpilot-login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 2rem;
+    text-align: left;
+}
+
+#stockpilot-login-form p {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+}
+
+#stockpilot-login-form label {
+    font-weight: 600;
+    color: var(--sp-color-text);
+}
+
+#stockpilot-login-form input[type='text'],
+#stockpilot-login-form input[type='password'] {
+    padding: 0.75rem 1rem;
+    border-radius: 14px;
+    border: 1px solid var(--sp-color-border);
+    background: var(--sp-color-surface);
+    box-shadow: inset 0 1px 2px rgba(16, 24, 40, 0.06);
+}
+
+#stockpilot-login-form input[type='text']:focus-visible,
+#stockpilot-login-form input[type='password']:focus-visible {
+    outline: none;
+    border-color: var(--sp-color-primary);
+    box-shadow: 0 0 0 4px rgba(244, 164, 18, 0.2);
+}
+
+#stockpilot-login-form .forgetmenot {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--sp-color-muted);
+}
+
+#stockpilot-login-form .forgetmenot input {
+    width: auto;
+    margin: 0;
+}
+
+#stockpilot-login-form .forgetmenot label {
+    font-weight: 500;
+}
+
+#stockpilot-login-form .submit {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+}
+
+#stockpilot-login-form .lostpassword {
+    align-items: flex-end;
+    margin-top: 0.5rem;
+}
+
+#stockpilot-login-form .lostpassword a {
+    color: var(--sp-color-primary);
+    font-weight: 600;
+}
+
+#stockpilot-login-form .submit .button-primary {
+    background: var(--sp-color-primary);
+    border: none;
+    border-radius: 999px;
+    padding: 0.75rem 1.8rem;
+    font-weight: 600;
+    box-shadow: var(--sp-shadow-xs);
+    transition: background var(--sp-transition), transform var(--sp-transition), box-shadow var(--sp-transition);
+}
+
+#stockpilot-login-form .submit .button-primary:hover,
+#stockpilot-login-form .submit .button-primary:focus-visible {
+    background: var(--sp-color-primary-dark);
+    transform: translateY(-1px);
+    box-shadow: var(--sp-shadow-sm);
+    outline: none;
+}
+
+#stockpilot-login-form .submit .button-primary:focus-visible {
+    box-shadow: 0 0 0 4px rgba(244, 164, 18, 0.18);
 }
 
 .stocks-table tr[data-status='warning'] {
@@ -1266,6 +1408,7 @@ textarea {
     .stockpilot-main {
         padding: 1.8rem 1.2rem;
     }
+}
 
     .stockpilot-header {
         padding: 1.8rem;
@@ -1293,6 +1436,15 @@ textarea {
 
     .toolbar-actions {
         margin-left: 0;
+    }
+
+    .field-with-action {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .field-with-action .link-button {
+        width: 100%;
     }
 
     .table-wrapper {
