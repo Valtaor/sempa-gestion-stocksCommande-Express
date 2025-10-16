@@ -7,6 +7,10 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+if (class_exists('Sempa_Stocks_App')) {
+    Sempa_Stocks_App::ensure_assets_for_template();
+}
+
 get_header();
 
 $allowed = class_exists('Sempa_Stocks_App') ? Sempa_Stocks_App::user_is_allowed() : false;

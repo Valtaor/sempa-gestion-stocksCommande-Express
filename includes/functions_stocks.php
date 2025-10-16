@@ -11,6 +11,7 @@ final class Sempa_Stocks_App
     private const SCRIPT_HANDLE = 'semparc-gestion-stocks';
     private const STYLE_HANDLE = 'semparc-stocks-style';
     private static $nonce_value = null;
+    private static $assets_enqueued = false;
 
     public static function register()
     {
@@ -35,9 +36,29 @@ final class Sempa_Stocks_App
 
     public static function enqueue_assets()
     {
+        if (self::$assets_enqueued) {
+            return;
+        }
+
         if (!self::is_stocks_template()) {
             return;
         }
+
+        self::enqueue_assets_internal();
+    }
+
+    public static function ensure_assets_for_template()
+    {
+        if (self::$assets_enqueued) {
+            return;
+        }
+
+        self::enqueue_assets_internal();
+    }
+
+    private static function enqueue_assets_internal()
+    {
+        self::$assets_enqueued = true;
 
         $dir = get_stylesheet_directory();
         $uri = get_stylesheet_directory_uri();
