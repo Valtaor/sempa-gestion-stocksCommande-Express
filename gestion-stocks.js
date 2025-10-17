@@ -693,10 +693,10 @@
         if (!name) {
             return;
         }
-        const color = window.prompt('Couleur hexadécimale (#f4a412 par défaut)', '#f4a412') || '#f4a412';
+        const color = '#f4a412';
         const data = new FormData();
         data.append('nom', name.trim());
-        data.append('couleur', color.trim());
+        data.append('couleur', color);
         request('sempa_stocks_save_category', data)
             .then((response) => {
                 if (response?.success && response.data?.category) {
