@@ -216,6 +216,10 @@ if (!class_exists('Sempa_Stocks_DB')) {
                 }
             }
 
+            if (!$columns && !empty($aliases)) {
+                return $aliases[0];
+            }
+
             return $fallback_to_input ? $column : null;
         }
 

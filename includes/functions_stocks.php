@@ -3,6 +3,10 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+if (!function_exists('wp_kses_post')) {
+    require_once ABSPATH . 'wp-includes/kses.php';
+}
+
 require_once __DIR__ . '/db_connect_stocks.php';
 
 final class Sempa_Stocks_App
