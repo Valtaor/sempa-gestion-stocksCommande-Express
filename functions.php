@@ -118,9 +118,34 @@ final class Sempa_Order_Route
             ], 500);
         }
 
+        $order_id = (int) $wpdb->insert_id;
+
+        if (class_exists('Sempa_Order_Stock_Sync')) {
+            $sync_result = Sempa_Order_Stock_Sync::sync($products, [
+                'order_id' => $order_id,
+                'order_number' => $data['numero_client'],
+                'order_date' => $data['date_commande'],
+                'client_name' => $data['nom_societe'],
+                'client_email' => $data['email'],
+            ]);
+
+            if (is_wp_error($sync_result)) {
+                if (function_exists('error_log')) {
+                    error_log('[Sempa] Stock sync failed for order #' . $order_id . ': ' . $sync_result->get_error_message());
+                }
+
+                return new WP_REST_Response([
+                    'success' => false,
+                    'message' => $sync_result->get_error_message(),
+                    'order_id' => $order_id,
+                ], 500);
+            }
+        }
+
         return new WP_REST_Response([
             'success' => true,
             'message' => 'Commande enregistrée avec succès.',
+            'order_id' => $order_id,
         ]);
     }
 }
