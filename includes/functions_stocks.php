@@ -531,12 +531,51 @@ final class Sempa_Stocks_App
         }
 
         $user = wp_get_current_user();
+
+        $role_whitelist = apply_filters('sempa_stock_allowed_roles', [
+            'gestionnaire_de_stock',
+            'administrator',
+            'editor',
+        ]);
+
+        if (!is_array($role_whitelist)) {
+            $role_whitelist = array_filter([$role_whitelist]);
+        }
+
+        if ($role_whitelist) {
+            $user_roles = array_map('strtolower', (array) $user->roles);
+            $role_whitelist = array_map('strtolower', $role_whitelist);
+
+            if (array_intersect($role_whitelist, $user_roles)) {
+                return true;
+            }
+        }
+
+        $capabilities = apply_filters('sempa_stock_allowed_capabilities', [
+            'manage_options',
+        ]);
+
+        if (!is_array($capabilities)) {
+            $capabilities = array_filter([$capabilities]);
+        }
+
+        foreach ($capabilities as $capability) {
+            if ($capability && user_can($user, $capability)) {
+                return true;
+            }
+        }
+
         $allowed = apply_filters('sempa_stock_allowed_emails', [
             'victorfaucher@sempa.fr',
             'jean-baptiste@sempa.fr',
         ]);
 
+        if (!is_array($allowed)) {
+            $allowed = array_filter([$allowed]);
+        }
+
         $allowed = array_map('strtolower', $allowed);
+
         return in_array(strtolower($user->user_email), $allowed, true);
     }
 
