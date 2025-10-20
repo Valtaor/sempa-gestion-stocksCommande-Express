@@ -636,8 +636,18 @@ final class Sempa_Stocks_App
             wp_send_json_error(['message' => __('La colonne "nom" est introuvable dans la table des catégories.', 'sempa')], 500);
         }
 
+        $slug_column = Sempa_Stocks_DB::resolve_column('categories_stocks', 'slug', false);
+
+        $slug = '';
+        if ($slug_column !== null) {
+            $requested_slug = isset($_POST['slug']) ? sanitize_title(wp_unslash($_POST['slug'])) : '';
+            $slug = $requested_slug !== '' ? $requested_slug : self::generate_slug_from_name($name);
+            $slug = self::ensure_unique_slug($db, $table, $slug_column, $slug);
+        }
+
         $data = Sempa_Stocks_DB::prepare_columns('categories_stocks', [
             'nom' => $name,
+            'slug' => $slug,
             'couleur' => $color ?: '#f4a412',
             'icone' => $icon,
         ]);
@@ -930,6 +940,46 @@ final class Sempa_Stocks_App
         $db->query('ALTER TABLE ' . Sempa_Stocks_DB::escape_identifier($table) . " ADD COLUMN `condition_materiel` VARCHAR(20) NOT NULL DEFAULT 'neuf'");
     }
 
+    private static function generate_slug_from_name(string $name)
+    {
+        $slug = sanitize_title($name);
+        if ($slug !== '') {
+            return $slug;
+        }
+
+        $normalized = strtolower(preg_replace('/[^a-z0-9]+/', '-', self::strip_accents($name)));
+        $normalized = trim($normalized, '-');
+
+        return $normalized !== '' ? $normalized : 'categorie';
+    }
+
+    private static function ensure_unique_slug($db, string $table, string $column, string $slug)
+    {
+        if (!($db instanceof \wpdb)) {
+            return $slug !== '' ? $slug : 'categorie';
+        }
+
+        $clean_slug = $slug !== '' ? $slug : 'categorie';
+        $base_slug = $clean_slug;
+        $suffix = 2;
+
+        do {
+            $exists = (int) $db->get_var(
+                $db->prepare(
+                    'SELECT COUNT(1) FROM ' . Sempa_Stocks_DB::escape_identifier($table) . ' WHERE ' . Sempa_Stocks_DB::escape_identifier($column) . ' = %s',
+                    $clean_slug
+                )
+            );
+
+            if ($exists === 0) {
+                return $clean_slug;
+            }
+
+            $clean_slug = $base_slug . '-' . $suffix;
+            $suffix++;
+        } while (true);
+    }
+
     private static function strip_accents(string $value)
     {
         if (function_exists('remove_accents')) {
@@ -1029,8 +1079,9 @@ final class Sempa_Stocks_App
     {
         $id = Sempa_Stocks_DB::value($category, 'categories_stocks', 'id', $category['id'] ?? 0);
         $name = Sempa_Stocks_DB::value($category, 'categories_stocks', 'nom', '');
-        $color = Sempa_Stocks_DB::value($category, 'categories_stocks', 'couleur', '#f4a412');
-        $icon = Sempa_Stocks_DB::value($category, 'categories_stocks', 'icone', '');
+        $slug = Sempa_Stocks_DB::value($category, 'categories_stocks', 'slug', $category['slug'] ?? '');
+        $color = Sempa_Stocks_DB::value($category, 'categories_stocks', 'couleur', $category['couleur'] ?? '#f4a412');
+        $icon = Sempa_Stocks_DB::value($category, 'categories_stocks', 'icone', $category['icone'] ?? '');
 
         if (!is_string($color) || $color === '') {
             $color = '#f4a412';
@@ -1039,6 +1090,7 @@ final class Sempa_Stocks_App
         return [
             'id' => (int) $id,
             'nom' => is_string($name) ? $name : '',
+            'slug' => is_string($slug) ? $slug : '',
             'couleur' => $color,
             'icone' => is_string($icon) ? $icon : '',
         ];
