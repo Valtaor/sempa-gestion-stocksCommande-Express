@@ -66,6 +66,39 @@ if (!class_exists('Sempa_Stocks_DB')) {
             ],
         ];
 
+        private const COLUMN_ALIASES = [
+            'categories_stocks' => [
+                'id' => ['id', 'id_categorie', 'categorie_id', 'category_id'],
+                'nom' => ['nom', 'name', 'libelle', 'libellé', 'titre', 'label'],
+                'couleur' => ['couleur', 'color', 'colour', 'couleur_hex', 'color_hex', 'hex_color'],
+                'icone' => ['icone', 'icon', 'icone_svg', 'pictogramme', 'logo', 'icône'],
+            ],
+            'fournisseurs_sempa' => [
+                'id' => ['id', 'fournisseur_id', 'supplier_id'],
+                'nom' => ['nom', 'name', 'raison_sociale', 'societe'],
+                'contact' => ['contact', 'contact_nom', 'responsable', 'personne_contact'],
+                'telephone' => ['telephone', 'tel', 'phone', 'mobile'],
+                'email' => ['email', 'mail', 'courriel'],
+            ],
+            'stocks_sempa' => [
+                'id' => ['id', 'produit_id', 'product_id'],
+                'reference' => ['reference', 'ref', 'code', 'sku'],
+                'designation' => ['designation', 'nom', 'name', 'libelle', 'description'],
+                'stock_actuel' => ['stock_actuel', 'stock', 'quantite', 'quantité', 'quantity', 'qte'],
+                'date_modification' => ['date_modification', 'updated_at', 'date_update', 'modified_at'],
+            ],
+            'mouvements_stocks_sempa' => [
+                'id' => ['id', 'mouvement_id', 'movement_id'],
+                'produit_id' => ['produit_id', 'product_id', 'id_produit'],
+                'type_mouvement' => ['type_mouvement', 'type', 'movement_type'],
+                'quantite' => ['quantite', 'quantité', 'qty', 'quantity'],
+                'ancien_stock' => ['ancien_stock', 'stock_avant', 'previous_stock'],
+                'nouveau_stock' => ['nouveau_stock', 'stock_apres', 'stock_après', 'new_stock'],
+                'motif' => ['motif', 'raison', 'reason', 'commentaire', 'note'],
+                'utilisateur' => ['utilisateur', 'user', 'auteur', 'email'],
+            ],
+        ];
+
         public static function instance()
         {
             if (self::$instance instanceof \wpdb) {
@@ -131,73 +164,105 @@ if (!class_exists('Sempa_Stocks_DB')) {
             return $name;
         }
 
-        public static function available_columns(string $table)
+        public static function resolve_column(string $table, string $column, bool $fallback_to_input = true)
         {
-            $resolved_table = self::table($table);
-            $cache_key = strtolower($resolved_table);
+            $table_key = strtolower($table);
+            $column_key = strtolower($column);
 
-            if (isset(self::$column_cache[$cache_key])) {
-                return self::$column_cache[$cache_key];
+            $resolved_table = self::table($table_key);
+            $columns = self::describe_columns($resolved_table);
+
+            if ($columns && isset($columns[$column_key])) {
+                return $columns[$column_key];
             }
 
-            $db = self::instance();
-            if (!($db instanceof \wpdb)) {
-                self::$column_cache[$cache_key] = [];
-
-                return [];
+            $aliases = self::COLUMN_ALIASES[$table_key][$column_key] ?? [];
+            foreach ($aliases as $alias) {
+                $alias_lower = strtolower($alias);
+                if ($columns && isset($columns[$alias_lower])) {
+                    return $columns[$alias_lower];
+                }
             }
 
-            $sql = 'SHOW COLUMNS FROM ' . self::quote_identifier($resolved_table);
-            $results = $db->get_results($sql, ARRAY_A);
+            if ($columns) {
+                foreach ($columns as $lower => $actual) {
+                    if ($lower === $column_key) {
+                        return $actual;
+                    }
+                }
 
-            $columns = [];
-            if (is_array($results)) {
-                foreach ($results as $column) {
-                    if (!empty($column['Field'])) {
-                        $field = (string) $column['Field'];
-                        $columns[strtolower($field)] = $field;
+                foreach ($columns as $lower => $actual) {
+                    if (strpos($lower, $column_key) !== false || strpos($column_key, $lower) !== false) {
+                        return $actual;
                     }
                 }
             }
 
-            self::$column_cache[$cache_key] = $columns;
-
-            $canonical_key = strtolower($table);
-            if ($canonical_key !== $cache_key) {
-                self::$column_cache[$canonical_key] = $columns;
-            }
-
-            return $columns;
+            return $fallback_to_input ? $column : null;
         }
 
-        public static function first_available_column(string $table, array $candidates)
+        public static function prepare_columns(string $table, array $data)
         {
-            $columns = self::available_columns($table);
-            foreach ($candidates as $candidate) {
-                $key = strtolower($candidate);
-                if (isset($columns[$key])) {
-                    return $columns[$key];
+            $prepared = [];
+            foreach ($data as $key => $value) {
+                $resolved = self::resolve_column($table, $key, false);
+                if ($resolved !== null) {
+                    $prepared[$resolved] = $value;
                 }
             }
 
-            return null;
+            return $prepared;
         }
 
-        public static function quote_identifier(string $identifier)
+        public static function value(array $row, string $table, string $column, $default = null)
         {
-            $parts = array_filter(explode('.', $identifier), static function ($part) {
-                return $part !== '';
-            });
-
-            if (empty($parts)) {
-                return '``';
+            if (empty($row)) {
+                return $default;
             }
 
-            $escaped = array_map(static function ($part) {
+            $table_key = strtolower($table);
+            $column_key = strtolower($column);
+
+            $lower_row = [];
+            foreach ($row as $key => $value) {
+                $lower_row[strtolower($key)] = $value;
+            }
+
+            if (array_key_exists($column_key, $lower_row)) {
+                return $lower_row[$column_key];
+            }
+
+            $aliases = self::COLUMN_ALIASES[$table_key][$column_key] ?? [];
+            foreach ($aliases as $alias) {
+                $alias_lower = strtolower($alias);
+                if (array_key_exists($alias_lower, $lower_row)) {
+                    return $lower_row[$alias_lower];
+                }
+            }
+
+            foreach ($lower_row as $key => $value) {
+                if ($key === $column_key) {
+                    return $value;
+                }
+            }
+
+            foreach ($lower_row as $key => $value) {
+                if (strpos($key, $column_key) !== false || strpos($column_key, $key) !== false) {
+                    return $value;
+                }
+            }
+
+            return $default;
+        }
+
+        public static function escape_identifier(string $identifier)
+        {
+            $parts = explode('.', $identifier);
+            $parts = array_map(function ($part) {
                 return '`' . str_replace('`', '``', $part) . '`';
             }, $parts);
 
-            return implode('.', $escaped);
+            return implode('.', $parts);
         }
 
         private static function prime_available_tables(\wpdb $db)
@@ -295,6 +360,46 @@ if (!class_exists('Sempa_Stocks_DB')) {
 
             return (strpos($haystack, $needle) === 0)
                 || (substr($haystack, -strlen($needle)) === $needle);
+        }
+
+        private static function describe_columns(string $table)
+        {
+            $cache_key = strtolower($table);
+
+            if (isset(self::$column_cache[$cache_key])) {
+                return self::$column_cache[$cache_key];
+            }
+
+            $db = self::instance();
+            if (!($db instanceof \wpdb)) {
+                self::$column_cache[$cache_key] = [];
+
+                return self::$column_cache[$cache_key];
+            }
+
+            $columns = [];
+
+            try {
+                $results = $db->get_results('SHOW COLUMNS FROM ' . self::escape_identifier($table), ARRAY_A);
+            } catch (Throwable $exception) {
+                if (function_exists('error_log')) {
+                    error_log('[Sempa] Unable to inspect columns for table "' . $table . '": ' . $exception->getMessage());
+                }
+                $results = null;
+            }
+
+            if (is_array($results)) {
+                foreach ($results as $result) {
+                    $field = $result['Field'] ?? null;
+                    if ($field) {
+                        $columns[strtolower($field)] = $field;
+                    }
+                }
+            }
+
+            self::$column_cache[$cache_key] = $columns;
+
+            return self::$column_cache[$cache_key];
         }
     }
 }

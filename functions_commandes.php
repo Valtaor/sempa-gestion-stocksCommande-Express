@@ -40,11 +40,13 @@ if (!class_exists('Sempa_Order_Stock_Sync')) {
                 );
             }
 
-            if (empty($db->dbh)) {
-                return new WP_Error(
-                    'stocks_connection_failed',
-                    __('Impossible de se connecter à la base de données des stocks.', 'sempa')
-                );
+            $stock_schema = self::resolve_stock_schema();
+            if (is_wp_error($stock_schema)) {
+                if (function_exists('error_log')) {
+                    error_log('[Sempa] Stock schema unavailable: ' . $stock_schema->get_error_message());
+                }
+
+                return true;
             }
 
             $transaction_started = false;
@@ -59,7 +61,7 @@ if (!class_exists('Sempa_Order_Stock_Sync')) {
 
             foreach ($products as $product) {
                 try {
-                    $result = self::synchronize_product($db, $product, $context);
+                    $result = self::synchronize_product($db, $product, $context, $stock_schema);
                 } catch (Throwable $exception) {
                     if ($transaction_started) {
                         $db->query('ROLLBACK');
@@ -99,7 +101,7 @@ if (!class_exists('Sempa_Order_Stock_Sync')) {
             return true;
         }
 
-        private static function synchronize_product(\wpdb $db, $raw_product, array $context)
+        private static function synchronize_product(\wpdb $db, $raw_product, array $context, array $stock_schema)
         {
             if (is_object($raw_product)) {
                 $raw_product = (array) $raw_product;
@@ -120,16 +122,20 @@ if (!class_exists('Sempa_Order_Stock_Sync')) {
                 return true;
             }
 
+            $stock_table = $stock_schema['table'];
+            $id_column = $stock_schema['id'];
+            $stock_column = $stock_schema['stock'];
+
             $row = $db->get_row(
                 $db->prepare(
-                    'SELECT id, reference, designation, stock_actuel FROM ' . Sempa_Stocks_DB::table('stocks_sempa') . ' WHERE id = %d',
+                    'SELECT * FROM ' . Sempa_Stocks_DB::escape_identifier($stock_table) . ' WHERE ' . Sempa_Stocks_DB::escape_identifier($id_column) . ' = %d',
                     $product_id
                 ),
                 ARRAY_A
             );
 
             if (!$row) {
-                $label = isset($product['name']) ? $product['name'] : ($product['designation'] ?? ('#' . $product_id));
+                $label = $product['name'] ?? $product['designation'] ?? ('#' . $product_id);
 
                 return new WP_Error(
                     'stock_product_missing',
@@ -140,21 +146,28 @@ if (!class_exists('Sempa_Order_Stock_Sync')) {
                 );
             }
 
-            $current_stock = (int) ($row['stock_actuel'] ?? 0);
+            $current_stock = (int) ($row[$stock_column] ?? 0);
             $new_stock = $current_stock - $quantity;
             $had_shortage = $new_stock < 0;
             if ($had_shortage) {
                 $new_stock = 0;
             }
 
+            $update_data = [
+                $stock_column => $new_stock,
+            ];
+            $update_formats = ['%d'];
+
+            if (!empty($stock_schema['modified'])) {
+                $update_data[$stock_schema['modified']] = current_time('mysql');
+                $update_formats[] = '%s';
+            }
+
             $updated = $db->update(
-                Sempa_Stocks_DB::table('stocks_sempa'),
-                [
-                    'stock_actuel' => $new_stock,
-                    'date_modification' => current_time('mysql'),
-                ],
-                ['id' => $product_id],
-                ['%d', '%s'],
+                $stock_table,
+                $update_data,
+                [$id_column => $product_id],
+                $update_formats,
                 ['%d']
             );
 
@@ -188,19 +201,35 @@ if (!class_exists('Sempa_Order_Stock_Sync')) {
         {
             $movement_reason = self::build_reason($quantity, $previous_stock, $new_stock, $had_shortage, $stock_row, $product, $context);
 
-            $inserted = $db->insert(
-                Sempa_Stocks_DB::table('mouvements_stocks_sempa'),
-                [
-                    'produit_id' => $product_id,
-                    'type_mouvement' => 'sortie',
-                    'quantite' => $quantity,
-                    'ancien_stock' => $previous_stock,
-                    'nouveau_stock' => $new_stock,
-                    'motif' => $movement_reason,
-                    'utilisateur' => self::resolve_user($context),
-                ],
-                ['%d', '%s', '%d', '%d', '%d', '%s', '%s']
-            );
+            $movement_table = Sempa_Stocks_DB::table('mouvements_stocks_sempa');
+            $movement_data = [];
+            $movement_formats = [];
+
+            $mapping = [
+                'produit_id' => [$product_id, '%d'],
+                'type_mouvement' => ['sortie', '%s'],
+                'quantite' => [$quantity, '%d'],
+                'ancien_stock' => [$previous_stock, '%d'],
+                'nouveau_stock' => [$new_stock, '%d'],
+                'motif' => [$movement_reason, '%s'],
+                'utilisateur' => [self::resolve_user($context), '%s'],
+            ];
+
+            foreach ($mapping as $column => $payload) {
+                $resolved = Sempa_Stocks_DB::resolve_column('mouvements_stocks_sempa', $column, false);
+                if ($resolved === null) {
+                    continue;
+                }
+
+                $movement_data[$resolved] = $payload[0];
+                $movement_formats[] = $payload[1];
+            }
+
+            if (empty($movement_data)) {
+                return true;
+            }
+
+            $inserted = $db->insert($movement_table, $movement_data, $movement_formats);
 
             if ($inserted === false) {
                 return new WP_Error(
@@ -253,12 +282,12 @@ if (!class_exists('Sempa_Order_Stock_Sync')) {
                 $parts[] = sanitize_text_field($context['client_name']);
             }
 
-            $designation = $product['name'] ?? $product['designation'] ?? ($stock_row['designation'] ?? '');
+            $designation = $product['name'] ?? $product['designation'] ?? Sempa_Stocks_DB::value($stock_row, 'stocks_sempa', 'designation', '');
             if ($designation !== '') {
                 $parts[] = sanitize_text_field($designation);
             }
 
-            $reference = $product['reference'] ?? ($stock_row['reference'] ?? '');
+            $reference = $product['reference'] ?? Sempa_Stocks_DB::value($stock_row, 'stocks_sempa', 'reference', '');
             if ($reference !== '') {
                 $parts[] = sprintf(__('Ref. %s', 'sempa'), sanitize_text_field($reference));
             }
@@ -289,6 +318,37 @@ if (!class_exists('Sempa_Order_Stock_Sync')) {
             }
 
             return 'commande-express@sempa.fr';
+        }
+
+        private static function resolve_stock_schema()
+        {
+            static $schema = null;
+
+            if ($schema instanceof WP_Error || is_array($schema)) {
+                return $schema;
+            }
+
+            $table = Sempa_Stocks_DB::table('stocks_sempa');
+            $id_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'id', false);
+            $stock_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'stock_actuel', false);
+
+            if (!$table || !$id_column || !$stock_column) {
+                $schema = new WP_Error(
+                    'stock_schema_invalid',
+                    __('Structure de la table des stocks invalide.', 'sempa')
+                );
+
+                return $schema;
+            }
+
+            $schema = [
+                'table' => $table,
+                'id' => $id_column,
+                'stock' => $stock_column,
+                'modified' => Sempa_Stocks_DB::resolve_column('stocks_sempa', 'date_modification', false),
+            ];
+
+            return $schema;
         }
     }
 }
