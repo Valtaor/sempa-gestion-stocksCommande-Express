@@ -998,6 +998,33 @@ final class Sempa_Stocks_App
         ];
     }
 
+    private static function pick_value(array $row, array $candidates, $default = '')
+    {
+        foreach ($candidates as $candidate) {
+            if (array_key_exists($candidate, $row)) {
+                return $row[$candidate];
+            }
+        }
+
+        if (empty($row)) {
+            return $default;
+        }
+
+        $lower = [];
+        foreach ($row as $key => $value) {
+            $lower[strtolower((string) $key)] = $value;
+        }
+
+        foreach ($candidates as $candidate) {
+            $key = strtolower($candidate);
+            if (array_key_exists($key, $lower)) {
+                return $lower[$key];
+            }
+        }
+
+        return $default;
+    }
+
     private static function format_category(array $category)
     {
         $id = Sempa_Stocks_DB::value($category, 'categories_stocks', 'id', $category['id'] ?? 0);

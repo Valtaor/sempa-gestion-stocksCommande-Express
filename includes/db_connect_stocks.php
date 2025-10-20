@@ -3,7 +3,26 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+if (defined('ABSPATH') && !class_exists('wpdb')) {
+    require_once ABSPATH . 'wp-includes/wp-db.php';
+}
+
+if (!class_exists('Sempa_Stocks_wpdb') && class_exists('wpdb')) {
+    /**
+     * Custom wpdb implementation that prevents wp_die() on connection errors.
+     */
+    class Sempa_Stocks_wpdb extends \wpdb
+    {
+        public function __construct($dbuser, $dbpassword, $dbname, $dbhost)
+        {
+            $this->allow_bail = false;
+            parent::__construct($dbuser, $dbpassword, $dbname, $dbhost);
+        }
+    }
+}
+
 if (!class_exists('Sempa_Stocks_DB')) {
+
     final class Sempa_Stocks_DB
     {
         private const DB_HOST = 'db5001643902.hosting-data.io';
@@ -98,12 +117,24 @@ if (!class_exists('Sempa_Stocks_DB')) {
                 return self::$instance;
             }
 
-            require_once ABSPATH . 'wp-includes/wp-db.php';
+            $host = self::DB_HOST;
+            if (self::DB_PORT) {
+                $host .= ':' . self::DB_PORT;
+            }
 
-            $wpdb = new \wpdb(self::DB_USER, self::DB_PASSWORD, self::DB_NAME, self::DB_HOST, self::DB_PORT);
+            if (class_exists('Sempa_Stocks_wpdb')) {
+                $wpdb = new Sempa_Stocks_wpdb(self::DB_USER, self::DB_PASSWORD, self::DB_NAME, $host);
+            } else {
+                $wpdb = new \wpdb(self::DB_USER, self::DB_PASSWORD, self::DB_NAME, $host);
+            }
             $wpdb->show_errors(false);
+            $wpdb->suppress_errors(true);
             if (!empty($wpdb->dbh)) {
                 $wpdb->set_charset($wpdb->dbh, 'utf8mb4');
+            }
+
+            if (empty($wpdb->dbh) && function_exists('error_log')) {
+                error_log('[Sempa] Unable to connect to the stock database.');
             }
 
             self::$instance = $wpdb;
