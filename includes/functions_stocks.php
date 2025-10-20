@@ -360,8 +360,24 @@ final class Sempa_Stocks_App
         self::ensure_secure_request();
 
         $db = Sempa_Stocks_DB::instance();
-        $categories = $db->get_results('SELECT * FROM ' . Sempa_Stocks_DB::table('categories_stocks') . ' ORDER BY nom ASC', ARRAY_A);
-        $suppliers = $db->get_results('SELECT * FROM ' . Sempa_Stocks_DB::table('fournisseurs_sempa') . ' ORDER BY nom ASC', ARRAY_A);
+        $category_table = Sempa_Stocks_DB::table('categories_stocks');
+        $supplier_table = Sempa_Stocks_DB::table('fournisseurs_sempa');
+
+        $category_order_column = Sempa_Stocks_DB::resolve_column('categories_stocks', 'nom', false);
+        $supplier_order_column = Sempa_Stocks_DB::resolve_column('fournisseurs_sempa', 'nom', false);
+
+        $category_query = 'SELECT * FROM ' . Sempa_Stocks_DB::escape_identifier($category_table);
+        if ($category_order_column) {
+            $category_query .= ' ORDER BY ' . Sempa_Stocks_DB::escape_identifier($category_order_column) . ' ASC';
+        }
+
+        $supplier_query = 'SELECT * FROM ' . Sempa_Stocks_DB::escape_identifier($supplier_table);
+        if ($supplier_order_column) {
+            $supplier_query .= ' ORDER BY ' . Sempa_Stocks_DB::escape_identifier($supplier_order_column) . ' ASC';
+        }
+
+        $categories = $db->get_results($category_query, ARRAY_A);
+        $suppliers = $db->get_results($supplier_query, ARRAY_A);
 
         wp_send_json_success([
             'categories' => array_map([__CLASS__, 'format_category'], $categories ?: []),
@@ -381,23 +397,54 @@ final class Sempa_Stocks_App
         }
 
         $db = Sempa_Stocks_DB::instance();
-        $inserted = $db->insert(Sempa_Stocks_DB::table('categories_stocks'), [
+        $table = Sempa_Stocks_DB::table('categories_stocks');
+        $name_column = Sempa_Stocks_DB::resolve_column('categories_stocks', 'nom', false);
+
+        if ($name_column === null) {
+            wp_send_json_error(['message' => __('La colonne "nom" est introuvable dans la table des catégories.', 'sempa')], 500);
+        }
+
+        $data = Sempa_Stocks_DB::prepare_columns('categories_stocks', [
             'nom' => $name,
             'couleur' => $color ?: '#f4a412',
             'icone' => $icon,
         ]);
 
+        if (!isset($data[$name_column])) {
+            $data[$name_column] = $name;
+        }
+
+        if (empty($data)) {
+            wp_send_json_error(['message' => __('Impossible de déterminer les colonnes de la table des catégories.', 'sempa')], 500);
+        }
+
+        $inserted = $db->insert($table, $data);
+
         if ($inserted === false) {
             wp_send_json_error(['message' => $db->last_error ?: __('Impossible d\'ajouter la catégorie.', 'sempa')], 500);
         }
 
+        $id_column = Sempa_Stocks_DB::resolve_column('categories_stocks', 'id', false);
+        $category_row = null;
+
+        if ($id_column) {
+            $category_row = $db->get_row(
+                $db->prepare(
+                    'SELECT * FROM ' . Sempa_Stocks_DB::escape_identifier($table) . ' WHERE ' . Sempa_Stocks_DB::escape_identifier($id_column) . ' = %d',
+                    (int) $db->insert_id
+                ),
+                ARRAY_A
+            );
+        }
+
+        if (!$category_row) {
+            $category_row = array_merge($data, [
+                $id_column ?: 'id' => (int) $db->insert_id,
+            ]);
+        }
+
         wp_send_json_success([
-            'category' => self::format_category([
-                'id' => (int) $db->insert_id,
-                'nom' => $name,
-                'couleur' => $color ?: '#f4a412',
-                'icone' => $icon,
-            ]),
+            'category' => self::format_category($category_row),
         ]);
     }
 
@@ -416,25 +463,55 @@ final class Sempa_Stocks_App
         }
 
         $db = Sempa_Stocks_DB::instance();
-        $inserted = $db->insert(Sempa_Stocks_DB::table('fournisseurs_sempa'), [
+        $table = Sempa_Stocks_DB::table('fournisseurs_sempa');
+        $name_column = Sempa_Stocks_DB::resolve_column('fournisseurs_sempa', 'nom', false);
+
+        if ($name_column === null) {
+            wp_send_json_error(['message' => __('La colonne "nom" est introuvable dans la table des fournisseurs.', 'sempa')], 500);
+        }
+
+        $data = Sempa_Stocks_DB::prepare_columns('fournisseurs_sempa', [
             'nom' => $name,
             'contact' => $contact,
             'telephone' => $telephone,
             'email' => $email,
         ]);
 
+        if (!isset($data[$name_column])) {
+            $data[$name_column] = $name;
+        }
+
+        if (empty($data)) {
+            wp_send_json_error(['message' => __('Impossible de déterminer les colonnes de la table des fournisseurs.', 'sempa')], 500);
+        }
+
+        $inserted = $db->insert($table, $data);
+
         if ($inserted === false) {
             wp_send_json_error(['message' => $db->last_error ?: __('Impossible d\'ajouter le fournisseur.', 'sempa')], 500);
         }
 
+        $id_column = Sempa_Stocks_DB::resolve_column('fournisseurs_sempa', 'id', false);
+        $supplier_row = null;
+
+        if ($id_column) {
+            $supplier_row = $db->get_row(
+                $db->prepare(
+                    'SELECT * FROM ' . Sempa_Stocks_DB::escape_identifier($table) . ' WHERE ' . Sempa_Stocks_DB::escape_identifier($id_column) . ' = %d',
+                    (int) $db->insert_id
+                ),
+                ARRAY_A
+            );
+        }
+
+        if (!$supplier_row) {
+            $supplier_row = array_merge($data, [
+                $id_column ?: 'id' => (int) $db->insert_id,
+            ]);
+        }
+
         wp_send_json_success([
-            'supplier' => self::format_supplier([
-                'id' => (int) $db->insert_id,
-                'nom' => $name,
-                'contact' => $contact,
-                'telephone' => $telephone,
-                'email' => $email,
-            ]),
+            'supplier' => self::format_supplier($supplier_row),
         ]);
     }
 
@@ -636,22 +713,37 @@ final class Sempa_Stocks_App
 
     private static function format_category(array $category)
     {
+        $id = Sempa_Stocks_DB::value($category, 'categories_stocks', 'id', $category['id'] ?? 0);
+        $name = Sempa_Stocks_DB::value($category, 'categories_stocks', 'nom', '');
+        $color = Sempa_Stocks_DB::value($category, 'categories_stocks', 'couleur', '#f4a412');
+        $icon = Sempa_Stocks_DB::value($category, 'categories_stocks', 'icone', '');
+
+        if (!is_string($color) || $color === '') {
+            $color = '#f4a412';
+        }
+
         return [
-            'id' => (int) ($category['id'] ?? 0),
-            'nom' => $category['nom'] ?? '',
-            'couleur' => $category['couleur'] ?? '#f4a412',
-            'icone' => $category['icone'] ?? '',
+            'id' => (int) $id,
+            'nom' => is_string($name) ? $name : '',
+            'couleur' => $color,
+            'icone' => is_string($icon) ? $icon : '',
         ];
     }
 
     private static function format_supplier(array $supplier)
     {
+        $id = Sempa_Stocks_DB::value($supplier, 'fournisseurs_sempa', 'id', $supplier['id'] ?? 0);
+        $name = Sempa_Stocks_DB::value($supplier, 'fournisseurs_sempa', 'nom', '');
+        $contact = Sempa_Stocks_DB::value($supplier, 'fournisseurs_sempa', 'contact', '');
+        $telephone = Sempa_Stocks_DB::value($supplier, 'fournisseurs_sempa', 'telephone', '');
+        $email = Sempa_Stocks_DB::value($supplier, 'fournisseurs_sempa', 'email', '');
+
         return [
-            'id' => (int) ($supplier['id'] ?? 0),
-            'nom' => $supplier['nom'] ?? '',
-            'contact' => $supplier['contact'] ?? '',
-            'telephone' => $supplier['telephone'] ?? '',
-            'email' => $supplier['email'] ?? '',
+            'id' => (int) $id,
+            'nom' => is_string($name) ? $name : '',
+            'contact' => is_string($contact) ? $contact : '',
+            'telephone' => is_string($telephone) ? $telephone : '',
+            'email' => is_string($email) ? $email : '',
         ];
     }
 
