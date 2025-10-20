@@ -85,7 +85,18 @@ if (!class_exists('Sempa_Stocks_DB')) {
                 'reference' => ['reference', 'ref', 'code', 'sku'],
                 'designation' => ['designation', 'nom', 'name', 'libelle', 'description'],
                 'stock_actuel' => ['stock_actuel', 'stock', 'quantite', 'quantité', 'quantity', 'qte'],
+                'categorie' => ['categorie', 'catégorie', 'category', 'category_id', 'categorie_id'],
+                'fournisseur' => ['fournisseur', 'supplier', 'fournisseur_id', 'supplier_id', 'fournisseur_nom'],
+                'prix_achat' => ['prix_achat', 'price_buy', 'purchase_price', 'prix_achat_ht', 'cout', 'cost'],
+                'prix_vente' => ['prix_vente', 'sale_price', 'selling_price', 'price_sell', 'prix_vente_ht'],
+                'stock_minimum' => ['stock_minimum', 'stock_min', 'minimum_stock', 'stock_securite', 'stock_securité'],
+                'emplacement' => ['emplacement', 'location', 'emplacement_stock', 'position'],
+                'date_entree' => ['date_entree', 'date_entrée', 'entry_date', 'date_ajout', 'created_at'],
                 'date_modification' => ['date_modification', 'updated_at', 'date_update', 'modified_at'],
+                'notes' => ['notes', 'commentaires', 'comments', 'description_detaillee'],
+                'document_pdf' => ['document_pdf', 'document', 'fichier', 'file', 'piece_jointe'],
+                'ajoute_par' => ['ajoute_par', 'ajout_par', 'cree_par', 'created_by', 'utilisateur', 'user'],
+                'condition_materiel' => ['condition_materiel', 'condition', 'etat', 'state'],
             ],
             'mouvements_stocks_sempa' => [
                 'id' => ['id', 'mouvement_id', 'movement_id'],
@@ -96,6 +107,7 @@ if (!class_exists('Sempa_Stocks_DB')) {
                 'nouveau_stock' => ['nouveau_stock', 'stock_apres', 'stock_après', 'new_stock'],
                 'motif' => ['motif', 'raison', 'reason', 'commentaire', 'note'],
                 'utilisateur' => ['utilisateur', 'user', 'auteur', 'email'],
+                'date_mouvement' => ['date_mouvement', 'date', 'created_at', 'timestamp'],
             ],
         ];
 
