@@ -40,18 +40,54 @@ if (!class_exists('Sempa_Order_Stock_Sync')) {
                 );
             }
 
-            $db->query('START TRANSACTION');
+            $transaction_started = false;
+            try {
+                $start_result = $db->query('START TRANSACTION');
+                $transaction_started = ($start_result !== false);
+            } catch (Throwable $exception) {
+                if (function_exists('error_log')) {
+                    error_log('[Sempa] Unable to start stock transaction: ' . $exception->getMessage());
+                }
+            }
 
             foreach ($products as $product) {
-                $result = self::synchronize_product($db, $product, $context);
+                try {
+                    $result = self::synchronize_product($db, $product, $context);
+                } catch (Throwable $exception) {
+                    if ($transaction_started) {
+                        $db->query('ROLLBACK');
+                    }
+
+                    $exception_message = $exception->getMessage();
+                    if (function_exists('error_log')) {
+                        error_log('[Sempa] Stock sync failure: ' . $exception_message);
+                    }
+
+                    $clean_message = function_exists('wp_strip_all_tags')
+                        ? wp_strip_all_tags($exception_message)
+                        : $exception_message;
+
+                    return new WP_Error(
+                        'stocks_sync_failed',
+                        sprintf(
+                            __('Impossible de synchroniser les stocks : %s', 'sempa'),
+                            $clean_message
+                        )
+                    );
+                }
+
                 if (is_wp_error($result)) {
-                    $db->query('ROLLBACK');
+                    if ($transaction_started) {
+                        $db->query('ROLLBACK');
+                    }
 
                     return $result;
                 }
             }
 
-            $db->query('COMMIT');
+            if ($transaction_started) {
+                $db->query('COMMIT');
+            }
 
             return true;
         }
