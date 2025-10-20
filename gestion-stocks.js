@@ -611,28 +611,55 @@ final class Sempa_Stock_Routes
         $new_stock = $current_stock;
         $component_logs = [];
 
-        if ($type === 'in') {
-            $new_stock = $current_stock + $quantity;
-        } elseif ($type === 'out') {
-            if (empty($product['is_kit']) && $quantity > $current_stock) {
-                return new WP_Error('insufficient_stock', __('Stock insuffisant pour effectuer la sortie.', 'sempa'), ['status' => 400]);
-            }
-            $new_stock = max(0, $current_stock - $quantity);
-        } elseif ($type === 'adjust') {
-            $new_stock = max(0, $quantity);
+    function createCategory() {
+        const name = window.prompt('Nom de la nouvelle catégorie ?');
+        if (!name) {
+            return;
         }
+        const color = '#f4a412';
+        const data = new FormData();
+        data.append('nom', name.trim());
+        data.append('couleur', color);
+        request('sempa_stocks_save_category', data)
+            .then((response) => {
+                if (response?.success && response.data?.category) {
+                    state.categories.push(response.data.category);
+                    populateSelects();
+                    const select = document.querySelector('#stocks-category-select');
+                    if (select) {
+                        select.value = response.data.category.nom;
+                    }
+                } else {
+                    throw new Error(response?.data?.message || SempaStocksData.strings.unknownError);
+                }
+            })
+            .catch(showError);
+    }
 
-        if (!empty($product['is_kit']) && $type === 'out') {
-            $components = $wpdb->get_results($wpdb->prepare(
-                "SELECT kc.component_id, kc.quantity, p.name, p.stock FROM {$wpdb->prefix}kit_components kc JOIN {$wpdb->prefix}products p ON p.id = kc.component_id WHERE kc.kit_id = %d",
-                $product_id
-            ), ARRAY_A);
-
-            foreach ($components as $component) {
-                $required = (int) $component['quantity'] * $quantity;
-                $available = (int) $component['stock'];
-                if ($required > $available) {
-                    return new WP_Error('insufficient_component_stock', sprintf(__('Stock insuffisant pour le composant %s.', 'sempa'), $component['name']), ['status' => 400]);
+    function createSupplier() {
+        const name = window.prompt('Nom du fournisseur ?');
+        if (!name) {
+            return;
+        }
+        const contact = window.prompt('Nom du contact (optionnel)') || '';
+        const phone = window.prompt('Téléphone (optionnel)') || '';
+        const email = window.prompt('Email (optionnel)') || '';
+        const data = new FormData();
+        data.append('nom', name.trim());
+        data.append('contact', contact.trim());
+        data.append('telephone', phone.trim());
+        data.append('email', email.trim());
+        request('sempa_stocks_save_supplier', data)
+            .then((response) => {
+                if (response?.success && response.data?.supplier) {
+                    state.suppliers.push(response.data.supplier);
+                    populateSelects();
+                    const select = document.querySelector('#stocks-supplier-select');
+                    if (select) {
+                        select.value = response.data.supplier.nom;
+                    }
+                } else {
+                    throw new Error(response?.data?.message || SempaStocksData.strings.unknownError);
                 }
             }
 

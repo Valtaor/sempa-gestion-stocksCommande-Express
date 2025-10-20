@@ -3,7 +3,26 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+if (defined('ABSPATH') && !class_exists('wpdb')) {
+    require_once ABSPATH . 'wp-includes/wp-db.php';
+}
+
+if (!class_exists('Sempa_Stocks_wpdb') && class_exists('wpdb')) {
+    /**
+     * Custom wpdb implementation that prevents wp_die() on connection errors.
+     */
+    class Sempa_Stocks_wpdb extends \wpdb
+    {
+        public function __construct($dbuser, $dbpassword, $dbname, $dbhost)
+        {
+            $this->allow_bail = false;
+            parent::__construct($dbuser, $dbpassword, $dbname, $dbhost);
+        }
+    }
+}
+
 if (!class_exists('Sempa_Stocks_DB')) {
+
     final class Sempa_Stocks_DB
     {
         private const DB_HOST = 'db5001643902.hosting-data.io';
@@ -15,6 +34,7 @@ if (!class_exists('Sempa_Stocks_DB')) {
         private static $instance = null;
         private static $table_cache = [];
         private static $available_tables = null;
+        private static $column_cache = [];
 
         private const TABLE_ALIASES = [
             'categories_stocks' => [
@@ -52,12 +72,24 @@ if (!class_exists('Sempa_Stocks_DB')) {
                 return self::$instance;
             }
 
-            require_once ABSPATH . 'wp-includes/wp-db.php';
+            $host = self::DB_HOST;
+            if (self::DB_PORT) {
+                $host .= ':' . self::DB_PORT;
+            }
 
-            $wpdb = new \wpdb(self::DB_USER, self::DB_PASSWORD, self::DB_NAME, self::DB_HOST, self::DB_PORT);
+            if (class_exists('Sempa_Stocks_wpdb')) {
+                $wpdb = new Sempa_Stocks_wpdb(self::DB_USER, self::DB_PASSWORD, self::DB_NAME, $host);
+            } else {
+                $wpdb = new \wpdb(self::DB_USER, self::DB_PASSWORD, self::DB_NAME, $host);
+            }
             $wpdb->show_errors(false);
+            $wpdb->suppress_errors(true);
             if (!empty($wpdb->dbh)) {
                 $wpdb->set_charset($wpdb->dbh, 'utf8mb4');
+            }
+
+            if (empty($wpdb->dbh) && function_exists('error_log')) {
+                error_log('[Sempa] Unable to connect to the stock database.');
             }
 
             self::$instance = $wpdb;
@@ -97,6 +129,75 @@ if (!class_exists('Sempa_Stocks_DB')) {
             self::$available_tables = null;
 
             return $name;
+        }
+
+        public static function available_columns(string $table)
+        {
+            $resolved_table = self::table($table);
+            $cache_key = strtolower($resolved_table);
+
+            if (isset(self::$column_cache[$cache_key])) {
+                return self::$column_cache[$cache_key];
+            }
+
+            $db = self::instance();
+            if (!($db instanceof \wpdb)) {
+                self::$column_cache[$cache_key] = [];
+
+                return [];
+            }
+
+            $sql = 'SHOW COLUMNS FROM ' . self::quote_identifier($resolved_table);
+            $results = $db->get_results($sql, ARRAY_A);
+
+            $columns = [];
+            if (is_array($results)) {
+                foreach ($results as $column) {
+                    if (!empty($column['Field'])) {
+                        $field = (string) $column['Field'];
+                        $columns[strtolower($field)] = $field;
+                    }
+                }
+            }
+
+            self::$column_cache[$cache_key] = $columns;
+
+            $canonical_key = strtolower($table);
+            if ($canonical_key !== $cache_key) {
+                self::$column_cache[$canonical_key] = $columns;
+            }
+
+            return $columns;
+        }
+
+        public static function first_available_column(string $table, array $candidates)
+        {
+            $columns = self::available_columns($table);
+            foreach ($candidates as $candidate) {
+                $key = strtolower($candidate);
+                if (isset($columns[$key])) {
+                    return $columns[$key];
+                }
+            }
+
+            return null;
+        }
+
+        public static function quote_identifier(string $identifier)
+        {
+            $parts = array_filter(explode('.', $identifier), static function ($part) {
+                return $part !== '';
+            });
+
+            if (empty($parts)) {
+                return '``';
+            }
+
+            $escaped = array_map(static function ($part) {
+                return '`' . str_replace('`', '``', $part) . '`';
+            }, $parts);
+
+            return implode('.', $escaped);
         }
 
         private static function prime_available_tables(\wpdb $db)

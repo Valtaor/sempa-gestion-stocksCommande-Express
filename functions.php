@@ -8,17 +8,233 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-/**
- * Chargement propre des styles et scripts du thème enfant
- */
-add_action('wp_enqueue_scripts', function () {
-    wp_enqueue_style(
-        'uncode-child-style',
-        get_stylesheet_directory_uri() . '/style.css',
-        ['uncode-style'],
-        filemtime(get_stylesheet_directory() . '/style.css')
-    );
-});
+require_once ABSPATH . 'wp-admin/includes/image.php';
+require_once ABSPATH . 'wp-admin/includes/file.php';
+require_once ABSPATH . 'wp-admin/includes/media.php';
+require_once __DIR__ . '/includes/functions_stocks.php';
+
+$commandes_file = __DIR__ . '/functions_commandes.php';
+if (file_exists($commandes_file)) {
+    require_once $commandes_file;
+}
+
+final class Sempa_App
+{
+    public static function boot()
+    {
+        Sempa_Theme::register();
+        Sempa_Order_Route::register();
+        Sempa_Contact_Route::register();
+        Sempa_RankMath::register();
+        Sempa_Stock_Role::register();
+        Sempa_Stock_Permissions::register();
+        Sempa_Stock_Routes::register();
+        Sempa_Login_Redirect::register();
+        Sempa_Stocks_App::register();
+        Sempa_Stocks_Login::register();
+    }
+}
+
+final class Sempa_Theme
+{
+    public static function register()
+    {
+        add_action('after_setup_theme', [__CLASS__, 'load_text_domain']);
+        add_action('wp_enqueue_scripts', [__CLASS__, 'enqueue_styles'], 100);
+        add_filter('uncode_activate_menu_badges', '__return_true');
+    }
+
+    public static function load_text_domain()
+    {
+        load_child_theme_textdomain('uncode', get_stylesheet_directory() . '/languages');
+    }
+
+    public static function enqueue_styles()
+    {
+        $production_mode = function_exists('ot_get_option') ? ot_get_option('_uncode_production') : 'off';
+        $resources_version = ($production_mode === 'on') ? null : wp_rand();
+
+        if (function_exists('get_rocket_option') && (get_rocket_option('remove_query_strings') || get_rocket_option('minify_css') || get_rocket_option('minify_js'))) {
+            $resources_version = null;
+        }
+
+        $parent_style = 'uncode-style';
+        wp_enqueue_style($parent_style, get_template_directory_uri() . '/library/css/style.css', [], $resources_version);
+        wp_enqueue_style('child-style', get_stylesheet_directory_uri() . '/style.css', [$parent_style], $resources_version);
+    }
+}
+
+final class Sempa_Order_Route
+{
+    public static function register()
+    {
+        add_action('rest_api_init', [__CLASS__, 'register_route']);
+    }
+
+    public static function register_route()
+    {
+        register_rest_route('sempa/v1', '/enregistrer-commande', [
+            'methods' => WP_REST_Server::CREATABLE,
+            'callback' => [__CLASS__, 'handle'],
+            'permission_callback' => '__return_true',
+        ]);
+    }
+
+    public static function handle(WP_REST_Request $request)
+    {
+        global $wpdb;
+
+        $payload = $request->get_json_params();
+        $client = is_array($payload['client'] ?? null) ? $payload['client'] : [];
+        $products = is_array($payload['products'] ?? null) ? $payload['products'] : [];
+        $totals = is_array($payload['totals'] ?? null) ? $payload['totals'] : [];
+
+        $data = [
+            'nom_societe' => sanitize_text_field($client['name'] ?? ''),
+            'email' => sanitize_email($client['email'] ?? ''),
+            'telephone' => sanitize_text_field($client['phone'] ?? ''),
+            'numero_client' => sanitize_text_field($client['clientNumber'] ?? ''),
+            'code_postal' => sanitize_text_field($client['postalCode'] ?? ''),
+            'ville' => sanitize_text_field($client['city'] ?? ''),
+            'date_commande' => sanitize_text_field($client['orderDate'] ?? ''),
+            'details_produits' => wp_json_encode($products, JSON_UNESCAPED_UNICODE),
+            'sous_total' => Sempa_Utils::parse_currency($totals['totalHT'] ?? '0'),
+            'frais_livraison' => Sempa_Utils::parse_currency($totals['shipping'] ?? '0'),
+            'tva' => Sempa_Utils::parse_currency($totals['vat'] ?? '0'),
+            'total_ttc' => Sempa_Utils::parse_currency($totals['totalTTC'] ?? '0'),
+            'instructions_speciales' => sanitize_textarea_field($client['comments'] ?? ''),
+            'confirmation_email' => !empty($client['sendConfirmationEmail']) ? 1 : 0,
+            'created_at' => current_time('mysql'),
+        ];
+
+        $result = $wpdb->insert($wpdb->prefix . 'commandes', $data, [
+            '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%f', '%f', '%f', '%f', '%s', '%d', '%s',
+        ]);
+
+        if ($result === false) {
+            return new WP_REST_Response([
+                'success' => false,
+                'message' => 'Erreur SQL.',
+                'error' => $wpdb->last_error,
+            ], 500);
+        }
+
+        $order_id = (int) $wpdb->insert_id;
+
+        if (class_exists('Sempa_Order_Stock_Sync')) {
+            $sync_result = Sempa_Order_Stock_Sync::sync($products, [
+                'order_id' => $order_id,
+                'order_number' => $data['numero_client'],
+                'order_date' => $data['date_commande'],
+                'client_name' => $data['nom_societe'],
+                'client_email' => $data['email'],
+            ]);
+
+            if (is_wp_error($sync_result)) {
+                if (function_exists('error_log')) {
+                    error_log('[Sempa] Stock sync failed for order #' . $order_id . ': ' . $sync_result->get_error_message());
+                }
+
+                return new WP_REST_Response([
+                    'success' => false,
+                    'message' => $sync_result->get_error_message(),
+                    'order_id' => $order_id,
+                ], 500);
+            }
+        }
+
+        return new WP_REST_Response([
+            'success' => true,
+            'message' => 'Commande enregistrée avec succès.',
+            'order_id' => $order_id,
+        ]);
+    }
+}
+
+final class Sempa_Contact_Route
+{
+    public static function register()
+    {
+        add_action('rest_api_init', [__CLASS__, 'register_route']);
+    }
+
+    public static function register_route()
+    {
+        register_rest_route('sempa/v1', '/enregistrer-contact', [
+            'methods' => WP_REST_Server::CREATABLE,
+            'callback' => [__CLASS__, 'handle'],
+            'permission_callback' => '__return_true',
+        ]);
+    }
+
+    public static function handle(WP_REST_Request $request)
+    {
+        global $wpdb;
+
+        $payload = $request->get_json_params();
+
+        $fullname = sanitize_text_field($payload['fullname'] ?? '');
+        $email = sanitize_email($payload['email'] ?? '');
+        $message = sanitize_textarea_field($payload['message'] ?? '');
+
+        if ($fullname === '' || $email === '' || $message === '') {
+            return new WP_REST_Response([
+                'success' => false,
+                'message' => 'Données invalides.',
+            ], 400);
+        }
+
+        $result = $wpdb->insert($wpdb->prefix . 'contact_submissions', [
+            'request_type' => sanitize_text_field($payload['request_type'] ?? ''),
+            'fullname' => $fullname,
+            'activity' => sanitize_text_field($payload['activity'] ?? ''),
+            'email' => $email,
+            'phone' => sanitize_text_field($payload['phone'] ?? ''),
+            'postal_code' => sanitize_text_field($payload['postalCode'] ?? ''),
+            'city' => sanitize_text_field($payload['city'] ?? ''),
+            'message' => $message,
+            'created_at' => current_time('mysql'),
+        ], ['%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s']);
+
+        if ($result === false) {
+            return new WP_REST_Response([
+                'success' => false,
+                'message' => 'Erreur BDD: ' . $wpdb->last_error,
+            ], 500);
+        }
+
+        return new WP_REST_Response([
+            'success' => true,
+            'message' => 'Contact enregistré.',
+        ]);
+    }
+}
+
+final class Sempa_RankMath
+{
+    public static function register()
+    {
+        add_filter('rank_math/sitemap/portfolio/enabled', '__return_false');
+        add_filter('rank_math/sitemap/post_tag/enabled', '__return_false');
+        add_filter('rank_math/sitemap/portfolio_category/enabled', '__return_false');
+        add_filter('rank_math/sitemap/page_category/enabled', '__return_false');
+    }
+}
+
+final class Sempa_Stock_Role
+{
+    const ROLE_KEY = 'gestionnaire_de_stock';
+
+    public static function register()
+    {
+        add_action('init', [__CLASS__, 'ensure_role_exists']);
+    }
+
+    public static function ensure_role_exists()
+    {
+        if (get_role(self::ROLE_KEY)) {
+            return;
+        }
 
 /**
  * Inclusion des fonctions spécifiques aux commandes SEMPA
