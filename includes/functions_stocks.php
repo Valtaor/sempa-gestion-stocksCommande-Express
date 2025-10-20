@@ -265,11 +265,35 @@ final class Sempa_Stocks_App
 
         $table = Sempa_Stocks_DB::table('stocks_sempa');
         $id_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'id', false);
+        $reference_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'reference', false);
 
         if ($id_column === null) {
             wp_send_json_error([
                 'message' => __('Structure de table produit invalide.', 'sempa'),
             ], 500);
+        }
+
+        if ($reference_column === null) {
+            wp_send_json_error([
+                'message' => __('Impossible de déterminer la colonne de référence produit.', 'sempa'),
+            ], 500);
+        }
+
+        $prepared_reference = $payload['reference'];
+        $duplicate_sql = 'SELECT COUNT(1) FROM ' . Sempa_Stocks_DB::escape_identifier($table)
+            . ' WHERE ' . Sempa_Stocks_DB::escape_identifier($reference_column) . ' = %s';
+
+        if ($id > 0) {
+            $duplicate_sql .= ' AND ' . Sempa_Stocks_DB::escape_identifier($id_column) . ' != %d';
+            $duplicate = (int) $db->get_var($db->prepare($duplicate_sql, $prepared_reference, $id));
+        } else {
+            $duplicate = (int) $db->get_var($db->prepare($duplicate_sql, $prepared_reference));
+        }
+
+        if ($duplicate > 0) {
+            wp_send_json_error([
+                'message' => __('Cette référence est déjà utilisée par un autre produit.', 'sempa'),
+            ], 409);
         }
 
         if ($id > 0) {
@@ -289,14 +313,27 @@ final class Sempa_Stocks_App
         if ($id > 0) {
             $updated = $db->update($table, $prepared_payload, [$id_column => $id]);
             if ($updated === false) {
-                wp_send_json_error(['message' => $db->last_error ?: __('Impossible de mettre à jour le produit.', 'sempa')], 500);
+                $message = $db->last_error ?: __('Impossible de mettre à jour le produit.', 'sempa');
+                if (self::is_duplicate_error_message($message)) {
+                    $message = __('Cette référence est déjà utilisée par un autre produit.', 'sempa');
+                }
+                wp_send_json_error(['message' => $message], self::is_duplicate_error_message($db->last_error) ? 409 : 500);
             }
         } else {
             $inserted = $db->insert($table, $prepared_payload);
             if ($inserted === false) {
-                wp_send_json_error(['message' => $db->last_error ?: __('Impossible d\'ajouter le produit.', 'sempa')], 500);
+                $message = $db->last_error ?: __('Impossible d\'ajouter le produit.', 'sempa');
+                if (self::is_duplicate_error_message($message)) {
+                    $message = __('Cette référence est déjà utilisée par un autre produit.', 'sempa');
+                }
+                wp_send_json_error(['message' => $message], self::is_duplicate_error_message($db->last_error) ? 409 : 500);
             }
             $id = (int) $db->insert_id;
+            if ($id <= 0) {
+                wp_send_json_error([
+                    'message' => __('Impossible de déterminer l\'identifiant du nouveau produit.', 'sempa'),
+                ], 500);
+            }
         }
 
         $product = $db->get_row(
@@ -834,6 +871,15 @@ final class Sempa_Stocks_App
 
         $decoded = json_decode($body, true);
         return is_array($decoded) ? $decoded : [];
+    }
+
+    private static function is_duplicate_error_message($message)
+    {
+        if (!is_string($message) || $message === '') {
+            return false;
+        }
+
+        return stripos($message, 'duplicate entry') !== false;
     }
 
     private static function sanitize_decimal($value)
