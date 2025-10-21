@@ -161,6 +161,7 @@
                 .catch(showError);
         });
     }
+}
 
     if (searchInput) {
         searchInput.addEventListener('input', () => {
@@ -258,103 +259,215 @@
             .catch(showError);
     }
 
-    function request(action, formData) {
-        const data = formData instanceof FormData ? formData : new FormData();
-        if (!(formData instanceof FormData)) {
-            Object.entries(formData || {}).forEach(([key, value]) => {
-                data.append(key, value);
-            });
-        }
-        if (typeof data.set === 'function') {
-            data.set('action', action);
-            data.set('nonce', SempaStocksData.nonce);
-        } else {
-            data.append('action', action);
-            data.append('nonce', SempaStocksData.nonce);
+        if ($result === false) {
+            return new WP_REST_Response([
+                'success' => false,
+                'message' => 'Erreur BDD: ' . $wpdb->last_error,
+            ], 500);
         }
 
-        return fetch(SempaStocksData.ajaxUrl, {
-            method: 'POST',
-            credentials: 'same-origin',
-            body: data,
-        }).then((response) => response.json());
+        return new WP_REST_Response([
+            'success' => true,
+            'message' => 'Contact enregistré.',
+        ]);
+    }
+}
+
+final class Sempa_RankMath
+{
+    public static function register(): void
+    {
+        add_filter('rank_math/sitemap/portfolio/enabled', '__return_false');
+        add_filter('rank_math/sitemap/post_tag/enabled', '__return_false');
+        add_filter('rank_math/sitemap/portfolio_category/enabled', '__return_false');
+        add_filter('rank_math/sitemap/page_category/enabled', '__return_false');
+    }
+}
+
+final class Sempa_Stock_Permissions
+{
+    public const NAMESPACE_PREFIX = '/sempa-stocks/v1';
+
+    public static function register(): void
+    {
+        add_filter('rest_authentication_errors', [__CLASS__, 'allow_public_cookie_errors'], 150, 3);
     }
 
-    function renderDashboard(data) {
-        if (!data) {
-            return;
+    public static function allow_public_cookie_errors($result, $server, $request)
+    {
+        if (!is_wp_error($result)) {
+            return $result;
         }
 
-        const totals = data.totals || {};
-        setMetricValue(document.querySelector('[data-dashboard="produits"]'), (totals.produits ?? 0).toString());
-        setMetricValue(document.querySelector('[data-dashboard="valeur"]'), formatCurrency(totals.valeur));
+        $code = $result->get_error_code();
+        if ($code !== 'rest_cookie_invalid_nonce' && $code !== 'nonce_failure') {
+            return $result;
+        }
 
-        const alerts = Array.isArray(data.alerts) ? data.alerts : [];
-        const recent = Array.isArray(data.recent) ? data.recent : [];
-        const noAlertsText = SempaStocksData?.strings?.noAlerts || 'Aucune alerte critique';
-        const noRecentText = SempaStocksData?.strings?.noRecent || 'Aucun mouvement récent';
+        if (!($request instanceof WP_REST_Request)) {
+            return $result;
+        }
 
-        setMetricValue(document.querySelector('[data-dashboard="alertes"]'), alerts.length.toString());
-        setMetricValue(document.querySelector('[data-dashboard="mouvements"]'), recent.length.toString());
+        $route = $request->get_route();
+        if (is_string($route) && strpos($route, self::NAMESPACE_PREFIX) === 0) {
+            return null;
+        }
 
-        if (alertsList) {
-            alertsList.innerHTML = '';
-            if (!alerts.length) {
-                alertsList.innerHTML = `<li class="empty">${escapeHtml(noAlertsText)}</li>`;
-            } else {
-                alerts.forEach((alert) => {
-                    const status = stockStatus(alert.stock_actuel, alert.stock_minimum);
-                    const current = Number(alert.stock_actuel ?? 0);
-                    const minimum = Number(alert.stock_minimum ?? 0);
-                    const severity = status === 'critical' ? 'urgent' : status === 'warning' ? 'warning' : 'normal';
-                    const severityLabel = status === 'critical' ? 'URGENT' : status === 'warning' ? 'AVERTISSEMENT' : 'INFO';
-                    const li = document.createElement('li');
-                    li.className = `alerts-item alerts-item--${status}`;
-                    li.innerHTML = `
-                        <span class="alerts-item__severity alerts-item__severity--${severity}">${escapeHtml(severityLabel)}</span>
-                        <div class="alerts-item__body">
-                            <div class="alerts-item__title">
-                                <strong>${escapeHtml(alert.reference)}</strong>
-                                <span class="alerts-item__designation">${escapeHtml(alert.designation)}</span>
-                            </div>
-                            <div class="alerts-item__meta">
-                                <span class="status-badge status-badge--${statusClassName(status)}">${escapeHtml(statusLabel(status))}</span>
-                                <span class="alerts-item__count">${current} / ${minimum}</span>
-                            </div>
-                        </div>`;
-                    alertsList.appendChild(li);
-                });
+        return $result;
+    }
+
+    public static function allow_public_reads($request = null): bool
+    {
+        unset($request);
+        return true;
+    }
+
+    public static function require_or_filter(WP_REST_Request $request)
+    {
+        $allow = apply_filters('sempa_allow_public_stock_writes', true, $request);
+        if ($allow) {
+            return true;
+        }
+
+        return new WP_Error('rest_forbidden', __('Authentification requise.', 'sempa'), ['status' => 401]);
+    }
+}
+
+final class Sempa_Stock_Routes
+{
+    private const ROUTE_NAMESPACE = 'sempa-stocks/v1';
+
+    public static function register(): void
+    {
+        add_action('rest_api_init', [__CLASS__, 'register_routes']);
+    }
+
+    public static function register_routes(): void
+    {
+        register_rest_route(self::ROUTE_NAMESPACE, '/products', [
+            [
+                'methods' => WP_REST_Server::READABLE,
+                'callback' => [__CLASS__, 'get_products'],
+                'permission_callback' => [Sempa_Stock_Permissions::class, 'allow_public_reads'],
+            ],
+            [
+                'methods' => WP_REST_Server::CREATABLE,
+                'callback' => [__CLASS__, 'save_product'],
+                'permission_callback' => [Sempa_Stock_Permissions::class, 'require_or_filter'],
+            ],
+        ]);
+
+        register_rest_route(self::ROUTE_NAMESPACE, '/products/(?P<id>\d+)', [
+            'args' => [
+                'id' => [
+                    'validate_callback' => [__CLASS__, 'validate_positive_int'],
+                ],
+            ],
+            [
+                'methods' => WP_REST_Server::READABLE,
+                'callback' => [__CLASS__, 'get_products'],
+                'permission_callback' => [Sempa_Stock_Permissions::class, 'allow_public_reads'],
+            ],
+            [
+                'methods' => WP_REST_Server::EDITABLE,
+                'callback' => [__CLASS__, 'save_product'],
+                'permission_callback' => [Sempa_Stock_Permissions::class, 'require_or_filter'],
+            ],
+            [
+                'methods' => WP_REST_Server::DELETABLE,
+                'callback' => [__CLASS__, 'delete_product'],
+                'permission_callback' => [Sempa_Stock_Permissions::class, 'require_or_filter'],
+            ],
+        ]);
+
+        register_rest_route(self::ROUTE_NAMESPACE, '/products/(?P<id>\d+)/photo', [
+            'methods' => WP_REST_Server::CREATABLE,
+            'callback' => [__CLASS__, 'upload_photo'],
+            'permission_callback' => [Sempa_Stock_Permissions::class, 'require_or_filter'],
+            'args' => [
+                'id' => [
+                    'validate_callback' => [__CLASS__, 'validate_positive_int'],
+                ],
+            ],
+        ]);
+
+        register_rest_route(self::ROUTE_NAMESPACE, '/products/(?P<id>\d+)/history', [
+            'methods' => WP_REST_Server::READABLE,
+            'callback' => [__CLASS__, 'get_history'],
+            'permission_callback' => [Sempa_Stock_Permissions::class, 'allow_public_reads'],
+            'args' => [
+                'id' => [
+                    'validate_callback' => [__CLASS__, 'validate_positive_int'],
+                ],
+            ],
+        ]);
+
+        register_rest_route(self::ROUTE_NAMESPACE, '/movements', [
+            [
+                'methods' => WP_REST_Server::READABLE,
+                'callback' => [__CLASS__, 'get_movements'],
+                'permission_callback' => [Sempa_Stock_Permissions::class, 'allow_public_reads'],
+            ],
+            [
+                'methods' => WP_REST_Server::CREATABLE,
+                'callback' => [__CLASS__, 'create_movement'],
+                'permission_callback' => [Sempa_Stock_Permissions::class, 'require_or_filter'],
+            ],
+        ]);
+
+        register_rest_route(self::ROUTE_NAMESPACE, '/categories', [
+            [
+                'methods' => WP_REST_Server::READABLE,
+                'callback' => [__CLASS__, 'get_categories'],
+                'permission_callback' => [Sempa_Stock_Permissions::class, 'allow_public_reads'],
+            ],
+            [
+                'methods' => WP_REST_Server::CREATABLE,
+                'callback' => [__CLASS__, 'create_category'],
+                'permission_callback' => [Sempa_Stock_Permissions::class, 'require_or_filter'],
+            ],
+        ]);
+
+        register_rest_route(self::ROUTE_NAMESPACE, '/categories/(?P<id>\d+)', [
+            'args' => [
+                'id' => [
+                    'validate_callback' => [__CLASS__, 'validate_positive_int'],
+                ],
+            ],
+            [
+                'methods' => WP_REST_Server::DELETABLE,
+                'callback' => [__CLASS__, 'delete_category'],
+                'permission_callback' => [Sempa_Stock_Permissions::class, 'require_or_filter'],
+            ],
+        ]);
+    }
+
+    public static function validate_positive_int($value): bool
+    {
+        return is_numeric($value) && (int) $value > 0;
+    }
+
+    public static function get_products(WP_REST_Request $request)
+    {
+        global $wpdb;
+
+        $id = (int) $request->get_param('id');
+        if ($id > 0) {
+            $product = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}products WHERE id = %d", $id), ARRAY_A);
+            if (!$product) {
+                return new WP_Error('not_found', __('Produit introuvable.', 'sempa'), ['status' => 404]);
             }
+
+            $product = self::hydrate_components($product, $wpdb);
+            return rest_ensure_response(Sempa_Utils::normalize_product($product));
         }
 
-        if (recentList) {
-            recentList.innerHTML = '';
-            if (!recent.length) {
-                recentList.innerHTML = `<li class="empty">${escapeHtml(noRecentText)}</li>`;
-            } else {
-                recent.forEach((movement) => {
-                    const tone = movementTone(movement.type_mouvement);
-                    const label = labelMovement(movement.type_mouvement);
-                    const quantity = movement.quantite ?? 0;
-                    const li = document.createElement('li');
-                    li.className = 'recent-item';
-                    li.dataset.type = tone;
-                    li.innerHTML = `
-                        <div class="recent-item__marker" aria-hidden="true"></div>
-                        <div class="recent-item__content">
-                            <div class="recent-item__header">
-                                <span class="recent-item__title">${escapeHtml(movement.reference)} – ${escapeHtml(movement.designation)}</span>
-                                <time class="recent-item__date" datetime="${escapeAttribute(movement.date_mouvement || '')}">${escapeHtml(formatRelativeDate(movement.date_mouvement))}</time>
-                            </div>
-                            <div class="recent-item__meta">
-                                <span class="movement-chip movement-chip--${tone}">${escapeHtml(label)}</span>
-                                <span class="recent-item__quantity">${escapeHtml(String(quantity))}</span>
-                            </div>
-                        </div>`;
-                    recentList.appendChild(li);
-                });
-            }
-        }
+        $products = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}products ORDER BY name ASC", ARRAY_A);
+        $products = array_map([Sempa_Utils::class, 'normalize_product'], $products);
+
+        return rest_ensure_response([
+            'products' => $products,
+        ]);
     }
 
     function setProductsLoading(isLoading) {
@@ -627,64 +740,34 @@
         });
     }
 
-    function renderMovements() {
-        if (!movementTable) {
-            return;
+        if (!empty($wpdb->last_error)) {
+            return new WP_Error('db_error', $wpdb->last_error, ['status' => 500]);
         }
 
-        movementTable.innerHTML = '';
-        if (!state.movements.length) {
-            const row = document.createElement('tr');
-            row.innerHTML = `<td colspan="6" class="empty">${escapeHtml(SempaStocksData?.strings?.noMovements || 'Aucun mouvement enregistré')}</td>`;
-            movementTable.appendChild(row);
-            return;
-        }
-
-        state.movements.forEach((movement) => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${formatDate(movement.date_mouvement)}</td>
-                <td>${escapeHtml(movement.reference)} – ${escapeHtml(movement.designation)}</td>
-                <td>${escapeHtml(labelMovement(movement.type_mouvement))}</td>
-                <td>${movement.quantite}</td>
-                <td>${movement.ancien_stock ?? 0} ➜ ${movement.nouveau_stock ?? 0}</td>
-                <td>${escapeHtml(movement.motif || '')}</td>`;
-            movementTable.appendChild(tr);
-        });
-    }
-
-    function populateSelects() {
-        const categorySelect = document.querySelector('#stocks-category-select');
-        const supplierSelect = document.querySelector('#stocks-supplier-select');
-        const movementSelect = document.querySelector('#movement-product');
-
-        if (categorySelect) {
-            const current = categorySelect.value;
-            categorySelect.innerHTML = '<option value="">—</option>';
-            state.categories.forEach((category) => {
-                const option = document.createElement('option');
-                option.value = category.nom;
-                option.textContent = category.nom;
-                categorySelect.appendChild(option);
-            });
-            if (current) {
-                categorySelect.value = current;
+        $was_kit = isset($previous['is_kit']) ? (int) $previous['is_kit'] : 0;
+        if ($product_data['is_kit']) {
+            if (!$was_kit) {
+                $history[] = __('Le produit est désormais géré comme un kit.', 'sempa');
             }
-        }
 
-        if (supplierSelect) {
-            const currentSupplier = supplierSelect.value;
-            supplierSelect.innerHTML = '<option value="">—</option>';
-            state.suppliers.forEach((supplier) => {
-                const option = document.createElement('option');
-                option.value = supplier.nom;
-                option.textContent = supplier.nom;
-                supplierSelect.appendChild(option);
-            });
-            if (currentSupplier) {
-                supplierSelect.value = currentSupplier;
+            $existing = $wpdb->get_results($wpdb->prepare("SELECT component_id, quantity FROM {$wpdb->prefix}kit_components WHERE kit_id = %d", $id), ARRAY_A);
+            $map = [];
+            foreach ($existing as $row) {
+                $map[(int) $row['component_id']] = (int) $row['quantity'];
             }
-        }
+
+            $wpdb->delete($wpdb->prefix . 'kit_components', ['kit_id' => $id]);
+
+            $components = [];
+            if (!empty($data['components']) && is_array($data['components'])) {
+                foreach ($data['components'] as $component) {
+                    $component_id = isset($component['id']) ? (int) $component['id'] : 0;
+                    $component_qty = isset($component['quantity']) ? (int) $component['quantity'] : 0;
+                    if ($component_id && $component_qty) {
+                        $components[$component_id] = $component_qty;
+                    }
+                }
+            }
 
         if (filterCategory) {
             const currentFilter = state.filters.category || '';
@@ -702,7 +785,6 @@
             if (currentFilter) {
                 filterCategory.value = currentFilter;
             }
-        }
 
         if (filterSupplier) {
             const currentFilter = state.filters.supplier || '';
@@ -720,17 +802,24 @@
             if (currentFilter) {
                 filterSupplier.value = currentFilter;
             }
+        } else {
+            if ($was_kit) {
+                $history[] = __('Ce produit n\'est plus géré comme un kit.', 'sempa');
+            }
+            $wpdb->delete($wpdb->prefix . 'kit_components', ['kit_id' => $id]);
         }
 
-        if (movementSelect) {
-            updateMovementSelect();
+        if (!empty($history)) {
+            $wpdb->insert($wpdb->prefix . 'product_history', [
+                'product_id' => $id,
+                'user_name' => $current_user->display_name,
+                'action' => implode("\n", $history),
+                'timestamp' => current_time('mysql'),
+            ]);
         }
-    }
 
-    function updateMovementSelect() {
-        const movementSelect = document.querySelector('#movement-product');
-        if (!movementSelect) {
-            return;
+        if (!empty($wpdb->last_error)) {
+            return new WP_Error('db_error', $wpdb->last_error, ['status' => 500]);
         }
         const options = Array.from(productOptions.values());
         movementSelect.innerHTML = '';
@@ -744,61 +833,28 @@
             });
     }
 
-    function openMovementForm() {
-        if (movementForm) {
-            movementForm.reset();
-        }
-        updateMovementSelect();
-        showPanel(movementPanel);
+        $product = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}products WHERE id = %d", $id), ARRAY_A);
+        $product = self::hydrate_components($product, $wpdb);
+
+        return rest_ensure_response(Sempa_Utils::normalize_product($product));
     }
 
-    function openProductForm(product = null) {
-        productForm?.reset();
-        if (!productForm) {
-            return;
-        }
-        if (product) {
-            productForm.querySelector('[name="id"]').value = product.id || '';
-            productForm.querySelector('[name="reference"]').value = product.reference || '';
-            productForm.querySelector('[name="designation"]').value = product.designation || '';
-            productForm.querySelector('[name="categorie"]').value = product.categorie || '';
-            productForm.querySelector('[name="fournisseur"]').value = product.fournisseur || '';
-            productForm.querySelector('[name="prix_achat"]').value = product.prix_achat || '';
-            productForm.querySelector('[name="prix_vente"]').value = product.prix_vente || '';
-            productForm.querySelector('[name="stock_actuel"]').value = product.stock_actuel || 0;
-            productForm.querySelector('[name="stock_minimum"]').value = product.stock_minimum || 0;
-            productForm.querySelector('[name="emplacement"]').value = product.emplacement || '';
-            productForm.querySelector('[name="date_entree"]').value = product.date_entree || '';
-            productForm.querySelector('[name="notes"]').value = product.notes || '';
-            const condition = getProductCondition(product);
-            const conditionInput = productForm.querySelector(`[name="condition_materiel"][value="${condition}"]`);
-            if (conditionInput) {
-                conditionInput.checked = true;
-            }
-            renderMeta(product);
-        } else if (productMeta) {
-            productMeta.innerHTML = '';
-            const defaultCondition = productForm.querySelector('[name="condition_materiel"][value="neuf"]');
-            if (defaultCondition) {
-                defaultCondition.checked = true;
-            }
-        }
-        showPanel(productPanel);
-    }
+    public static function upload_photo(WP_REST_Request $request)
+    {
+        global $wpdb;
 
-    function resetProductForm() {
-        if (productForm) {
-            productForm.reset();
-            productForm.querySelector('[name="id"]').value = '';
-            const defaultCondition = productForm.querySelector('[name="condition_materiel"][value="neuf"]');
-            if (defaultCondition) {
-                defaultCondition.checked = true;
-            }
+        $id = (int) $request->get_param('id');
+        $files = $request->get_file_params();
+        $file = $files['file'] ?? null;
+
+        if ($id <= 0 || empty($file)) {
+            return new WP_Error('bad_request', __('Fichier ou ID de produit manquant.', 'sempa'), ['status' => 400]);
         }
-        if (productMeta) {
-            productMeta.innerHTML = '';
+
+        $attachment_id = media_handle_sideload($file, 0, sprintf(__('Photo du produit %d', 'sempa'), $id));
+        if (is_wp_error($attachment_id)) {
+            return new WP_Error('upload_error', $attachment_id->get_error_message(), ['status' => 500]);
         }
-    }
 
     function saveProduct(formData) {
         request('sempa_stocks_save_product', formData)
@@ -817,85 +873,109 @@
             .catch(showError);
     }
 
-    function showPanel(panel) {
-        if (!panel) {
-            return;
-        }
-        panel.removeAttribute('hidden');
-        panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        $current_user = wp_get_current_user();
+        $wpdb->insert($wpdb->prefix . 'product_history', [
+            'product_id' => $id,
+            'user_name' => $current_user->display_name,
+            'action' => __('La photo du produit a été mise à jour.', 'sempa'),
+            'timestamp' => current_time('mysql'),
+        ]);
+
+        return rest_ensure_response([
+            'status' => 'success',
+            'imageUrl' => $image_url,
+        ]);
     }
 
-    function hidePanel(panel) {
-        panel?.setAttribute('hidden', 'hidden');
+    public static function get_history(WP_REST_Request $request)
+    {
+        global $wpdb;
+
+        $id = (int) $request->get_param('id');
+        $history = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}product_history WHERE product_id = %d ORDER BY timestamp DESC", $id), ARRAY_A);
+
+        return rest_ensure_response($history);
     }
 
-    function renderMeta(product) {
-        if (!productMeta) {
-            return;
+    public static function delete_product(WP_REST_Request $request)
+    {
+        global $wpdb;
+
+        $id = (int) $request->get_param('id');
+        if ($id <= 0) {
+            return new WP_Error('bad_request', __('Identifiant manquant.', 'sempa'), ['status' => 400]);
         }
-        const documentUrl = product.document_pdf
-            ? (product.document_pdf.startsWith('http')
-                ? product.document_pdf
-                : SempaStocksData.uploadsUrl + product.document_pdf.replace(/^uploads-stocks\//, ''))
-            : '';
-        const condition = conditionLabel(getProductCondition(product));
-        productMeta.innerHTML = `
-            <ul>
-                <li><strong>${escapeHtml('Créé par')} :</strong> ${escapeHtml(product.ajoute_par || '—')}</li>
-                <li><strong>${escapeHtml('Entrée')} :</strong> ${product.date_entree || '—'}</li>
-                <li><strong>${escapeHtml('Modifié')} :</strong> ${product.date_modification || '—'}</li>
-                <li><strong>${escapeHtml('Condition')} :</strong> ${escapeHtml(condition)}</li>
-                ${documentUrl ? `<li><a href="${escapeAttribute(documentUrl)}" target="_blank" rel="noopener">${escapeHtml('Voir le document')}</a></li>` : ''}
-            </ul>`;
+
+        $product = $wpdb->get_row($wpdb->prepare("SELECT name FROM {$wpdb->prefix}products WHERE id = %d", $id));
+        if (!$product) {
+            return new WP_Error('not_found', __('Produit introuvable.', 'sempa'), ['status' => 404]);
+        }
+
+        $current_user = wp_get_current_user();
+        $wpdb->insert($wpdb->prefix . 'product_history', [
+            'product_id' => $id,
+            'user_name' => $current_user->display_name,
+            'action' => sprintf(__('Produit "%s" supprimé.', 'sempa'), $product->name),
+            'timestamp' => current_time('mysql'),
+        ]);
+
+        $wpdb->delete($wpdb->prefix . 'kit_components', ['kit_id' => $id]);
+        $wpdb->delete($wpdb->prefix . 'products', ['id' => $id]);
+
+        if (!empty($wpdb->last_error)) {
+            return new WP_Error('db_error', $wpdb->last_error, ['status' => 500]);
+        }
+
+        return rest_ensure_response(['status' => 'success']);
     }
 
-    function normalizeProduct(product = {}) {
-        const normalized = { ...product };
-        normalized.condition_materiel = getProductCondition(product);
-        return normalized;
+    public static function get_movements(): WP_REST_Response
+    {
+        global $wpdb;
+
+        $movements = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}movements ORDER BY date DESC LIMIT 300", ARRAY_A);
+
+        return rest_ensure_response([
+            'movements' => $movements,
+        ]);
     }
 
-    function getProductCondition(product = {}) {
-        const direct = sanitizeCondition(product.condition_materiel || product.condition || product.conditionMateriel);
-        if (direct) {
-            return direct;
+    public static function create_movement(WP_REST_Request $request)
+    {
+        global $wpdb;
+
+        $data = $request->get_json_params();
+
+        $product_id = isset($data['productId']) ? (int) $data['productId'] : 0;
+        $type = isset($data['type']) ? sanitize_key($data['type']) : '';
+        $quantity = isset($data['quantity']) ? (int) $data['quantity'] : 0;
+        $reason = isset($data['reason']) ? sanitize_text_field($data['reason']) : '';
+        $product_name = isset($data['productName']) ? sanitize_text_field($data['productName']) : '';
+
+        if ($product_id <= 0) {
+            return new WP_Error('bad_request', __('Produit introuvable.', 'sempa'), ['status' => 400]);
         }
 
-        const legacy = sanitizeCondition(product.type_materiel || product.typeMateriel);
-        if (legacy) {
-            return legacy;
+        if (!in_array($type, ['in', 'out', 'adjust'], true)) {
+            return new WP_Error('bad_request', __('Type de mouvement invalide.', 'sempa'), ['status' => 400]);
         }
 
-        const category = (product.categorie || '').toLowerCase();
-        if (category.includes('recond') || category.includes('occasion')) {
-            return 'reconditionne';
+        if ($type === 'adjust') {
+            if ($quantity < 0) {
+                return new WP_Error('bad_request', __('La quantité doit être positive pour un ajustement.', 'sempa'), ['status' => 400]);
+            }
+        } elseif ($quantity <= 0) {
+            return new WP_Error('bad_request', __('La quantité doit être supérieure à zéro.', 'sempa'), ['status' => 400]);
         }
 
-        return 'neuf';
-    }
+        $product = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}products WHERE id = %d", $product_id), ARRAY_A);
+        if (!$product) {
+            return new WP_Error('not_found', __('Produit introuvable.', 'sempa'), ['status' => 404]);
+        }
 
-    function sanitizeCondition(value) {
-        if (!value) {
-            return '';
-        }
-        let stringValue = String(value).toLowerCase();
-        try {
-            stringValue = stringValue.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        } catch (error) {
-            stringValue = stringValue.replace(/[éèê]/g, 'e');
-        }
-        if (['reconditionne', 'refurbished', 'occasion'].includes(stringValue)) {
-            return 'reconditionne';
-        }
-        if (['neuf', 'new'].includes(stringValue)) {
-            return 'neuf';
-        }
-        return '';
-    }
-
-    function conditionLabel(condition) {
-        return condition === 'reconditionne' ? 'Reconditionné' : 'Matériel neuf';
-    }
+        $current_stock = (int) $product['stock'];
+        $new_stock = $current_stock;
+        $component_logs = [];
 
     function createCategory() {
         const name = window.prompt('Nom de la nouvelle catégorie ?');
@@ -947,155 +1027,211 @@
                 } else {
                     throw new Error(response?.data?.message || SempaStocksData.strings.unknownError);
                 }
-            })
-            .catch(showError);
-    }
+            }
 
-    function stockStatus(current, minimum) {
-        const stock = Number(current ?? 0);
-        const min = Number(minimum ?? 0);
-        if (stock <= 0) {
-            return 'critical';
-        }
-        if (min > 0 && stock <= min) {
-            return 'warning';
-        }
-        return 'normal';
-    }
-
-    function statusLabel(status) {
-        switch (status) {
-            case 'critical':
-                return 'Rupture';
-            case 'warning':
-                return 'Stock faible';
-            default:
-                return 'En stock';
-        }
-    }
-
-    function statusClassName(status) {
-        switch (status) {
-            case 'critical':
-                return 'out';
-            case 'warning':
-                return 'low';
-            default:
-                return 'in-stock';
-        }
-    }
-
-    function movementTone(type) {
-        switch (type) {
-            case 'entree':
-                return 'entry';
-            case 'sortie':
-                return 'exit';
-            case 'ajustement':
-                return 'adjust';
-            default:
-                return 'neutral';
-        }
-    }
-
-    function setMetricValue(element, text) {
-        if (!element) {
-            return;
-        }
-        const value = text == null ? '' : String(text);
-        if (element.textContent !== value) {
-            element.textContent = value;
-            element.classList.remove('is-updated');
-            void element.offsetWidth;
-            element.classList.add('is-updated');
-        } else {
-            element.textContent = value;
-        }
-    }
-
-    function labelMovement(type) {
-        switch (type) {
-            case 'entree':
-                return 'Entrée';
-            case 'sortie':
-                return 'Sortie';
-            case 'ajustement':
-                return 'Ajustement';
-            default:
-                return type || '';
-        }
-    }
-
-    function formatDate(value) {
-        if (!value) {
-            return '';
-        }
-        const date = new Date(value.replace(' ', 'T'));
-        return date.toLocaleString('fr-FR');
-    }
-
-    function formatRelativeDate(value) {
-        if (!value) {
-            return '';
-        }
-        const date = new Date(value.replace(' ', 'T'));
-        if (Number.isNaN(date.getTime())) {
-            return '';
-        }
-        const now = new Date();
-        const diffSeconds = Math.round((date.getTime() - now.getTime()) / 1000);
-        const absSeconds = Math.abs(diffSeconds);
-        const table = [
-            { limit: 60, divisor: 1, unit: 'second' },
-            { limit: 3600, divisor: 60, unit: 'minute' },
-            { limit: 86400, divisor: 3600, unit: 'hour' },
-            { limit: 604800, divisor: 86400, unit: 'day' },
-            { limit: 2629800, divisor: 604800, unit: 'week' },
-            { limit: 31557600, divisor: 2629800, unit: 'month' },
-            { limit: Infinity, divisor: 31557600, unit: 'year' },
-        ];
-
-        for (const entry of table) {
-            if (absSeconds < entry.limit) {
-                const valueToFormat = Math.round(diffSeconds / entry.divisor);
-                if (typeof Intl !== 'undefined' && typeof Intl.RelativeTimeFormat !== 'undefined') {
-                    const rtf = new Intl.RelativeTimeFormat('fr', { numeric: 'auto' });
-                    return rtf.format(valueToFormat, entry.unit);
-                }
-                const absoluteString = Math.abs(valueToFormat).toString();
-                const suffix = diffSeconds < 0 ? 'il y a' : 'dans';
-                return `${suffix} ${absoluteString} ${entry.unit}`;
+            foreach ($components as $component) {
+                $required = (int) $component['quantity'] * $quantity;
+                $wpdb->query($wpdb->prepare(
+                    "UPDATE {$wpdb->prefix}products SET stock = GREATEST(stock - %d, 0) WHERE id = %d",
+                    $required,
+                    (int) $component['component_id']
+                ));
+                $component_logs[] = sprintf('%s (-%d)', $component['name'], $required);
             }
         }
 
-        return formatDate(value);
-    }
+        $wpdb->update($wpdb->prefix . 'products', [
+            'stock' => $new_stock,
+            'lastUpdated' => current_time('mysql'),
+        ], ['id' => $product_id], ['%d', '%s'], ['%d']);
 
-    function formatCurrency(value) {
-        const amount = Number(value || 0);
-        return amount.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
-    }
+        $inserted = $wpdb->insert($wpdb->prefix . 'movements', [
+            'productId' => $product_id,
+            'productName' => $product_name ?: $product['name'],
+            'type' => $type,
+            'quantity' => $quantity,
+            'reason' => $reason,
+            'date' => current_time('mysql'),
+        ], ['%d', '%s', '%s', '%d', '%s', '%s']);
 
-    function escapeHtml(value) {
-        if (value == null) {
-            return '';
+        if ($inserted === false || !empty($wpdb->last_error)) {
+            return new WP_Error('db_error', $wpdb->last_error ?: __('Impossible de créer le mouvement.', 'sempa'), ['status' => 500]);
         }
-        return String(value)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
+
+        $current_user = wp_get_current_user();
+        $message = '';
+        switch ($type) {
+            case 'in':
+                $message = sprintf(__('Entrée de stock : +%d (stock actuel : %d). Raison : %s', 'sempa'), $quantity, $new_stock, $reason);
+                break;
+            case 'out':
+                $message = sprintf(__('Sortie de stock : -%d (stock actuel : %d). Raison : %s', 'sempa'), $quantity, $new_stock, $reason);
+                if ($component_logs) {
+                    $message .= ' | ' . __('Composants ajustés : ', 'sempa') . implode(', ', $component_logs);
+                }
+                break;
+            case 'adjust':
+                $message = sprintf(__('Stock ajusté à %d (ancien stock : %d). Raison : %s', 'sempa'), $new_stock, $current_stock, $reason);
+                break;
+        }
+
+        $wpdb->insert($wpdb->prefix . 'product_history', [
+            'product_id' => $product_id,
+            'user_name' => $current_user->display_name,
+            'action' => $message,
+            'timestamp' => current_time('mysql'),
+        ], ['%d', '%s', '%s', '%s']);
+
+        $updated = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}products WHERE id = %d", $product_id), ARRAY_A);
+        $updated = self::hydrate_components($updated, $wpdb);
+
+        return rest_ensure_response([
+            'status' => 'success',
+            'product' => Sempa_Utils::normalize_product($updated),
+        ]);
     }
 
-    function escapeAttribute(value) {
-        return escapeHtml(value).replace(/\s/g, '%20');
+    public static function get_categories(): WP_REST_Response
+    {
+        global $wpdb;
+
+        $categories = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}product_categories ORDER BY name ASC", ARRAY_A);
+
+        return rest_ensure_response($categories);
     }
 
-    function showError(error) {
-        const message = error?.message || SempaStocksData.strings.unknownError;
-        window.alert(message);
+    public static function create_category(WP_REST_Request $request)
+    {
+        global $wpdb;
+
+        $data = $request->get_json_params();
+        $name = sanitize_text_field($data['name'] ?? '');
+
+        if ($name === '') {
+            return new WP_Error('bad_request', __('Le nom de la catégorie est obligatoire.', 'sempa'), ['status' => 400]);
+        }
+
+        $wpdb->insert($wpdb->prefix . 'product_categories', [
+            'name' => $name,
+            'slug' => sanitize_title($name),
+        ], ['%s', '%s']);
+
+        if (!empty($wpdb->last_error)) {
+            return new WP_Error('db_error', $wpdb->last_error, ['status' => 500]);
+        }
+
+        return rest_ensure_response([
+            'status' => 'success',
+            'id' => (int) $wpdb->insert_id,
+        ]);
     }
+
+    public static function delete_category(WP_REST_Request $request)
+    {
+        global $wpdb;
+
+        $id = (int) $request->get_param('id');
+        if ($id <= 0) {
+            return new WP_Error('bad_request', __('Identifiant manquant.', 'sempa'), ['status' => 400]);
+        }
+
+        $wpdb->delete($wpdb->prefix . 'product_categories', ['id' => $id]);
+
+        if (!empty($wpdb->last_error)) {
+            return new WP_Error('db_error', $wpdb->last_error, ['status' => 500]);
+        }
+
+        return rest_ensure_response(['status' => 'success']);
+    }
+
+    private static function hydrate_components(array $product, \wpdb $wpdb): array
+    {
+        if (empty($product['is_kit'])) {
+            return $product;
+        }
+
+        $product['components'] = $wpdb->get_results($wpdb->prepare(
+            "SELECT p.id, p.name, p.reference, kc.quantity FROM {$wpdb->prefix}kit_components kc JOIN {$wpdb->prefix}products p ON p.id = kc.component_id WHERE kc.kit_id = %d",
+            (int) $product['id']
+        ), ARRAY_A);
+
+        return $product;
+    }
+}
+
+final class Sempa_Login_Redirect
+{
+    public static function register(): void
+    {
+        add_filter('login_redirect', [__CLASS__, 'maybe_redirect'], 10, 3);
+    }
+
+    public static function maybe_redirect($redirect_to, $requested_redirect_to, $user)
+    {
+        if (!($user instanceof WP_User)) {
+            return $redirect_to;
+        }
+
+        $emails = apply_filters('sempa_stock_redirect_emails', [
+            'victorfaucher@sempa.fr',
+            'jean-baptiste@sempa.fr',
+        ]);
+
+        $normalized = array_map('strtolower', $emails);
+        if (in_array(strtolower($user->user_email), $normalized, true)) {
+            $url = Sempa_Utils::get_stock_app_url();
+            if ($url) {
+                return $url;
+            }
+        }
+
+        return $redirect_to;
+    }
+}
+
+final class Sempa_Utils
+{
+    public static function parse_currency($value): float
+    {
+        $sanitized = preg_replace('/[^0-9,.]/', '', (string) $value);
+        $sanitized = str_replace(',', '.', $sanitized);
+
+        return (float) $sanitized;
+    }
+
+    public static function normalize_product(array $product): array
+    {
+        $product['id'] = isset($product['id']) ? (int) $product['id'] : 0;
+        $product['stock'] = isset($product['stock']) ? (int) $product['stock'] : 0;
+        $product['minStock'] = isset($product['minStock']) ? (int) $product['minStock'] : 0;
+        $product['purchasePrice'] = isset($product['purchasePrice']) ? (float) $product['purchasePrice'] : 0.0;
+        $product['salePrice'] = isset($product['salePrice']) ? (float) $product['salePrice'] : 0.0;
+        $product['is_kit'] = !empty($product['is_kit']) ? 1 : 0;
+
+        if (!empty($product['components']) && is_array($product['components'])) {
+            $product['components'] = array_map(function ($component) {
+                return [
+                    'id' => isset($component['id']) ? (int) $component['id'] : 0,
+                    'name' => $component['name'] ?? '',
+                    'reference' => $component['reference'] ?? '',
+                    'quantity' => isset($component['quantity']) ? (int) $component['quantity'] : 0,
+                ];
+            }, $product['components']);
+        }
+
+        return $product;
+    }
+
+    public static function get_stock_app_url(): string
+    {
+        $default = home_url('/gestion-stocks-sempa/');
+        $slugs = [
+            'stocks',
+            'gestion-stocks-sempa',
+            'gestion-stocks',
+            'app-gestion-stocks',
+            'stock-management',
+        ];
 
     productTable?.addEventListener('click', (event) => {
         const target = event.target;
@@ -1130,11 +1266,6 @@
                     .catch(showError);
             }
         }
-        const menu = target.closest('details');
-        if (menu) {
-            menu.open = false;
-        }
-    });
 
     setConditionView(state.filters.condition, { fetch: false });
 
