@@ -987,7 +987,14 @@ final class Sempa_Stocks_App
             return;
         }
 
-        $db->query('ALTER TABLE ' . Sempa_Stocks_DB::escape_identifier($table) . " ADD COLUMN `condition_materiel` VARCHAR(20) NOT NULL DEFAULT 'neuf'");
+        $result = $db->query('ALTER TABLE ' . Sempa_Stocks_DB::escape_identifier($table) . " ADD COLUMN `condition_materiel` VARCHAR(20) NOT NULL DEFAULT 'neuf'");
+
+        if ($result === false && function_exists('error_log')) {
+            error_log('[Sempa] Unable to add condition_materiel column to table "' . $table . '": ' . $db->last_error);
+        }
+
+        Sempa_Stocks_DB::clear_column_cache($table);
+        Sempa_Stocks_DB::clear_column_cache('stocks_sempa');
     }
 
     private static function generate_slug_from_name(string $name)

@@ -267,6 +267,33 @@ if (!class_exists('Sempa_Stocks_DB')) {
             return $prepared;
         }
 
+        public static function clear_column_cache(?string $table = null)
+        {
+            if ($table === null) {
+                self::$column_cache = [];
+
+                return;
+            }
+
+            $targets = [strtolower($table)];
+            $canonical = strtolower($table);
+
+            if (isset(self::$table_cache[$canonical])) {
+                $targets[] = strtolower(self::$table_cache[$canonical]);
+            }
+
+            foreach (self::$table_cache as $alias => $resolved) {
+                if (strtolower($resolved) === $canonical) {
+                    $targets[] = strtolower($resolved);
+                    $targets[] = $alias;
+                }
+            }
+
+            foreach (array_unique($targets) as $target) {
+                unset(self::$column_cache[$target]);
+            }
+        }
+
         public static function value(array $row, string $table, string $column, $default = null)
         {
             if (empty($row)) {
