@@ -201,7 +201,6 @@ if (!class_exists('Sempa_Order_Stock_Sync')) {
         {
             $movement_reason = self::build_reason($quantity, $previous_stock, $new_stock, $had_shortage, $stock_row, $product, $context);
 
-            $movement_table = Sempa_Stocks_DB::table('mouvements_stocks_sempa');
             $movement_data = [];
             $movement_formats = [];
 
@@ -229,6 +228,7 @@ if (!class_exists('Sempa_Order_Stock_Sync')) {
                 return true;
             }
 
+            $movement_table = Sempa_Stocks_DB::table('mouvements_stocks_sempa');
             $inserted = $db->insert($movement_table, $movement_data, $movement_formats);
 
             if ($inserted === false) {
@@ -328,9 +328,9 @@ if (!class_exists('Sempa_Order_Stock_Sync')) {
                 return $schema;
             }
 
-            $table = Sempa_Stocks_DB::table('stocks_sempa');
             $id_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'id', false);
             $stock_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'stock_actuel', false);
+            $table = Sempa_Stocks_DB::table('stocks_sempa');
 
             if (!$table || !$id_column || !$stock_column) {
                 $schema = new WP_Error(
