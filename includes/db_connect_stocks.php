@@ -54,12 +54,12 @@ if (!class_exists('Sempa_Stocks_DB')) {
                 'suppliers',
             ],
             'stocks_sempa' => [
+                'products',
+                'product',
                 'stocks',
                 'stock',
                 'stocks_stockpilot',
                 'stockpilot_stocks',
-                'products',
-                'product',
             ],
             'mouvements_stocks_sempa' => [
                 'mouvements_stocks',
@@ -189,34 +189,34 @@ if (!class_exists('Sempa_Stocks_DB')) {
 
             $resolved_table = self::table($table_key);
             $columns = self::describe_columns($resolved_table);
-
-            if ($columns && isset($columns[$column_key])) {
-                return $columns[$column_key];
-            }
-
             $aliases = self::COLUMN_ALIASES[$table_key][$column_key] ?? [];
-            foreach ($aliases as $alias) {
-                $alias_lower = strtolower($alias);
-                if ($columns && isset($columns[$alias_lower])) {
-                    return $columns[$alias_lower];
+
+            $match = self::match_column($columns, $aliases, $column_key);
+            if ($match !== null) {
+                return $match;
+            }
+
+            $checked_any = !empty($columns);
+
+            foreach (self::candidate_variants($table_key) as $variant) {
+                $candidate = self::resolve_table_name($variant);
+                if ($candidate === null || $candidate === $resolved_table) {
+                    continue;
+                }
+
+                $candidate_columns = self::describe_columns($candidate);
+                if (!empty($candidate_columns)) {
+                    $checked_any = true;
+                }
+                $match = self::match_column($candidate_columns, $aliases, $column_key);
+                if ($match !== null) {
+                    self::$table_cache[$table_key] = $candidate;
+
+                    return $match;
                 }
             }
 
-            if ($columns) {
-                foreach ($columns as $lower => $actual) {
-                    if ($lower === $column_key) {
-                        return $actual;
-                    }
-                }
-
-                foreach ($columns as $lower => $actual) {
-                    if (strpos($lower, $column_key) !== false || strpos($column_key, $lower) !== false) {
-                        return $actual;
-                    }
-                }
-            }
-
-            if (!$columns && !empty($aliases)) {
+            if (!$checked_any && !empty($aliases)) {
                 return $aliases[0];
             }
 
@@ -382,6 +382,38 @@ if (!class_exists('Sempa_Stocks_DB')) {
 
             return (strpos($haystack, $needle) === 0)
                 || (substr($haystack, -strlen($needle)) === $needle);
+        }
+
+        private static function match_column(array $columns, array $aliases, string $column_key)
+        {
+            if (empty($columns)) {
+                return null;
+            }
+
+            if (isset($columns[$column_key])) {
+                return $columns[$column_key];
+            }
+
+            foreach ($aliases as $alias) {
+                $alias_lower = strtolower($alias);
+                if (isset($columns[$alias_lower])) {
+                    return $columns[$alias_lower];
+                }
+            }
+
+            foreach ($columns as $lower => $actual) {
+                if ($lower === $column_key) {
+                    return $actual;
+                }
+            }
+
+            foreach ($columns as $lower => $actual) {
+                if (strpos($lower, $column_key) !== false || strpos($column_key, $lower) !== false) {
+                    return $actual;
+                }
+            }
+
+            return null;
         }
 
         private static function describe_columns(string $table)
