@@ -305,13 +305,14 @@ class Sempa_Stock_Permissions {
         add_filter('rest_authentication_errors', [__CLASS__, 'allow_public_cookie_errors'], 10, 3);
     }
 
-    /**
-     * Autorise certaines requêtes REST publiques
-     * Compatible avec les appels à 1 ou 3 arguments
-     */
-    public static function allow_public_cookie_errors($result = null, $server = null, $request = null) {
-        // Si déjà une erreur d’authentification, on la renvoie telle quelle
-        if (!empty($result)) {
+    public static function allow_public_cookie_errors($result, $server = null, $request = null)
+    {
+        if (!is_wp_error($result)) {
+            return $result;
+        }
+
+        $code = $result->get_error_code();
+        if ($code !== 'rest_cookie_invalid_nonce' && $code !== 'nonce_failure') {
             return $result;
         }
 
