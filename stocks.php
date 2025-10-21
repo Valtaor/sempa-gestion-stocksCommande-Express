@@ -62,8 +62,165 @@ $nonce = class_exists('Sempa_Stocks_App') ? Sempa_Stocks_App::nonce() : wp_creat
                     <h3><?php esc_html_e('Derniers mouvements', 'sempa'); ?></h3>
                     <ul id="stocks-recent" class="list"></ul>
                 </div>
-            </div>
-        </section>
+            </aside>
+
+            <div class="stockpilot-main">
+                <header class="stockpilot-header">
+                    <div class="stockpilot-header__titles">
+                        <p class="stockpilot-header__eyebrow"><?php esc_html_e('SEMPA Stocks', 'sempa'); ?></p>
+                        <h1><?php esc_html_e('Tableau de bord StockPilot', 'sempa'); ?></h1>
+                        <p class="stockpilot-header__subtitle"><?php esc_html_e('Suivez vos produits, alertes et mouvements dans une interface professionnelle.', 'sempa'); ?></p>
+                    </div>
+                    <div class="stockpilot-header__tools">
+                        <label for="stocks-search" class="screen-reader-text"><?php esc_html_e('Rechercher un produit', 'sempa'); ?></label>
+                        <div class="header-search">
+                            <input type="search" id="stocks-search" aria-label="<?php esc_attr_e('Rechercher un produit par référence ou désignation', 'sempa'); ?>" placeholder="<?php esc_attr_e('Rechercher un produit…', 'sempa'); ?>" />
+                        </div>
+                        <div class="stockpilot-header__actions">
+                            <a class="button button--ghost" href="#" id="stocks-export" data-export="1"><?php esc_html_e('Exporter CSV', 'sempa'); ?></a>
+                            <button type="button" id="stocks-refresh" class="button button--primary"><?php esc_html_e('Actualiser', 'sempa'); ?></button>
+                        </div>
+                    </div>
+                </header>
+
+                <main class="stockpilot-content">
+                    <section class="stockpilot-section" id="stockpilot-dashboard" aria-labelledby="stocks-dashboard-title">
+                        <div class="section-header">
+                            <div>
+                                <p class="section-eyebrow"><?php esc_html_e('Vue d\'ensemble', 'sempa'); ?></p>
+                                <h2 id="stocks-dashboard-title"><?php esc_html_e('Métriques principales', 'sempa'); ?></h2>
+                            </div>
+                            <div class="section-context">
+                                <span class="section-context__badge"><?php esc_html_e('Données en temps réel', 'sempa'); ?></span>
+                            </div>
+                        </div>
+                        <div class="stockpilot-metrics" id="stocks-dashboard-cards">
+                            <article class="metric-card metric-card--products">
+                                <header>
+                                    <span class="metric-card__title"><?php esc_html_e('Total produits', 'sempa'); ?></span>
+                                    <span class="metric-card__icon" aria-hidden="true"></span>
+                                </header>
+                                <p class="metric-card__value" data-dashboard="produits">0</p>
+                                <p class="metric-card__hint"><?php esc_html_e('Catalogue actif', 'sempa'); ?></p>
+                            </article>
+                            <article class="metric-card metric-card--value">
+                                <header>
+                                    <span class="metric-card__title"><?php esc_html_e('Valeur du stock', 'sempa'); ?></span>
+                                    <span class="metric-card__icon" aria-hidden="true"></span>
+                                </header>
+                                <p class="metric-card__value" data-dashboard="valeur">0 €</p>
+                                <p class="metric-card__hint"><?php esc_html_e('Estimation achat', 'sempa'); ?></p>
+                            </article>
+                            <article class="metric-card metric-card--alerts">
+                                <header>
+                                    <span class="metric-card__title"><?php esc_html_e('Alertes stock', 'sempa'); ?></span>
+                                    <span class="metric-card__icon" aria-hidden="true"></span>
+                                </header>
+                                <p class="metric-card__value" data-dashboard="alertes">0</p>
+                                <p class="metric-card__hint"><?php esc_html_e('À traiter rapidement', 'sempa'); ?></p>
+                            </article>
+                            <article class="metric-card metric-card--movements">
+                                <header>
+                                    <span class="metric-card__title"><?php esc_html_e('Mouvements', 'sempa'); ?></span>
+                                    <span class="metric-card__icon" aria-hidden="true"></span>
+                                </header>
+                                <p class="metric-card__value" data-dashboard="mouvements">0</p>
+                                <p class="metric-card__hint"><?php esc_html_e('7 derniers jours', 'sempa'); ?></p>
+                            </article>
+                        </div>
+                        <div class="stockpilot-panels">
+                            <article class="panel panel--alerts" aria-labelledby="stockpilot-alerts-title">
+                                <div class="panel__header">
+                                    <h3 id="stockpilot-alerts-title"><?php esc_html_e('Alertes nécessitant attention', 'sempa'); ?></h3>
+                                    <span class="panel__badge panel__badge--urgent"><?php esc_html_e('Urgent', 'sempa'); ?></span>
+                                </div>
+                                <ul id="stocks-alerts" class="alerts-list"></ul>
+                            </article>
+                            <article class="panel panel--recent" aria-labelledby="stockpilot-recent-title">
+                                <div class="panel__header">
+                                    <h3 id="stockpilot-recent-title"><?php esc_html_e('Mouvements récents', 'sempa'); ?></h3>
+                                    <span class="panel__badge"><?php esc_html_e('Timeline', 'sempa'); ?></span>
+                                </div>
+                                <ul id="stocks-recent" class="recent-list"></ul>
+                            </article>
+                        </div>
+                    </section>
+
+                    <section class="stockpilot-section" id="stockpilot-products" aria-labelledby="stocks-products-title">
+                        <div class="section-header">
+                            <div>
+                                <p class="section-eyebrow"><?php esc_html_e('Catalogue', 'sempa'); ?></p>
+                                <h2 id="stocks-products-title"><?php esc_html_e('Produits', 'sempa'); ?></h2>
+                                <p class="section-subtitle"><?php esc_html_e('Gérez vos références, fournisseurs et niveaux de stock.', 'sempa'); ?></p>
+                            </div>
+                            <div class="section-actions">
+                                <button type="button" class="button button--primary" id="stocks-open-product-form"><?php esc_html_e('Ajouter un produit', 'sempa'); ?></button>
+                            </div>
+                        </div>
+                        <div class="products-toolbar" role="group" aria-label="<?php esc_attr_e('Filtres produits', 'sempa'); ?>">
+                            <div class="toolbar-field">
+                                <label for="stocks-filter-category"><?php esc_html_e('Catégorie', 'sempa'); ?></label>
+                                <select id="stocks-filter-category"></select>
+                            </div>
+                            <div class="toolbar-field">
+                                <label for="stocks-filter-supplier"><?php esc_html_e('Fournisseur', 'sempa'); ?></label>
+                                <select id="stocks-filter-supplier"></select>
+                            </div>
+                            <div class="toolbar-field">
+                                <label for="stocks-filter-status"><?php esc_html_e('Statut', 'sempa'); ?></label>
+                                <select id="stocks-filter-status">
+                                    <option value=""><?php esc_html_e('Tous les statuts', 'sempa'); ?></option>
+                                    <option value="normal"><?php esc_html_e('En stock', 'sempa'); ?></option>
+                                    <option value="warning"><?php esc_html_e('Stock faible', 'sempa'); ?></option>
+                                    <option value="critical"><?php esc_html_e('Rupture', 'sempa'); ?></option>
+                                </select>
+                            </div>
+                            <div class="toolbar-actions">
+                                <button type="button" class="button button--ghost" id="stocks-clear-filters"><?php esc_html_e('Réinitialiser', 'sempa'); ?></button>
+                            </div>
+                            <div class="toolbar-segment" role="group" aria-label="<?php esc_attr_e('Type de matériel', 'sempa'); ?>">
+                                <button type="button" class="segment-button is-active" data-condition-view="all" aria-pressed="true"><?php esc_html_e('Tout', 'sempa'); ?></button>
+                                <button type="button" class="segment-button" data-condition-view="neuf" aria-pressed="false"><?php esc_html_e('Matériel neuf', 'sempa'); ?></button>
+                                <button type="button" class="segment-button" data-condition-view="reconditionne" aria-pressed="false"><?php esc_html_e('Reconditionné', 'sempa'); ?></button>
+                            </div>
+                        </div>
+                        <div class="table-wrapper table-wrapper--elevated">
+                            <table class="stocks-table stocks-table--products" id="stocks-products-table">
+                                <thead>
+                                    <tr>
+                                        <th scope="col"><?php esc_html_e('Produit', 'sempa'); ?></th>
+                                        <th scope="col"><?php esc_html_e('Référence', 'sempa'); ?></th>
+                                        <th scope="col"><?php esc_html_e('Stock', 'sempa'); ?></th>
+                                        <th scope="col"><?php esc_html_e('Statut', 'sempa'); ?></th>
+                                        <th scope="col"><?php esc_html_e('Condition', 'sempa'); ?></th>
+                                        <th scope="col" class="actions">&nbsp;</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="6" class="empty"><?php esc_html_e('Chargement des produits…', 'sempa'); ?></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="table-pagination" id="stocks-products-pagination" aria-live="polite">
+                            <button type="button" class="button button--ghost" data-pagination="prev" disabled>
+                                <?php esc_html_e('Précédent', 'sempa'); ?>
+                            </button>
+                            <div class="table-pagination__status">
+                                <span data-pagination="summary"><?php esc_html_e('Aucun produit à afficher', 'sempa'); ?></span>
+                                <span class="table-pagination__page">
+                                    <?php esc_html_e('Page', 'sempa'); ?>
+                                    <span data-pagination="page">1</span>
+                                    <?php esc_html_e('sur', 'sempa'); ?>
+                                    <span data-pagination="pages">1</span>
+                                </span>
+                            </div>
+                            <button type="button" class="button button--ghost" data-pagination="next" disabled>
+                                <?php esc_html_e('Suivant', 'sempa'); ?>
+                            </button>
+                        </div>
+                    </section>
 
         <section class="stocks-management" aria-labelledby="stocks-products-title">
             <div class="section-head">

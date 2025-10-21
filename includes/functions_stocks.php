@@ -214,18 +214,125 @@ final class Sempa_Stocks_App
         self::ensure_secure_request();
 
         $db = Sempa_Stocks_DB::instance();
-        $designation_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'designation', false);
         $table = Sempa_Stocks_DB::table('stocks_sempa');
+        $table_identifier = Sempa_Stocks_DB::escape_identifier($table);
 
-        $sql = 'SELECT * FROM ' . Sempa_Stocks_DB::escape_identifier($table);
-        if ($designation_column) {
-            $sql .= ' ORDER BY ' . Sempa_Stocks_DB::escape_identifier($designation_column) . ' ASC';
+        $context = isset($_POST['context']) ? sanitize_key(wp_unslash($_POST['context'])) : 'list';
+        $page = isset($_POST['page']) ? max(1, absint($_POST['page'])) : 1;
+        $per_page = isset($_POST['per_page']) ? absint($_POST['per_page']) : 25;
+        if ($per_page <= 0) {
+            $per_page = 25;
+        }
+        $per_page = min($per_page, $context === 'options' ? 500 : 100);
+
+        $search = isset($_POST['search']) ? sanitize_text_field(wp_unslash($_POST['search'])) : '';
+        $category_filter = isset($_POST['category']) ? sanitize_text_field(wp_unslash($_POST['category'])) : '';
+        $supplier_filter = isset($_POST['supplier']) ? sanitize_text_field(wp_unslash($_POST['supplier'])) : '';
+        $status_filter = isset($_POST['status']) ? sanitize_key(wp_unslash($_POST['status'])) : '';
+        if (!in_array($status_filter, ['normal', 'warning', 'critical'], true)) {
+            $status_filter = '';
         }
 
-        $products = $db->get_results($sql, ARRAY_A);
+        $condition_filter = isset($_POST['condition']) ? sanitize_text_field(wp_unslash($_POST['condition'])) : '';
+        $condition_filter = strtolower(self::strip_accents($condition_filter));
+        if (!in_array($condition_filter, ['neuf', 'reconditionne'], true)) {
+            $condition_filter = '';
+        }
+
+        $designation_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'designation', false);
+        $reference_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'reference', false);
+        $category_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'categorie', false);
+        $supplier_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'fournisseur', false);
+        $stock_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'stock_actuel', false);
+        $minimum_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'stock_minimum', false);
+        $condition_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'condition_materiel', false);
+        $id_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'id', false);
+
+        $where_clauses = [];
+        $where_args = [];
+
+        if ($search !== '' && ($reference_column || $designation_column)) {
+            $like = '%' . $db->esc_like($search) . '%';
+            $search_clauses = [];
+            if ($reference_column) {
+                $search_clauses[] = Sempa_Stocks_DB::escape_identifier($reference_column) . ' LIKE %s';
+                $where_args[] = $like;
+            }
+            if ($designation_column) {
+                $search_clauses[] = Sempa_Stocks_DB::escape_identifier($designation_column) . ' LIKE %s';
+                $where_args[] = $like;
+            }
+            if ($search_clauses) {
+                $where_clauses[] = '(' . implode(' OR ', $search_clauses) . ')';
+            }
+        }
+
+        if ($category_filter !== '' && $category_column) {
+            $where_clauses[] = 'LOWER(' . Sempa_Stocks_DB::escape_identifier($category_column) . ') = %s';
+            $where_args[] = strtolower($category_filter);
+        }
+
+        if ($supplier_filter !== '' && $supplier_column) {
+            $where_clauses[] = 'LOWER(' . Sempa_Stocks_DB::escape_identifier($supplier_column) . ') = %s';
+            $where_args[] = strtolower($supplier_filter);
+        }
+
+        if ($status_filter && $stock_column) {
+            $stock_identifier = Sempa_Stocks_DB::escape_identifier($stock_column);
+            if ($status_filter === 'critical') {
+                $where_clauses[] = $stock_identifier . ' <= 0';
+            } elseif ($status_filter === 'warning' && $minimum_column) {
+                $minimum_identifier = Sempa_Stocks_DB::escape_identifier($minimum_column);
+                $where_clauses[] = '(' . $minimum_identifier . ' > 0 AND ' . $stock_identifier . ' <= ' . $minimum_identifier . ')';
+            } elseif ($status_filter === 'normal') {
+                $minimum_identifier = $minimum_column ? Sempa_Stocks_DB::escape_identifier($minimum_column) : null;
+                if ($minimum_identifier) {
+                    $where_clauses[] = '(' . $stock_identifier . ' > 0 AND (' . $minimum_identifier . ' <= 0 OR ' . $stock_identifier . ' > ' . $minimum_identifier . '))';
+                } else {
+                    $where_clauses[] = $stock_identifier . ' > 0';
+                }
+            }
+        }
+
+        if ($condition_filter !== '' && $condition_column) {
+            $where_clauses[] = 'LOWER(' . Sempa_Stocks_DB::escape_identifier($condition_column) . ') = %s';
+            $where_args[] = $condition_filter;
+        }
+
+        $where_sql = $where_clauses ? ' WHERE ' . implode(' AND ', $where_clauses) : '';
+
+        $count_sql = 'SELECT COUNT(1) FROM ' . $table_identifier . $where_sql;
+        $count_query = $where_args ? $db->prepare($count_sql, $where_args) : $count_sql;
+        $total = (int) $db->get_var($count_query);
+        $total_pages = $per_page > 0 ? (int) ceil($total / $per_page) : 1;
+        if ($total_pages < 1) {
+            $total_pages = 1;
+        }
+        if ($page > $total_pages) {
+            $page = $total_pages;
+        }
+
+        $offset = ($page - 1) * $per_page;
+        if ($offset < 0) {
+            $offset = 0;
+        }
+
+        $order_column = $designation_column ?: ($reference_column ?: $id_column);
+        $order_sql = $order_column ? ' ORDER BY ' . Sempa_Stocks_DB::escape_identifier($order_column) . ' ASC' : '';
+
+        $products_sql = 'SELECT * FROM ' . $table_identifier . $where_sql . $order_sql . ' LIMIT %d OFFSET %d';
+        $products_args = array_merge($where_args, [$per_page, $offset]);
+        $products_query = $db->prepare($products_sql, $products_args);
+        $products = $db->get_results($products_query, ARRAY_A);
 
         wp_send_json_success([
             'products' => array_map([__CLASS__, 'format_product'], $products ?: []),
+            'pagination' => [
+                'page' => $page,
+                'per_page' => $per_page,
+                'total' => $total,
+                'total_pages' => $total_pages,
+            ],
         ]);
     }
 
@@ -255,6 +362,11 @@ final class Sempa_Stocks_App
             'condition_materiel' => self::sanitize_condition($data['condition_materiel'] ?? ''),
             'ajoute_par' => $user->user_email,
         ];
+
+        $condition_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'condition_materiel', false);
+        if ($condition_column === null) {
+            unset($payload['condition_materiel']);
+        }
 
         if ($payload['reference'] === '' || $payload['designation'] === '') {
             wp_send_json_error([
