@@ -9,8 +9,6 @@
         products: [],
         movements: [],
         categories: [],
-        suppliers: [],
-        conditionView: 'all',
     };
 
     const selectors = {
@@ -34,10 +32,8 @@
     const searchInput = document.querySelector('#stocks-search');
     const productMeta = document.querySelector('#stocks-product-meta');
     const filterCategory = document.querySelector('#stocks-filter-category');
-    const filterSupplier = document.querySelector('#stocks-filter-supplier');
     const filterStatus = document.querySelector('#stocks-filter-status');
     const clearFiltersButton = document.querySelector('#stocks-clear-filters');
-    const conditionButtons = document.querySelectorAll('[data-condition-view]');
 
     const exports = document.querySelectorAll('[data-trigger="export"], #stocks-export');
     exports.forEach((element) => {
@@ -104,8 +100,6 @@
             event.preventDefault();
             if (action === 'add-category') {
                 createCategory();
-            } else if (action === 'add-supplier') {
-                createSupplier();
             }
         });
     }
@@ -143,10 +137,6 @@
         renderProducts(searchInput?.value || '');
     });
 
-    filterSupplier?.addEventListener('change', () => {
-        renderProducts(searchInput?.value || '');
-    });
-
     filterStatus?.addEventListener('change', () => {
         renderProducts(searchInput?.value || '');
     });
@@ -155,31 +145,11 @@
         if (filterCategory) {
             filterCategory.value = '';
         }
-        if (filterSupplier) {
-            filterSupplier.value = '';
-        }
         if (filterStatus) {
             filterStatus.value = '';
         }
         renderProducts(searchInput?.value || '');
     });
-
-    if (conditionButtons.length) {
-        conditionButtons.forEach((button) => {
-            button.addEventListener('click', () => {
-                const view = button.dataset.conditionView || 'all';
-                if (view === state.conditionView) {
-                    return;
-                }
-                state.conditionView = view;
-                conditionButtons.forEach((item) => {
-                    item.classList.toggle('is-active', item === button);
-                    item.setAttribute('aria-pressed', item === button ? 'true' : 'false');
-                });
-                renderProducts(searchInput?.value || '');
-            });
-        });
-    }
 
     function loadAll() {
         Promise.all([
@@ -193,7 +163,7 @@
                     renderDashboard(dashboardData.data);
                 }
                 if (productData?.success) {
-                    state.products = (productData.data.products || []).map(normalizeProduct);
+                    state.products = productData.data.products || [];
                     renderProducts();
                     updateMovementSelect();
                 }
@@ -203,7 +173,6 @@
                 }
                 if (referenceData?.success) {
                     state.categories = referenceData.data.categories || [];
-                    state.suppliers = referenceData.data.suppliers || [];
                     populateSelects();
                 }
             })
@@ -317,9 +286,7 @@
         const searchValue = (typeof search === 'string' && search.length >= 0 ? search : '') || (searchInput?.value || '');
         const query = searchValue.trim().toLowerCase();
         const categoryFilter = filterCategory?.value?.toLowerCase() || '';
-        const supplierFilter = filterSupplier?.value?.toLowerCase() || '';
         const statusFilter = filterStatus?.value || '';
-        const conditionView = state.conditionView || 'all';
 
         const rows = state.products
             .filter((product) => {
@@ -333,13 +300,9 @@
             })
             .filter((product) => {
                 const productCategory = (product.categorie || '').toLowerCase();
-                const productSupplier = (product.fournisseur || '').toLowerCase();
                 const status = stockStatus(product.stock_actuel, product.stock_minimum);
 
                 if (categoryFilter && productCategory !== categoryFilter) {
-                    return false;
-                }
-                if (supplierFilter && productSupplier !== supplierFilter) {
                     return false;
                 }
                 if (statusFilter && status !== statusFilter) {
@@ -347,12 +310,6 @@
                 }
 
                 return true;
-            })
-            .filter((product) => {
-                if (conditionView === 'all') {
-                    return true;
-                }
-                return getProductCondition(product) === conditionView;
             })
             .map((product) => {
                 const documentUrl = product.document_pdf
@@ -364,10 +321,10 @@
                 const stockMinimum = Number(product.stock_minimum ?? 0);
                 const status = stockStatus(stockActual, stockMinimum);
                 const value = formatCurrency((Number(product.prix_achat) || 0) * stockActual);
-                const meta = [product.categorie, product.fournisseur].filter(Boolean).join(' • ');
-                const condition = getProductCondition(product);
+                const meta = product.categorie ? product.categorie : '';
                 const tr = document.createElement('tr');
                 tr.dataset.id = product.id;
+                tr.dataset.status = status;
                 tr.innerHTML = `
                     <td>
                         <div class="product-cell">
@@ -391,9 +348,6 @@
                     <td>
                         <span class="status-badge status-badge--${statusClassName(status)}">${escapeHtml(statusLabel(status))}</span>
                     </td>
-                    <td>
-                        <span class="condition-chip condition-chip--${condition}">${escapeHtml(conditionLabel(condition))}</span>
-                    </td>
                     <td class="actions">
                         <details class="actions-menu">
                             <summary class="actions-trigger" aria-label="${escapeAttribute(SempaStocksData?.strings?.productActions || 'Actions produit')}"><span aria-hidden="true">⋮</span></summary>
@@ -409,7 +363,7 @@
         productTable.innerHTML = '';
         if (!rows.length) {
             const row = document.createElement('tr');
-            row.innerHTML = `<td colspan="6" class="empty">${escapeHtml(SempaStocksData?.strings?.noProducts || 'Aucun produit trouvé')}</td>`;
+            row.innerHTML = `<td colspan="5" class="empty">${escapeHtml(SempaStocksData?.strings?.noProducts || 'Aucun produit trouvé')}</td>`;
             productTable.appendChild(row);
         } else {
             rows.forEach((row) => productTable.appendChild(row));
@@ -431,11 +385,15 @@
 
         state.movements.forEach((movement) => {
             const tr = document.createElement('tr');
+            const tone = movementTone(movement.type_mouvement);
+            const label = labelMovement(movement.type_mouvement);
+            const quantity = movement.quantite ?? 0;
+            tr.dataset.type = tone;
             tr.innerHTML = `
-                <td>${formatDate(movement.date_mouvement)}</td>
+                <td>${escapeHtml(formatDate(movement.date_mouvement))}</td>
                 <td>${escapeHtml(movement.reference)} – ${escapeHtml(movement.designation)}</td>
-                <td>${escapeHtml(labelMovement(movement.type_mouvement))}</td>
-                <td>${movement.quantite}</td>
+                <td><span class="movement-chip movement-chip--${tone}">${escapeHtml(label)}</span></td>
+                <td><span class="movement-qty">${escapeHtml(String(quantity))}</span></td>
                 <td>${movement.ancien_stock ?? 0} ➜ ${movement.nouveau_stock ?? 0}</td>
                 <td>${escapeHtml(movement.motif || '')}</td>`;
             movementTable.appendChild(tr);
@@ -444,7 +402,6 @@
 
     function populateSelects() {
         const categorySelect = document.querySelector('#stocks-category-select');
-        const supplierSelect = document.querySelector('#stocks-supplier-select');
         const movementSelect = document.querySelector('#movement-product');
 
         if (categorySelect) {
@@ -458,20 +415,6 @@
             });
             if (current) {
                 categorySelect.value = current;
-            }
-        }
-
-        if (supplierSelect) {
-            const currentSupplier = supplierSelect.value;
-            supplierSelect.innerHTML = '<option value="">—</option>';
-            state.suppliers.forEach((supplier) => {
-                const option = document.createElement('option');
-                option.value = supplier.nom;
-                option.textContent = supplier.nom;
-                supplierSelect.appendChild(option);
-            });
-            if (currentSupplier) {
-                supplierSelect.value = currentSupplier;
             }
         }
 
@@ -490,24 +433,6 @@
             });
             if (currentFilter) {
                 filterCategory.value = currentFilter;
-            }
-        }
-
-        if (filterSupplier) {
-            const currentFilter = filterSupplier.value;
-            filterSupplier.innerHTML = '';
-            const placeholder = document.createElement('option');
-            placeholder.value = '';
-            placeholder.textContent = (SempaStocksData?.strings?.allSuppliers) || 'Tous les fournisseurs';
-            filterSupplier.appendChild(placeholder);
-            state.suppliers.forEach((supplier) => {
-                const option = document.createElement('option');
-                option.value = (supplier.nom || '').toLowerCase();
-                option.textContent = supplier.nom;
-                filterSupplier.appendChild(option);
-            });
-            if (currentFilter) {
-                filterSupplier.value = currentFilter;
             }
         }
 
@@ -548,26 +473,14 @@
             productForm.querySelector('[name="reference"]').value = product.reference || '';
             productForm.querySelector('[name="designation"]').value = product.designation || '';
             productForm.querySelector('[name="categorie"]').value = product.categorie || '';
-            productForm.querySelector('[name="fournisseur"]').value = product.fournisseur || '';
             productForm.querySelector('[name="prix_achat"]').value = product.prix_achat || '';
             productForm.querySelector('[name="prix_vente"]').value = product.prix_vente || '';
             productForm.querySelector('[name="stock_actuel"]').value = product.stock_actuel || 0;
             productForm.querySelector('[name="stock_minimum"]').value = product.stock_minimum || 0;
-            productForm.querySelector('[name="emplacement"]').value = product.emplacement || '';
-            productForm.querySelector('[name="date_entree"]').value = product.date_entree || '';
             productForm.querySelector('[name="notes"]').value = product.notes || '';
-            const condition = getProductCondition(product);
-            const conditionInput = productForm.querySelector(`[name="condition_materiel"][value="${condition}"]`);
-            if (conditionInput) {
-                conditionInput.checked = true;
-            }
             renderMeta(product);
         } else if (productMeta) {
             productMeta.innerHTML = '';
-            const defaultCondition = productForm.querySelector('[name="condition_materiel"][value="neuf"]');
-            if (defaultCondition) {
-                defaultCondition.checked = true;
-            }
         }
         showPanel(productPanel);
     }
@@ -576,10 +489,6 @@
         if (productForm) {
             productForm.reset();
             productForm.querySelector('[name="id"]').value = '';
-            const defaultCondition = productForm.querySelector('[name="condition_materiel"][value="neuf"]');
-            if (defaultCondition) {
-                defaultCondition.checked = true;
-            }
         }
         if (productMeta) {
             productMeta.innerHTML = '';
@@ -590,7 +499,7 @@
         request('sempa_stocks_save_product', formData)
             .then((response) => {
                 if (response?.success && response.data?.product) {
-                    const product = normalizeProduct(response.data.product);
+                    const product = response.data.product;
                     const index = state.products.findIndex((item) => item.id === product.id);
                     if (index >= 0) {
                         state.products[index] = product;
@@ -629,63 +538,13 @@
                 ? product.document_pdf
                 : SempaStocksData.uploadsUrl + product.document_pdf.replace(/^uploads-stocks\//, ''))
             : '';
-        const condition = conditionLabel(getProductCondition(product));
         productMeta.innerHTML = `
             <ul>
                 <li><strong>${escapeHtml('Créé par')} :</strong> ${escapeHtml(product.ajoute_par || '—')}</li>
                 <li><strong>${escapeHtml('Entrée')} :</strong> ${product.date_entree || '—'}</li>
                 <li><strong>${escapeHtml('Modifié')} :</strong> ${product.date_modification || '—'}</li>
-                <li><strong>${escapeHtml('Condition')} :</strong> ${escapeHtml(condition)}</li>
                 ${documentUrl ? `<li><a href="${escapeAttribute(documentUrl)}" target="_blank" rel="noopener">${escapeHtml('Voir le document')}</a></li>` : ''}
             </ul>`;
-    }
-
-    function normalizeProduct(product = {}) {
-        const normalized = { ...product };
-        normalized.condition_materiel = getProductCondition(product);
-        return normalized;
-    }
-
-    function getProductCondition(product = {}) {
-        const direct = sanitizeCondition(product.condition_materiel || product.condition || product.conditionMateriel);
-        if (direct) {
-            return direct;
-        }
-
-        const legacy = sanitizeCondition(product.type_materiel || product.typeMateriel);
-        if (legacy) {
-            return legacy;
-        }
-
-        const category = (product.categorie || '').toLowerCase();
-        if (category.includes('recond') || category.includes('occasion')) {
-            return 'reconditionne';
-        }
-
-        return 'neuf';
-    }
-
-    function sanitizeCondition(value) {
-        if (!value) {
-            return '';
-        }
-        let stringValue = String(value).toLowerCase();
-        try {
-            stringValue = stringValue.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-        } catch (error) {
-            stringValue = stringValue.replace(/[éèê]/g, 'e');
-        }
-        if (['reconditionne', 'refurbished', 'occasion'].includes(stringValue)) {
-            return 'reconditionne';
-        }
-        if (['neuf', 'new'].includes(stringValue)) {
-            return 'neuf';
-        }
-        return '';
-    }
-
-    function conditionLabel(condition) {
-        return condition === 'reconditionne' ? 'Reconditionné' : 'Matériel neuf';
     }
 
     function createCategory() {
@@ -705,35 +564,6 @@
                     const select = document.querySelector('#stocks-category-select');
                     if (select) {
                         select.value = response.data.category.nom;
-                    }
-                } else {
-                    throw new Error(response?.data?.message || SempaStocksData.strings.unknownError);
-                }
-            })
-            .catch(showError);
-    }
-
-    function createSupplier() {
-        const name = window.prompt('Nom du fournisseur ?');
-        if (!name) {
-            return;
-        }
-        const contact = window.prompt('Nom du contact (optionnel)') || '';
-        const phone = window.prompt('Téléphone (optionnel)') || '';
-        const email = window.prompt('Email (optionnel)') || '';
-        const data = new FormData();
-        data.append('nom', name.trim());
-        data.append('contact', contact.trim());
-        data.append('telephone', phone.trim());
-        data.append('email', email.trim());
-        request('sempa_stocks_save_supplier', data)
-            .then((response) => {
-                if (response?.success && response.data?.supplier) {
-                    state.suppliers.push(response.data.supplier);
-                    populateSelects();
-                    const select = document.querySelector('#stocks-supplier-select');
-                    if (select) {
-                        select.value = response.data.supplier.nom;
                     }
                 } else {
                     throw new Error(response?.data?.message || SempaStocksData.strings.unknownError);

@@ -35,7 +35,14 @@ if (!class_exists('Sempa_Stocks_DB')) {
 
         public static function table(string $name)
         {
-            return $name;
+            $map = [
+                'stocks_sempa' => 'products',
+                'mouvements_stocks_sempa' => 'movements',
+                'categories_stocks_sempa' => 'product_categories',
+                'fournisseurs_stocks_sempa' => 'fournisseurs',
+            ];
+
+            return $map[$name] ?? $name;
         }
     }
 }
