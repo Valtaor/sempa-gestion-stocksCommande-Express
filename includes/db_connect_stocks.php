@@ -117,6 +117,27 @@ if (!class_exists('Sempa_Stocks_DB')) {
             ],
         ];
 
+        private const COLUMN_DEFAULTS = [
+            'stocks_sempa' => [
+                'id' => 'id',
+                'reference' => 'reference',
+                'designation' => 'name',
+                'stock_actuel' => 'stock',
+                'stock_minimum' => 'minStock',
+                'prix_achat' => 'purchasePrice',
+                'prix_vente' => 'salePrice',
+                'categorie' => 'category',
+                'notes' => 'description',
+                'document_pdf' => 'imageUrl',
+                'date_modification' => 'lastUpdated',
+                'date_entree' => false,
+                'fournisseur' => false,
+                'emplacement' => false,
+                'condition_materiel' => false,
+                'ajoute_par' => false,
+            ],
+        ];
+
         public static function instance()
         {
             if (self::$instance instanceof \wpdb) {
@@ -214,6 +235,16 @@ if (!class_exists('Sempa_Stocks_DB')) {
 
                     return $match;
                 }
+            }
+
+            $default = self::COLUMN_DEFAULTS[$table_key][$column_key] ?? null;
+
+            if ($default === false) {
+                return null;
+            }
+
+            if (is_string($default) && $default !== '') {
+                return $default;
             }
 
             if (!$checked_any && !empty($aliases)) {
