@@ -225,6 +225,23 @@ if ($current_user instanceof WP_User && $current_user->exists()) {
                                 </tbody>
                             </table>
                         </div>
+                        <div class="table-pagination" id="stocks-products-pagination" aria-live="polite">
+                            <button type="button" class="button button--ghost" data-pagination="prev" disabled>
+                                <?php esc_html_e('Précédent', 'sempa'); ?>
+                            </button>
+                            <div class="table-pagination__status">
+                                <span data-pagination="summary"><?php esc_html_e('Aucun produit à afficher', 'sempa'); ?></span>
+                                <span class="table-pagination__page">
+                                    <?php esc_html_e('Page', 'sempa'); ?>
+                                    <span data-pagination="page">1</span>
+                                    <?php esc_html_e('sur', 'sempa'); ?>
+                                    <span data-pagination="pages">1</span>
+                                </span>
+                            </div>
+                            <button type="button" class="button button--ghost" data-pagination="next" disabled>
+                                <?php esc_html_e('Suivant', 'sempa'); ?>
+                            </button>
+                        </div>
                     </section>
 
                     <section class="stockpilot-section" id="stockpilot-movements" aria-labelledby="stocks-movements-title">

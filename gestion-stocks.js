@@ -10,7 +10,20 @@
         movements: [],
         categories: [],
         suppliers: [],
-        conditionView: 'all',
+        filters: {
+            search: '',
+            category: '',
+            supplier: '',
+            status: '',
+            condition: 'all',
+        },
+        pagination: {
+            page: 1,
+            perPage: 25,
+            total: 0,
+            totalPages: 1,
+        },
+        isLoadingProducts: false,
     };
 
     const selectors = {
@@ -38,6 +51,18 @@
     const filterStatus = document.querySelector('#stocks-filter-status');
     const clearFiltersButton = document.querySelector('#stocks-clear-filters');
     const conditionButtons = document.querySelectorAll('[data-condition-view]');
+    const paginationWrapper = document.querySelector('#stocks-products-pagination');
+    const paginationPrev = paginationWrapper?.querySelector('[data-pagination="prev"]');
+    const paginationNext = paginationWrapper?.querySelector('[data-pagination="next"]');
+    const paginationSummary = paginationWrapper?.querySelector('[data-pagination="summary"]');
+    const paginationPage = paginationWrapper?.querySelector('[data-pagination="page"]');
+    const paginationPages = paginationWrapper?.querySelector('[data-pagination="pages"]');
+
+    const PRODUCTS_PER_PAGE = 25;
+    const productOptions = new Map();
+    let movementOptionsLoaded = false;
+    let productOptionsRequest = null;
+    let searchTimeout = null;
 
     const exports = document.querySelectorAll('[data-trigger="export"], #stocks-export');
     exports.forEach((element) => {
@@ -71,7 +96,13 @@
     });
 
     document.querySelector('#stocks-open-movement-form')?.addEventListener('click', () => {
-        openMovementForm();
+        ensureMovementOptions()
+            .catch((error) => {
+                showError(error);
+            })
+            .finally(() => {
+                openMovementForm();
+            });
     });
 
     document.querySelector('#stocks-cancel-movement')?.addEventListener('click', () => {
@@ -120,13 +151,11 @@
                     if (response?.success && response.data?.movement) {
                         state.movements.unshift(response.data.movement);
                         renderMovements();
-                        const product = state.products.find((item) => item.id === response.data.movement.produit_id);
-                        if (product) {
-                            product.stock_actuel = response.data.movement.nouveau_stock;
-                            renderProducts();
-                        }
                         movementForm.reset();
                         hidePanel(movementPanel);
+                        loadProducts({ page: state.pagination.page }).catch(showError);
+                    } else {
+                        throw new Error(response?.data?.message || SempaStocksData.strings.unknownError);
                     }
                 })
                 .catch(showError);
@@ -135,23 +164,29 @@
 
     if (searchInput) {
         searchInput.addEventListener('input', () => {
-            renderProducts(searchInput.value);
+            window.clearTimeout(searchTimeout);
+            searchTimeout = window.setTimeout(() => {
+                updateProductFilters({ search: searchInput.value.trim() || '' });
+            }, 250);
         });
     }
 
     filterCategory?.addEventListener('change', () => {
-        renderProducts(searchInput?.value || '');
+        updateProductFilters({ category: filterCategory.value || '' });
     });
 
     filterSupplier?.addEventListener('change', () => {
-        renderProducts(searchInput?.value || '');
+        updateProductFilters({ supplier: filterSupplier.value || '' });
     });
 
     filterStatus?.addEventListener('change', () => {
-        renderProducts(searchInput?.value || '');
+        updateProductFilters({ status: filterStatus.value || '' });
     });
 
     clearFiltersButton?.addEventListener('click', () => {
+        if (searchInput) {
+            searchInput.value = '';
+        }
         if (filterCategory) {
             filterCategory.value = '';
         }
@@ -161,41 +196,52 @@
         if (filterStatus) {
             filterStatus.value = '';
         }
-        renderProducts(searchInput?.value || '');
+        setConditionView('all', { fetch: false });
+        state.filters = {
+            search: '',
+            category: '',
+            supplier: '',
+            status: '',
+            condition: 'all',
+        };
+        state.pagination.page = 1;
+        loadProducts().catch(showError);
     });
 
     if (conditionButtons.length) {
         conditionButtons.forEach((button) => {
             button.addEventListener('click', () => {
                 const view = button.dataset.conditionView || 'all';
-                if (view === state.conditionView) {
+                if (view === state.filters.condition) {
                     return;
                 }
-                state.conditionView = view;
-                conditionButtons.forEach((item) => {
-                    item.classList.toggle('is-active', item === button);
-                    item.setAttribute('aria-pressed', item === button ? 'true' : 'false');
-                });
-                renderProducts(searchInput?.value || '');
+                setConditionView(view);
             });
         });
     }
 
+    paginationPrev?.addEventListener('click', () => {
+        if (state.pagination.page > 1) {
+            loadProducts({ page: state.pagination.page - 1 }).catch(showError);
+        }
+    });
+
+    paginationNext?.addEventListener('click', () => {
+        if (state.pagination.page < state.pagination.totalPages) {
+            loadProducts({ page: state.pagination.page + 1 }).catch(showError);
+        }
+    });
+
     function loadAll() {
-        Promise.all([
-            request('sempa_stocks_dashboard'),
-            request('sempa_stocks_products'),
-            request('sempa_stocks_movements'),
-            request('sempa_stocks_reference_data')
-        ])
-            .then(([dashboardData, productData, movementData, referenceData]) => {
+        const dashboardPromise = request('sempa_stocks_dashboard');
+        const productsPromise = loadProducts({ page: 1 });
+        const movementsPromise = request('sempa_stocks_movements');
+        const referencePromise = request('sempa_stocks_reference_data');
+
+        Promise.all([dashboardPromise, productsPromise, movementsPromise, referencePromise])
+            .then(([dashboardData, productResponse, movementData, referenceData]) => {
                 if (dashboardData?.success) {
                     renderDashboard(dashboardData.data);
-                }
-                if (productData?.success) {
-                    state.products = (productData.data.products || []).map(normalizeProduct);
-                    renderProducts();
-                    updateMovementSelect();
                 }
                 if (movementData?.success) {
                     state.movements = movementData.data.movements || [];
@@ -206,6 +252,8 @@
                     state.suppliers = referenceData.data.suppliers || [];
                     populateSelects();
                 }
+
+                return productResponse;
             })
             .catch(showError);
     }
@@ -309,111 +357,274 @@
         }
     }
 
-    function renderProducts(search = '') {
+    function setProductsLoading(isLoading) {
+        state.isLoadingProducts = isLoading;
+        if (isLoading && productTable) {
+            productTable.innerHTML = `<tr><td colspan="6" class="empty">${escapeHtml(SempaStocksData?.strings?.loadingProducts || 'Chargement des produits…')}</td></tr>`;
+        }
+    }
+
+    function renderProductsError(message) {
+        if (!productTable) {
+            return;
+        }
+        productTable.innerHTML = `<tr><td colspan="6" class="empty">${escapeHtml(message)}</td></tr>`;
+        renderPagination(true);
+    }
+
+    function renderProducts() {
         if (!productTable) {
             return;
         }
 
-        const searchValue = (typeof search === 'string' && search.length >= 0 ? search : '') || (searchInput?.value || '');
-        const query = searchValue.trim().toLowerCase();
-        const categoryFilter = filterCategory?.value?.toLowerCase() || '';
-        const supplierFilter = filterSupplier?.value?.toLowerCase() || '';
-        const statusFilter = filterStatus?.value || '';
-        const conditionView = state.conditionView || 'all';
+        productTable.innerHTML = '';
 
-        const rows = state.products
-            .filter((product) => {
-                if (!query) {
-                    return true;
+        if (!state.products.length) {
+            const row = document.createElement('tr');
+            const message = state.isLoadingProducts
+                ? (SempaStocksData?.strings?.loadingProducts || 'Chargement des produits…')
+                : (SempaStocksData?.strings?.noProducts || 'Aucun produit trouvé');
+            row.innerHTML = `<td colspan="6" class="empty">${escapeHtml(message)}</td>`;
+            productTable.appendChild(row);
+            renderPagination();
+            return;
+        }
+
+        state.products.forEach((product) => {
+            const documentUrl = product.document_pdf
+                ? (product.document_pdf.startsWith('http')
+                    ? product.document_pdf
+                    : SempaStocksData.uploadsUrl + product.document_pdf.replace(/^uploads-stocks\//, ''))
+                : '';
+            const stockActual = Number(product.stock_actuel ?? 0);
+            const stockMinimum = Number(product.stock_minimum ?? 0);
+            const status = stockStatus(stockActual, stockMinimum);
+            const value = formatCurrency((Number(product.prix_achat) || 0) * stockActual);
+            const meta = [product.categorie, product.fournisseur].filter(Boolean).join(' • ');
+            const condition = getProductCondition(product);
+            const tr = document.createElement('tr');
+            tr.dataset.id = product.id;
+            tr.innerHTML = `
+                <td>
+                    <div class="product-cell">
+                        <span class="product-cell__name">${escapeHtml(product.designation)}</span>
+                        <span class="product-cell__meta">${escapeHtml(meta || '—')}</span>
+                    </div>
+                </td>
+                <td>
+                    <div class="product-ref">
+                        <span class="product-ref__code">${escapeHtml(product.reference)}</span>
+                        ${documentUrl ? `<a class="product-ref__doc" href="${escapeAttribute(documentUrl)}" target="_blank" rel="noopener">PDF</a>` : ''}
+                    </div>
+                </td>
+                <td>
+                    <div class="stock-level">
+                        <span class="stock-level__value">${stockActual}</span>
+                        <span class="stock-level__hint">${escapeHtml(`Min ${stockMinimum}`)}</span>
+                        <span class="stock-level__value-secondary">${escapeHtml(value)}</span>
+                    </div>
+                </td>
+                <td>
+                    <span class="status-badge status-badge--${statusClassName(status)}">${escapeHtml(statusLabel(status))}</span>
+                </td>
+                <td>
+                    <span class="condition-chip condition-chip--${condition}">${escapeHtml(conditionLabel(condition))}</span>
+                </td>
+                <td class="actions">
+                    <details class="actions-menu">
+                        <summary class="actions-trigger" aria-label="${escapeAttribute(SempaStocksData?.strings?.productActions || 'Actions produit')}"><span aria-hidden="true">⋮</span></summary>
+                        <div class="actions-menu__content">
+                            <button type="button" data-action="edit">${escapeHtml('Modifier')}</button>
+                            <button type="button" data-action="delete">${escapeHtml('Supprimer')}</button>
+                        </div>
+                    </details>
+                </td>`;
+            productTable.appendChild(tr);
+        });
+
+        renderPagination();
+    }
+
+    function renderPagination(force = false) {
+        if (!paginationWrapper) {
+            return;
+        }
+
+        const total = Number(state.pagination.total) || 0;
+        const page = Number(state.pagination.page) || 1;
+        const perPage = Number(state.pagination.perPage) || PRODUCTS_PER_PAGE;
+        const totalPages = Math.max(1, Number(state.pagination.totalPages) || Math.ceil(total / perPage) || 1);
+
+        paginationWrapper.classList.toggle('is-hidden', !force && total <= perPage && totalPages <= 1);
+
+        if (paginationPrev) {
+            paginationPrev.disabled = page <= 1;
+        }
+        if (paginationNext) {
+            paginationNext.disabled = page >= totalPages;
+        }
+
+        if (paginationSummary) {
+            if (total === 0) {
+                paginationSummary.textContent = SempaStocksData?.strings?.noProducts || 'Aucun produit trouvé';
+            } else {
+                const start = (page - 1) * perPage + 1;
+                const end = Math.min(total, start + state.products.length - 1);
+                paginationSummary.textContent = `${start} – ${end} / ${total}`;
+            }
+        }
+
+        if (paginationPage) {
+            paginationPage.textContent = String(page);
+        }
+
+        if (paginationPages) {
+            paginationPages.textContent = String(totalPages);
+        }
+    }
+
+    function updateProductFilters(patch = {}) {
+        state.filters = { ...state.filters, ...patch };
+        state.pagination.page = 1;
+        loadProducts({ page: 1 }).catch(showError);
+    }
+
+    function setConditionView(view, { fetch = true } = {}) {
+        const normalized = ['neuf', 'reconditionne'].includes(view) ? view : 'all';
+        state.filters.condition = normalized;
+        conditionButtons.forEach((button) => {
+            const buttonView = button.dataset.conditionView || 'all';
+            const isActive = buttonView === normalized;
+            button.classList.toggle('is-active', isActive);
+            button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        });
+        if (fetch) {
+            state.pagination.page = 1;
+            loadProducts({ page: 1 }).catch(showError);
+        }
+    }
+
+    function loadProducts(options = {}) {
+        const requestedPage = options.page != null ? Number(options.page) : state.pagination.page;
+        const requestedPerPage = options.perPage != null ? Number(options.perPage) : state.pagination.perPage;
+        const page = Number.isFinite(requestedPage) && requestedPage > 0 ? Math.floor(requestedPage) : 1;
+        const perPage = Number.isFinite(requestedPerPage) && requestedPerPage > 0 ? Math.floor(requestedPerPage) : PRODUCTS_PER_PAGE;
+
+        const filters = { ...state.filters };
+        const payload = {
+            page,
+            per_page: perPage,
+            search: filters.search,
+            category: filters.category,
+            supplier: filters.supplier,
+            status: filters.status,
+        };
+
+        if (filters.condition && filters.condition !== 'all') {
+            payload.condition = filters.condition;
+        }
+
+        setProductsLoading(true);
+
+        return request('sempa_stocks_products', payload)
+            .then((response) => {
+                if (!response?.success) {
+                    throw new Error(response?.data?.message || SempaStocksData.strings.unknownError);
                 }
-                return (
-                    (product.reference || '').toLowerCase().includes(query) ||
-                    (product.designation || '').toLowerCase().includes(query)
+
+                const products = Array.isArray(response.data?.products) ? response.data.products : [];
+                state.products = products.map(normalizeProduct);
+                addProductOptions(state.products);
+
+                const pagination = response.data?.pagination || {};
+                state.pagination.page = Number(pagination.page) || page;
+                state.pagination.perPage = Number(pagination.per_page) || perPage;
+                state.pagination.total = Number(pagination.total) || state.products.length;
+                state.pagination.totalPages = Math.max(
+                    1,
+                    Number(pagination.total_pages) || Math.ceil(state.pagination.total / state.pagination.perPage) || 1
                 );
-            })
-            .filter((product) => {
-                const productCategory = (product.categorie || '').toLowerCase();
-                const productSupplier = (product.fournisseur || '').toLowerCase();
-                const status = stockStatus(product.stock_actuel, product.stock_minimum);
 
-                if (categoryFilter && productCategory !== categoryFilter) {
-                    return false;
-                }
-                if (supplierFilter && productSupplier !== supplierFilter) {
-                    return false;
-                }
-                if (statusFilter && status !== statusFilter) {
-                    return false;
-                }
+                setProductsLoading(false);
+                renderProducts();
+                updateMovementSelect();
 
-                return true;
+                return response;
             })
-            .filter((product) => {
-                if (conditionView === 'all') {
-                    return true;
-                }
-                return getProductCondition(product) === conditionView;
+            .catch((error) => {
+                setProductsLoading(false);
+                state.products = [];
+                state.pagination.page = 1;
+                state.pagination.total = 0;
+                state.pagination.totalPages = 1;
+                renderProductsError(error?.message || SempaStocksData.strings.unknownError);
+                throw error;
+            });
+    }
+
+    function addProductOptions(products = []) {
+        products.forEach((product) => {
+            if (!product || product.id == null) {
+                return;
+            }
+            const id = Number(product.id);
+            productOptions.set(id, {
+                id,
+                reference: product.reference || '',
+                designation: product.designation || '',
+            });
+        });
+    }
+
+    function removeProductOption(id) {
+        productOptions.delete(Number(id));
+    }
+
+    function ensureMovementOptions() {
+        if (movementOptionsLoaded) {
+            return Promise.resolve();
+        }
+        if (productOptionsRequest) {
+            return productOptionsRequest;
+        }
+
+        productOptionsRequest = fetchAllProductOptions(1)
+            .then(() => {
+                movementOptionsLoaded = true;
             })
-            .map((product) => {
-                const documentUrl = product.document_pdf
-                    ? (product.document_pdf.startsWith('http')
-                        ? product.document_pdf
-                        : SempaStocksData.uploadsUrl + product.document_pdf.replace(/^uploads-stocks\//, ''))
-                    : '';
-                const stockActual = Number(product.stock_actuel ?? 0);
-                const stockMinimum = Number(product.stock_minimum ?? 0);
-                const status = stockStatus(stockActual, stockMinimum);
-                const value = formatCurrency((Number(product.prix_achat) || 0) * stockActual);
-                const meta = [product.categorie, product.fournisseur].filter(Boolean).join(' • ');
-                const condition = getProductCondition(product);
-                const tr = document.createElement('tr');
-                tr.dataset.id = product.id;
-                tr.innerHTML = `
-                    <td>
-                        <div class="product-cell">
-                            <span class="product-cell__name">${escapeHtml(product.designation)}</span>
-                            <span class="product-cell__meta">${escapeHtml(meta || '—')}</span>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="product-ref">
-                            <span class="product-ref__code">${escapeHtml(product.reference)}</span>
-                            ${documentUrl ? `<a class="product-ref__doc" href="${escapeAttribute(documentUrl)}" target="_blank" rel="noopener">PDF</a>` : ''}
-                        </div>
-                    </td>
-                    <td>
-                        <div class="stock-level">
-                            <span class="stock-level__value">${stockActual}</span>
-                            <span class="stock-level__hint">${escapeHtml(`Min ${stockMinimum}`)}</span>
-                            <span class="stock-level__value-secondary">${escapeHtml(value)}</span>
-                        </div>
-                    </td>
-                    <td>
-                        <span class="status-badge status-badge--${statusClassName(status)}">${escapeHtml(statusLabel(status))}</span>
-                    </td>
-                    <td>
-                        <span class="condition-chip condition-chip--${condition}">${escapeHtml(conditionLabel(condition))}</span>
-                    </td>
-                    <td class="actions">
-                        <details class="actions-menu">
-                            <summary class="actions-trigger" aria-label="${escapeAttribute(SempaStocksData?.strings?.productActions || 'Actions produit')}"><span aria-hidden="true">⋮</span></summary>
-                            <div class="actions-menu__content">
-                                <button type="button" data-action="edit">${escapeHtml('Modifier')}</button>
-                                <button type="button" data-action="delete">${escapeHtml('Supprimer')}</button>
-                            </div>
-                        </details>
-                    </td>`;
-                return tr;
+            .finally(() => {
+                productOptionsRequest = null;
             });
 
-        productTable.innerHTML = '';
-        if (!rows.length) {
-            const row = document.createElement('tr');
-            row.innerHTML = `<td colspan="6" class="empty">${escapeHtml(SempaStocksData?.strings?.noProducts || 'Aucun produit trouvé')}</td>`;
-            productTable.appendChild(row);
-        } else {
-            rows.forEach((row) => productTable.appendChild(row));
-        }
+        return productOptionsRequest;
+    }
+
+    function fetchAllProductOptions(page = 1) {
+        const perPage = 200;
+        return request('sempa_stocks_products', {
+            page,
+            per_page: perPage,
+            context: 'options',
+        }).then((response) => {
+            if (!response?.success) {
+                throw new Error(response?.data?.message || SempaStocksData.strings.unknownError);
+            }
+
+            const products = Array.isArray(response.data?.products) ? response.data.products : [];
+            addProductOptions(products.map(normalizeProduct));
+
+            const pagination = response.data?.pagination || {};
+            const currentPage = Number(pagination.page) || page;
+            const totalPages = Number(pagination.total_pages) || 1;
+
+            if (currentPage < totalPages && currentPage < 25) {
+                return fetchAllProductOptions(currentPage + 1);
+            }
+
+            updateMovementSelect();
+
+            return response;
+        });
     }
 
     function renderMovements() {
@@ -476,7 +687,7 @@
         }
 
         if (filterCategory) {
-            const currentFilter = filterCategory.value;
+            const currentFilter = state.filters.category || '';
             filterCategory.innerHTML = '';
             const placeholder = document.createElement('option');
             placeholder.value = '';
@@ -484,7 +695,7 @@
             filterCategory.appendChild(placeholder);
             state.categories.forEach((category) => {
                 const option = document.createElement('option');
-                option.value = (category.nom || '').toLowerCase();
+                option.value = category.nom || '';
                 option.textContent = category.nom;
                 filterCategory.appendChild(option);
             });
@@ -494,7 +705,7 @@
         }
 
         if (filterSupplier) {
-            const currentFilter = filterSupplier.value;
+            const currentFilter = state.filters.supplier || '';
             filterSupplier.innerHTML = '';
             const placeholder = document.createElement('option');
             placeholder.value = '';
@@ -502,7 +713,7 @@
             filterSupplier.appendChild(placeholder);
             state.suppliers.forEach((supplier) => {
                 const option = document.createElement('option');
-                option.value = (supplier.nom || '').toLowerCase();
+                option.value = supplier.nom || '';
                 option.textContent = supplier.nom;
                 filterSupplier.appendChild(option);
             });
@@ -521,13 +732,16 @@
         if (!movementSelect) {
             return;
         }
+        const options = Array.from(productOptions.values());
         movementSelect.innerHTML = '';
-        state.products.forEach((product) => {
-            const option = document.createElement('option');
-            option.value = product.id;
-            option.textContent = `${product.reference} – ${product.designation}`;
-            movementSelect.appendChild(option);
-        });
+        options
+            .sort((a, b) => a.designation.localeCompare(b.designation, 'fr', { sensitivity: 'base' }))
+            .forEach((product) => {
+                const option = document.createElement('option');
+                option.value = product.id;
+                option.textContent = `${product.reference} – ${product.designation}`;
+                movementSelect.appendChild(option);
+            });
     }
 
     function openMovementForm() {
@@ -591,16 +805,11 @@
             .then((response) => {
                 if (response?.success && response.data?.product) {
                     const product = normalizeProduct(response.data.product);
-                    const index = state.products.findIndex((item) => item.id === product.id);
-                    if (index >= 0) {
-                        state.products[index] = product;
-                    } else {
-                        state.products.push(product);
-                    }
-                    renderProducts(searchInput?.value || '');
-                    updateMovementSelect();
+                    addProductOptions([product]);
                     hidePanel(productPanel);
                     resetProductForm();
+                    state.pagination.page = 1;
+                    loadProducts({ page: 1 }).catch(showError);
                 } else {
                     throw new Error(response?.data?.message || SempaStocksData.strings.unknownError);
                 }
@@ -693,10 +902,10 @@
         if (!name) {
             return;
         }
-        const color = window.prompt('Couleur hexadécimale (#f4a412 par défaut)', '#f4a412') || '#f4a412';
+        const color = '#f4a412';
         const data = new FormData();
         data.append('nom', name.trim());
-        data.append('couleur', color.trim());
+        data.append('couleur', color);
         request('sempa_stocks_save_category', data)
             .then((response) => {
                 if (response?.success && response.data?.category) {
@@ -912,9 +1121,8 @@
                 request('sempa_stocks_delete_product', payload)
                     .then((response) => {
                         if (response?.success) {
-                            state.products = state.products.filter((item) => item.id !== product.id);
-                            renderProducts(searchInput?.value || '');
-                            updateMovementSelect();
+                            removeProductOption(product.id);
+                            loadProducts({ page: state.pagination.page }).catch(showError);
                         } else {
                             throw new Error(response?.data?.message || SempaStocksData.strings.unknownError);
                         }
@@ -927,6 +1135,8 @@
             menu.open = false;
         }
     });
+
+    setConditionView(state.filters.condition, { fetch: false });
 
     loadAll();
 })(jQuery);
