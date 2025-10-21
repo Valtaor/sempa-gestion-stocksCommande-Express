@@ -88,26 +88,80 @@ final class Sempa_Order_Route
         $products = is_array($payload['products'] ?? null) ? $payload['products'] : [];
         $totals = is_array($payload['totals'] ?? null) ? $payload['totals'] : [];
 
+        $order_number = sanitize_text_field($client['clientNumber'] ?? '');
+        $order_date = sanitize_text_field($client['orderDate'] ?? '');
+        $postal_code = sanitize_text_field($client['postalCode'] ?? '');
+        $city = sanitize_text_field($client['city'] ?? '');
+        $shipping_lines = [];
+
+        foreach ($client as $key => $value) {
+            if (!is_string($value)) {
+                continue;
+            }
+
+            if (stripos($key, 'address') !== false || stripos($key, 'adresse') !== false || stripos($key, 'street') !== false) {
+                $shipping_lines[] = sanitize_text_field($value);
+            }
+        }
+
+        if ($postal_code !== '' || $city !== '') {
+            $shipping_lines[] = trim($postal_code . ' ' . $city);
+        }
+
+        $delivery_address = implode("\n", array_filter(array_map('trim', $shipping_lines)));
+
+        $total_ht = Sempa_Utils::parse_currency($totals['totalHT'] ?? '0');
+        $total_vat = Sempa_Utils::parse_currency($totals['vat'] ?? '0');
+        $total_ttc = Sempa_Utils::parse_currency($totals['totalTTC'] ?? '0');
+        $shipping_total = Sempa_Utils::parse_currency($totals['shipping'] ?? '0');
+
+        $details_payload = [
+            'produits' => $products,
+            'totaux' => [
+                'total_ht' => $total_ht,
+                'total_tva' => $total_vat,
+                'total_ttc' => $total_ttc,
+                'frais_livraison' => $shipping_total,
+            ],
+            'meta' => array_filter([
+                'numero_client' => $order_number,
+                'date_commande' => $order_date,
+                'code_postal' => $postal_code,
+                'ville' => $city,
+                'adresse_livraison' => $delivery_address,
+                'confirmation_email' => !empty($client['sendConfirmationEmail']),
+            ], function ($value) {
+                return $value !== '' && $value !== null && $value !== false;
+            }),
+        ];
+
+        $details_json = wp_json_encode($details_payload, JSON_UNESCAPED_UNICODE);
+        if (!is_string($details_json)) {
+            $details_json = wp_json_encode([], JSON_UNESCAPED_UNICODE);
+        }
+
+        $status = $payload['statut'] ?? $payload['status'] ?? 'en_attente';
+        $status = sanitize_key($status);
+        if ($status === '') {
+            $status = 'en_attente';
+        }
+
         $data = [
             'nom_societe' => sanitize_text_field($client['name'] ?? ''),
             'email' => sanitize_email($client['email'] ?? ''),
             'telephone' => sanitize_text_field($client['phone'] ?? ''),
-            'numero_client' => sanitize_text_field($client['clientNumber'] ?? ''),
-            'code_postal' => sanitize_text_field($client['postalCode'] ?? ''),
-            'ville' => sanitize_text_field($client['city'] ?? ''),
-            'date_commande' => sanitize_text_field($client['orderDate'] ?? ''),
-            'details_produits' => wp_json_encode($products, JSON_UNESCAPED_UNICODE),
-            'sous_total' => Sempa_Utils::parse_currency($totals['totalHT'] ?? '0'),
-            'frais_livraison' => Sempa_Utils::parse_currency($totals['shipping'] ?? '0'),
-            'tva' => Sempa_Utils::parse_currency($totals['vat'] ?? '0'),
-            'total_ttc' => Sempa_Utils::parse_currency($totals['totalTTC'] ?? '0'),
+            'adresse_livraison' => $delivery_address,
+            'details_commande' => $details_json,
             'instructions_speciales' => sanitize_textarea_field($client['comments'] ?? ''),
-            'confirmation_email' => !empty($client['sendConfirmationEmail']) ? 1 : 0,
-            'created_at' => current_time('mysql'),
+            'statut' => $status,
+            'total_ht' => $total_ht,
+            'total_tva' => $total_vat,
+            'total_ttc' => $total_ttc,
+            'date_creation' => current_time('mysql'),
         ];
 
         $result = $wpdb->insert($wpdb->prefix . 'commandes', $data, [
-            '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%f', '%f', '%f', '%f', '%s', '%d', '%s',
+            '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%f', '%f', '%f', '%s',
         ]);
 
         if ($result === false) {
@@ -118,9 +172,34 @@ final class Sempa_Order_Route
             ], 500);
         }
 
+        $order_id = (int) $wpdb->insert_id;
+
+        if (class_exists('Sempa_Order_Stock_Sync')) {
+            $sync_result = Sempa_Order_Stock_Sync::sync($products, [
+                'order_id' => $order_id,
+                'order_number' => $order_number,
+                'order_date' => $order_date,
+                'client_name' => $data['nom_societe'],
+                'client_email' => $data['email'],
+            ]);
+
+            if (is_wp_error($sync_result)) {
+                if (function_exists('error_log')) {
+                    error_log('[Sempa] Stock sync failed for order #' . $order_id . ': ' . $sync_result->get_error_message());
+                }
+
+                return new WP_REST_Response([
+                    'success' => false,
+                    'message' => $sync_result->get_error_message(),
+                    'order_id' => $order_id,
+                ], 500);
+            }
+        }
+
         return new WP_REST_Response([
             'success' => true,
             'message' => 'Commande enregistrée avec succès.',
+            'order_id' => $order_id,
         ]);
     }
 }
