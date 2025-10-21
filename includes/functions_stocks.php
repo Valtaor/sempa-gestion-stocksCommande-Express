@@ -3,6 +3,10 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+if (!function_exists('wp_kses_post')) {
+    require_once ABSPATH . 'wp-includes/kses.php';
+}
+
 require_once __DIR__ . '/db_connect_stocks.php';
 
 final class Sempa_Stocks_App
@@ -110,10 +114,89 @@ final class Sempa_Stocks_App
         self::ensure_secure_request();
 
         $db = Sempa_Stocks_DB::instance();
+        $stock_table = Sempa_Stocks_DB::table('stocks_sempa');
+        $stock_alias = 's';
+        $stock_identifier = Sempa_Stocks_DB::escape_identifier($stock_table) . ' AS ' . $stock_alias;
 
-        $totals = $db->get_row('SELECT COUNT(*) AS total_produits, SUM(stock_actuel) AS total_unites, SUM(prix_achat * stock_actuel) AS valeur_totale FROM ' . Sempa_Stocks_DB::table('stocks_sempa'));
-        $alerts = $db->get_results('SELECT id, reference, designation, stock_actuel, stock_minimum FROM ' . Sempa_Stocks_DB::table('stocks_sempa') . ' WHERE stock_minimum > 0 AND stock_actuel <= stock_minimum ORDER BY stock_actuel ASC LIMIT 20', ARRAY_A);
-        $recent = $db->get_results('SELECT m.*, s.reference, s.designation FROM ' . Sempa_Stocks_DB::table('mouvements_stocks_sempa') . ' AS m INNER JOIN ' . Sempa_Stocks_DB::table('stocks_sempa') . ' AS s ON s.id = m.produit_id ORDER BY m.date_mouvement DESC LIMIT 10', ARRAY_A);
+        $stock_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'stock_actuel', false);
+        $purchase_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'prix_achat', false);
+        $id_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'id', false);
+        $reference_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'reference', false);
+        $designation_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'designation', false);
+        $minimum_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'stock_minimum', false);
+
+        $totals_select = ['COUNT(*) AS total_produits'];
+        if ($stock_column) {
+            $totals_select[] = 'SUM(' . Sempa_Stocks_DB::escape_identifier($stock_column) . ') AS total_unites';
+        } else {
+            $totals_select[] = '0 AS total_unites';
+        }
+
+        if ($stock_column && $purchase_column) {
+            $totals_select[] = 'SUM(' . Sempa_Stocks_DB::escape_identifier($purchase_column) . ' * ' . Sempa_Stocks_DB::escape_identifier($stock_column) . ') AS valeur_totale';
+        } else {
+            $totals_select[] = '0 AS valeur_totale';
+        }
+
+        $totals = $db->get_row('SELECT ' . implode(', ', $totals_select) . ' FROM ' . Sempa_Stocks_DB::escape_identifier($stock_table));
+
+        $alert_columns = [];
+        if ($id_column) {
+            $alert_columns[] = Sempa_Stocks_DB::escape_identifier($stock_alias . '.' . $id_column) . ' AS id';
+        }
+        if ($reference_column) {
+            $alert_columns[] = Sempa_Stocks_DB::escape_identifier($stock_alias . '.' . $reference_column) . ' AS reference';
+        }
+        if ($designation_column) {
+            $alert_columns[] = Sempa_Stocks_DB::escape_identifier($stock_alias . '.' . $designation_column) . ' AS designation';
+        }
+        if ($stock_column) {
+            $alert_columns[] = Sempa_Stocks_DB::escape_identifier($stock_alias . '.' . $stock_column) . ' AS stock_actuel';
+        }
+        if ($minimum_column) {
+            $alert_columns[] = Sempa_Stocks_DB::escape_identifier($stock_alias . '.' . $minimum_column) . ' AS stock_minimum';
+        }
+
+        $alerts_sql = 'SELECT ' . ($alert_columns ? implode(', ', $alert_columns) : $stock_alias . '.*') . ' FROM ' . $stock_identifier;
+        $alert_conditions = [];
+        if ($minimum_column) {
+            $alert_conditions[] = Sempa_Stocks_DB::escape_identifier($stock_alias . '.' . $minimum_column) . ' > 0';
+        }
+        if ($minimum_column && $stock_column) {
+            $alert_conditions[] = Sempa_Stocks_DB::escape_identifier($stock_alias . '.' . $stock_column) . ' <= ' . Sempa_Stocks_DB::escape_identifier($stock_alias . '.' . $minimum_column);
+        }
+        if ($alert_conditions) {
+            $alerts_sql .= ' WHERE ' . implode(' AND ', $alert_conditions);
+        }
+        if ($stock_column) {
+            $alerts_sql .= ' ORDER BY ' . Sempa_Stocks_DB::escape_identifier($stock_alias . '.' . $stock_column) . ' ASC';
+        }
+        $alerts_sql .= ' LIMIT 20';
+        $alerts = $db->get_results($alerts_sql, ARRAY_A);
+
+        $movement_table = Sempa_Stocks_DB::table('mouvements_stocks_sempa');
+        $movement_alias = 'm';
+        $movement_identifier = Sempa_Stocks_DB::escape_identifier($movement_table) . ' AS ' . $movement_alias;
+        $movement_product_column = Sempa_Stocks_DB::resolve_column('mouvements_stocks_sempa', 'produit_id', false);
+        $movement_date_column = Sempa_Stocks_DB::resolve_column('mouvements_stocks_sempa', 'date_mouvement', false);
+
+        $recent_select = [$movement_alias . '.*'];
+        if ($reference_column) {
+            $recent_select[] = Sempa_Stocks_DB::escape_identifier($stock_alias . '.' . $reference_column) . ' AS reference';
+        }
+        if ($designation_column) {
+            $recent_select[] = Sempa_Stocks_DB::escape_identifier($stock_alias . '.' . $designation_column) . ' AS designation';
+        }
+
+        $recent_sql = 'SELECT ' . implode(', ', $recent_select) . ' FROM ' . $movement_identifier;
+        if ($movement_product_column && $id_column) {
+            $recent_sql .= ' INNER JOIN ' . $stock_identifier . ' ON ' . Sempa_Stocks_DB::escape_identifier($stock_alias . '.' . $id_column) . ' = ' . Sempa_Stocks_DB::escape_identifier($movement_alias . '.' . $movement_product_column);
+        }
+        if ($movement_date_column) {
+            $recent_sql .= ' ORDER BY ' . Sempa_Stocks_DB::escape_identifier($movement_alias . '.' . $movement_date_column) . ' DESC';
+        }
+        $recent_sql .= ' LIMIT 10';
+        $recent = $db->get_results($recent_sql, ARRAY_A);
 
         wp_send_json_success([
             'totals' => [
@@ -131,7 +214,15 @@ final class Sempa_Stocks_App
         self::ensure_secure_request();
 
         $db = Sempa_Stocks_DB::instance();
-        $products = $db->get_results('SELECT * FROM ' . Sempa_Stocks_DB::table('stocks_sempa') . ' ORDER BY designation ASC', ARRAY_A);
+        $table = Sempa_Stocks_DB::table('stocks_sempa');
+        $designation_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'designation', false);
+
+        $sql = 'SELECT * FROM ' . Sempa_Stocks_DB::escape_identifier($table);
+        if ($designation_column) {
+            $sql .= ' ORDER BY ' . Sempa_Stocks_DB::escape_identifier($designation_column) . ' ASC';
+        }
+
+        $products = $db->get_results($sql, ARRAY_A);
 
         wp_send_json_success([
             'products' => array_map([__CLASS__, 'format_product'], $products ?: []),
@@ -176,24 +267,86 @@ final class Sempa_Stocks_App
             $payload['document_pdf'] = $upload_path;
         }
 
-        if ($id > 0) {
-            $payload['date_modification'] = current_time('mysql');
-            $updated = $db->update(Sempa_Stocks_DB::table('stocks_sempa'), $payload, ['id' => $id]);
-            if ($updated === false) {
-                wp_send_json_error(['message' => $db->last_error ?: __('Impossible de mettre à jour le produit.', 'sempa')], 500);
-            }
-        } else {
-            if (empty($payload['date_entree'])) {
-                $payload['date_entree'] = wp_date('Y-m-d');
-            }
-            $inserted = $db->insert(Sempa_Stocks_DB::table('stocks_sempa'), $payload);
-            if ($inserted === false) {
-                wp_send_json_error(['message' => $db->last_error ?: __('Impossible d\'ajouter le produit.', 'sempa')], 500);
-            }
-            $id = (int) $db->insert_id;
+        $table = Sempa_Stocks_DB::table('stocks_sempa');
+        $id_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'id', false);
+        $reference_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'reference', false);
+
+        if ($id_column === null) {
+            wp_send_json_error([
+                'message' => __('Structure de table produit invalide.', 'sempa'),
+            ], 500);
         }
 
-        $product = $db->get_row($db->prepare('SELECT * FROM ' . Sempa_Stocks_DB::table('stocks_sempa') . ' WHERE id = %d', $id), ARRAY_A);
+        if ($reference_column === null) {
+            wp_send_json_error([
+                'message' => __('Impossible de déterminer la colonne de référence produit.', 'sempa'),
+            ], 500);
+        }
+
+        $prepared_reference = $payload['reference'];
+        $duplicate_sql = 'SELECT COUNT(1) FROM ' . Sempa_Stocks_DB::escape_identifier($table)
+            . ' WHERE ' . Sempa_Stocks_DB::escape_identifier($reference_column) . ' = %s';
+
+        if ($id > 0) {
+            $duplicate_sql .= ' AND ' . Sempa_Stocks_DB::escape_identifier($id_column) . ' != %d';
+            $duplicate = (int) $db->get_var($db->prepare($duplicate_sql, $prepared_reference, $id));
+        } else {
+            $duplicate = (int) $db->get_var($db->prepare($duplicate_sql, $prepared_reference));
+        }
+
+        if ($duplicate > 0) {
+            wp_send_json_error([
+                'message' => __('Cette référence est déjà utilisée par un autre produit.', 'sempa'),
+            ], 409);
+        }
+
+        if ($id > 0) {
+            $payload['date_modification'] = current_time('mysql');
+        } elseif (empty($payload['date_entree'])) {
+            $payload['date_entree'] = wp_date('Y-m-d');
+        }
+
+        $prepared_payload = Sempa_Stocks_DB::prepare_columns('stocks_sempa', $payload);
+
+        if (empty($prepared_payload)) {
+            wp_send_json_error([
+                'message' => __('Impossible de déterminer les colonnes de la table des stocks.', 'sempa'),
+            ], 500);
+        }
+
+        if ($id > 0) {
+            $updated = $db->update($table, $prepared_payload, [$id_column => $id]);
+            if ($updated === false) {
+                $message = $db->last_error ?: __('Impossible de mettre à jour le produit.', 'sempa');
+                if (self::is_duplicate_error_message($message)) {
+                    $message = __('Cette référence est déjà utilisée par un autre produit.', 'sempa');
+                }
+                wp_send_json_error(['message' => $message], self::is_duplicate_error_message($db->last_error) ? 409 : 500);
+            }
+        } else {
+            $inserted = $db->insert($table, $prepared_payload);
+            if ($inserted === false) {
+                $message = $db->last_error ?: __('Impossible d\'ajouter le produit.', 'sempa');
+                if (self::is_duplicate_error_message($message)) {
+                    $message = __('Cette référence est déjà utilisée par un autre produit.', 'sempa');
+                }
+                wp_send_json_error(['message' => $message], self::is_duplicate_error_message($db->last_error) ? 409 : 500);
+            }
+            $id = (int) $db->insert_id;
+            if ($id <= 0) {
+                wp_send_json_error([
+                    'message' => __('Impossible de déterminer l\'identifiant du nouveau produit.', 'sempa'),
+                ], 500);
+            }
+        }
+
+        $product = $db->get_row(
+            $db->prepare(
+                'SELECT * FROM ' . Sempa_Stocks_DB::escape_identifier($table) . ' WHERE ' . Sempa_Stocks_DB::escape_identifier($id_column) . ' = %d',
+                $id
+            ),
+            ARRAY_A
+        );
         wp_send_json_success([
             'product' => self::format_product($product ?: []),
         ]);
@@ -209,7 +362,14 @@ final class Sempa_Stocks_App
         }
 
         $db = Sempa_Stocks_DB::instance();
-        $deleted = $db->delete(Sempa_Stocks_DB::table('stocks_sempa'), ['id' => $id]);
+        $table = Sempa_Stocks_DB::table('stocks_sempa');
+        $id_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'id', false);
+
+        if ($id_column === null) {
+            wp_send_json_error(['message' => __('Structure de table produit invalide.', 'sempa')], 500);
+        }
+
+        $deleted = $db->delete($table, [$id_column => $id]);
         if ($deleted === false) {
             wp_send_json_error(['message' => $db->last_error ?: __('Impossible de supprimer le produit.', 'sempa')], 500);
         }
@@ -222,7 +382,35 @@ final class Sempa_Stocks_App
         self::ensure_secure_request();
 
         $db = Sempa_Stocks_DB::instance();
-        $movements = $db->get_results('SELECT m.*, s.reference, s.designation FROM ' . Sempa_Stocks_DB::table('mouvements_stocks_sempa') . ' AS m INNER JOIN ' . Sempa_Stocks_DB::table('stocks_sempa') . ' AS s ON s.id = m.produit_id ORDER BY m.date_mouvement DESC LIMIT 200', ARRAY_A);
+        $movement_table = Sempa_Stocks_DB::table('mouvements_stocks_sempa');
+        $stock_table = Sempa_Stocks_DB::table('stocks_sempa');
+        $movement_alias = 'm';
+        $stock_alias = 's';
+
+        $movement_product_column = Sempa_Stocks_DB::resolve_column('mouvements_stocks_sempa', 'produit_id', false);
+        $movement_date_column = Sempa_Stocks_DB::resolve_column('mouvements_stocks_sempa', 'date_mouvement', false);
+        $stock_id_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'id', false);
+        $reference_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'reference', false);
+        $designation_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'designation', false);
+
+        $select = [$movement_alias . '.*'];
+        if ($reference_column) {
+            $select[] = Sempa_Stocks_DB::escape_identifier($stock_alias . '.' . $reference_column) . ' AS reference';
+        }
+        if ($designation_column) {
+            $select[] = Sempa_Stocks_DB::escape_identifier($stock_alias . '.' . $designation_column) . ' AS designation';
+        }
+
+        $sql = 'SELECT ' . implode(', ', $select) . ' FROM ' . Sempa_Stocks_DB::escape_identifier($movement_table) . ' AS ' . $movement_alias;
+        if ($movement_product_column && $stock_id_column) {
+            $sql .= ' INNER JOIN ' . Sempa_Stocks_DB::escape_identifier($stock_table) . ' AS ' . $stock_alias . ' ON ' . Sempa_Stocks_DB::escape_identifier($stock_alias . '.' . $stock_id_column) . ' = ' . Sempa_Stocks_DB::escape_identifier($movement_alias . '.' . $movement_product_column);
+        }
+        if ($movement_date_column) {
+            $sql .= ' ORDER BY ' . Sempa_Stocks_DB::escape_identifier($movement_alias . '.' . $movement_date_column) . ' DESC';
+        }
+        $sql .= ' LIMIT 200';
+
+        $movements = $db->get_results($sql, ARRAY_A);
 
         wp_send_json_success([
             'movements' => array_map([__CLASS__, 'format_movement'], $movements ?: []),
@@ -244,12 +432,43 @@ final class Sempa_Stocks_App
         }
 
         $db = Sempa_Stocks_DB::instance();
-        $product = $db->get_row($db->prepare('SELECT * FROM ' . Sempa_Stocks_DB::table('stocks_sempa') . ' WHERE id = %d', $product_id), ARRAY_A);
+        $table = Sempa_Stocks_DB::table('stocks_sempa');
+        $id_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'id', false);
+        $stock_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'stock_actuel', false);
+        $modified_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'date_modification', false);
+
+        $movement_table = Sempa_Stocks_DB::table('mouvements_stocks_sempa');
+        $movement_alias = 'm';
+        $stock_table = Sempa_Stocks_DB::table('stocks_sempa');
+        $stock_alias = 's';
+        $movement_product_column = Sempa_Stocks_DB::resolve_column('mouvements_stocks_sempa', 'produit_id', false);
+        $movement_date_column = Sempa_Stocks_DB::resolve_column('mouvements_stocks_sempa', 'date_mouvement', false);
+        $movement_type_column = Sempa_Stocks_DB::resolve_column('mouvements_stocks_sempa', 'type_mouvement', false);
+        $movement_quantity_column = Sempa_Stocks_DB::resolve_column('mouvements_stocks_sempa', 'quantite', false);
+        $movement_old_column = Sempa_Stocks_DB::resolve_column('mouvements_stocks_sempa', 'ancien_stock', false);
+        $movement_new_column = Sempa_Stocks_DB::resolve_column('mouvements_stocks_sempa', 'nouveau_stock', false);
+        $movement_reason_column = Sempa_Stocks_DB::resolve_column('mouvements_stocks_sempa', 'motif', false);
+        $movement_user_column = Sempa_Stocks_DB::resolve_column('mouvements_stocks_sempa', 'utilisateur', false);
+        $stock_id_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'id', false);
+        $reference_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'reference', false);
+        $designation_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'designation', false);
+
+        if (!$id_column || !$stock_column) {
+            wp_send_json_error(['message' => __('Structure de table produit invalide.', 'sempa')], 500);
+        }
+
+        $product = $db->get_row(
+            $db->prepare(
+                'SELECT * FROM ' . Sempa_Stocks_DB::escape_identifier($table) . ' WHERE ' . Sempa_Stocks_DB::escape_identifier($id_column) . ' = %d',
+                $product_id
+            ),
+            ARRAY_A
+        );
         if (!$product) {
             wp_send_json_error(['message' => __('Produit introuvable.', 'sempa')], 404);
         }
 
-        $current_stock = (int) $product['stock_actuel'];
+        $current_stock = (int) Sempa_Stocks_DB::value($product, 'stocks_sempa', 'stock_actuel', 0);
         $new_stock = $current_stock;
 
         if ($type === 'entree') {
@@ -261,10 +480,18 @@ final class Sempa_Stocks_App
         }
 
         $db->query('START TRANSACTION');
+
+        $update_data = [
+            $stock_column => $new_stock,
+        ];
+        if ($modified_column) {
+            $update_data[$modified_column] = current_time('mysql');
+        }
+
         $updated = $db->update(
-            Sempa_Stocks_DB::table('stocks_sempa'),
-            ['stock_actuel' => $new_stock, 'date_modification' => current_time('mysql')],
-            ['id' => $product_id]
+            $table,
+            $update_data,
+            [$id_column => $product_id]
         );
 
         if ($updated === false) {
@@ -273,18 +500,36 @@ final class Sempa_Stocks_App
         }
 
         $user = wp_get_current_user();
-        $inserted = $db->insert(
-            Sempa_Stocks_DB::table('mouvements_stocks_sempa'),
-            [
-                'produit_id' => $product_id,
-                'type_mouvement' => $type,
-                'quantite' => abs($quantity),
-                'ancien_stock' => $current_stock,
-                'nouveau_stock' => $new_stock,
-                'motif' => $motif,
-                'utilisateur' => $user->user_email,
-            ]
-        );
+
+        $movement_payload = [];
+        if ($movement_product_column) {
+            $movement_payload[$movement_product_column] = $product_id;
+        }
+        if ($movement_type_column) {
+            $movement_payload[$movement_type_column] = $type;
+        }
+        if ($movement_quantity_column) {
+            $movement_payload[$movement_quantity_column] = abs($quantity);
+        }
+        if ($movement_old_column) {
+            $movement_payload[$movement_old_column] = $current_stock;
+        }
+        if ($movement_new_column) {
+            $movement_payload[$movement_new_column] = $new_stock;
+        }
+        if ($movement_reason_column) {
+            $movement_payload[$movement_reason_column] = $motif;
+        }
+        if ($movement_user_column) {
+            $movement_payload[$movement_user_column] = $user->user_email;
+        }
+
+        if (!$movement_product_column || !$movement_type_column || !$movement_quantity_column || empty($movement_payload)) {
+            $db->query('ROLLBACK');
+            wp_send_json_error(['message' => __('Structure de la table des mouvements invalide.', 'sempa')], 500);
+        }
+
+        $inserted = $db->insert($movement_table, $movement_payload);
 
         if ($inserted === false) {
             $db->query('ROLLBACK');
@@ -293,7 +538,26 @@ final class Sempa_Stocks_App
 
         $db->query('COMMIT');
 
-        $movement = $db->get_row($db->prepare('SELECT m.*, s.reference, s.designation FROM ' . Sempa_Stocks_DB::table('mouvements_stocks_sempa') . ' AS m INNER JOIN ' . Sempa_Stocks_DB::table('stocks_sempa') . ' AS s ON s.id = m.produit_id WHERE m.id = %d', (int) $db->insert_id), ARRAY_A);
+        $movement_id_column = Sempa_Stocks_DB::resolve_column('mouvements_stocks_sempa', 'id', false);
+
+        $movement = null;
+        if ($movement_id_column) {
+            $movement_select = [$movement_alias . '.*'];
+            if ($reference_column) {
+                $movement_select[] = Sempa_Stocks_DB::escape_identifier($stock_alias . '.' . $reference_column) . ' AS reference';
+            }
+            if ($designation_column) {
+                $movement_select[] = Sempa_Stocks_DB::escape_identifier($stock_alias . '.' . $designation_column) . ' AS designation';
+            }
+
+            $movement_sql = 'SELECT ' . implode(', ', $movement_select) . ' FROM ' . Sempa_Stocks_DB::escape_identifier($movement_table) . ' AS ' . $movement_alias;
+            if ($movement_product_column && $stock_id_column) {
+                $movement_sql .= ' INNER JOIN ' . Sempa_Stocks_DB::escape_identifier($stock_table) . ' AS ' . $stock_alias . ' ON ' . Sempa_Stocks_DB::escape_identifier($stock_alias . '.' . $stock_id_column) . ' = ' . Sempa_Stocks_DB::escape_identifier($movement_alias . '.' . $movement_product_column);
+            }
+            $movement_sql .= ' WHERE ' . Sempa_Stocks_DB::escape_identifier($movement_alias . '.' . $movement_id_column) . ' = %d';
+
+            $movement = $db->get_row($db->prepare($movement_sql, (int) $db->insert_id), ARRAY_A);
+        }
 
         wp_send_json_success([
             'movement' => self::format_movement($movement ?: []),
@@ -319,7 +583,15 @@ final class Sempa_Stocks_App
         }
 
         $db = Sempa_Stocks_DB::instance();
-        $products = $db->get_results('SELECT * FROM ' . Sempa_Stocks_DB::table('stocks_sempa') . ' ORDER BY designation ASC', ARRAY_A);
+        $table = Sempa_Stocks_DB::table('stocks_sempa');
+        $designation_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'designation', false);
+
+        $sql = 'SELECT * FROM ' . Sempa_Stocks_DB::escape_identifier($table);
+        if ($designation_column) {
+            $sql .= ' ORDER BY ' . Sempa_Stocks_DB::escape_identifier($designation_column) . ' ASC';
+        }
+
+        $products = $db->get_results($sql, ARRAY_A);
 
         nocache_headers();
         header('Content-Type: text/csv; charset=utf-8');
@@ -331,23 +603,24 @@ final class Sempa_Stocks_App
         ]);
 
         foreach ($products ?: [] as $product) {
+            $formatted = self::format_product($product);
             fputcsv($output, [
-                $product['id'],
-                $product['reference'],
-                $product['designation'],
-                $product['categorie'],
-                $product['fournisseur'],
-                $product['prix_achat'],
-                $product['prix_vente'],
-                $product['stock_actuel'],
-                $product['stock_minimum'],
-                $product['condition_materiel'] ?? '',
-                $product['emplacement'],
-                $product['date_entree'],
-                $product['date_modification'],
-                $product['notes'],
-                $product['document_pdf'],
-                $product['ajoute_par'],
+                $formatted['id'],
+                $formatted['reference'],
+                $formatted['designation'],
+                $formatted['categorie'],
+                $formatted['fournisseur'],
+                $formatted['prix_achat'],
+                $formatted['prix_vente'],
+                $formatted['stock_actuel'],
+                $formatted['stock_minimum'],
+                $formatted['condition_materiel'],
+                $formatted['emplacement'],
+                $formatted['date_entree'],
+                $formatted['date_modification'],
+                $formatted['notes'],
+                $formatted['document_pdf'],
+                $formatted['ajoute_par'],
             ]);
         }
 
@@ -360,8 +633,24 @@ final class Sempa_Stocks_App
         self::ensure_secure_request();
 
         $db = Sempa_Stocks_DB::instance();
-        $categories = $db->get_results('SELECT * FROM ' . Sempa_Stocks_DB::table('categories_stocks') . ' ORDER BY nom ASC', ARRAY_A);
-        $suppliers = $db->get_results('SELECT * FROM ' . Sempa_Stocks_DB::table('fournisseurs_sempa') . ' ORDER BY nom ASC', ARRAY_A);
+        $category_table = Sempa_Stocks_DB::table('categories_stocks');
+        $supplier_table = Sempa_Stocks_DB::table('fournisseurs_sempa');
+
+        $category_order_column = Sempa_Stocks_DB::resolve_column('categories_stocks', 'nom', false);
+        $supplier_order_column = Sempa_Stocks_DB::resolve_column('fournisseurs_sempa', 'nom', false);
+
+        $category_query = 'SELECT * FROM ' . Sempa_Stocks_DB::escape_identifier($category_table);
+        if ($category_order_column) {
+            $category_query .= ' ORDER BY ' . Sempa_Stocks_DB::escape_identifier($category_order_column) . ' ASC';
+        }
+
+        $supplier_query = 'SELECT * FROM ' . Sempa_Stocks_DB::escape_identifier($supplier_table);
+        if ($supplier_order_column) {
+            $supplier_query .= ' ORDER BY ' . Sempa_Stocks_DB::escape_identifier($supplier_order_column) . ' ASC';
+        }
+
+        $categories = $db->get_results($category_query, ARRAY_A);
+        $suppliers = $db->get_results($supplier_query, ARRAY_A);
 
         wp_send_json_success([
             'categories' => array_map([__CLASS__, 'format_category'], $categories ?: []),
@@ -381,23 +670,64 @@ final class Sempa_Stocks_App
         }
 
         $db = Sempa_Stocks_DB::instance();
-        $inserted = $db->insert(Sempa_Stocks_DB::table('categories_stocks'), [
+        $table = Sempa_Stocks_DB::table('categories_stocks');
+        $name_column = Sempa_Stocks_DB::resolve_column('categories_stocks', 'nom', false);
+
+        if ($name_column === null) {
+            wp_send_json_error(['message' => __('La colonne "nom" est introuvable dans la table des catégories.', 'sempa')], 500);
+        }
+
+        $slug_column = Sempa_Stocks_DB::resolve_column('categories_stocks', 'slug', false);
+
+        $slug = '';
+        if ($slug_column !== null) {
+            $requested_slug = isset($_POST['slug']) ? sanitize_title(wp_unslash($_POST['slug'])) : '';
+            $slug = $requested_slug !== '' ? $requested_slug : self::generate_slug_from_name($name);
+            $slug = self::ensure_unique_slug($db, $table, $slug_column, $slug);
+        }
+
+        $data = Sempa_Stocks_DB::prepare_columns('categories_stocks', [
             'nom' => $name,
+            'slug' => $slug,
             'couleur' => $color ?: '#f4a412',
             'icone' => $icon,
         ]);
+
+        if (!isset($data[$name_column])) {
+            $data[$name_column] = $name;
+        }
+
+        if (empty($data)) {
+            wp_send_json_error(['message' => __('Impossible de déterminer les colonnes de la table des catégories.', 'sempa')], 500);
+        }
+
+        $inserted = $db->insert($table, $data);
 
         if ($inserted === false) {
             wp_send_json_error(['message' => $db->last_error ?: __('Impossible d\'ajouter la catégorie.', 'sempa')], 500);
         }
 
+        $id_column = Sempa_Stocks_DB::resolve_column('categories_stocks', 'id', false);
+        $category_row = null;
+
+        if ($id_column) {
+            $category_row = $db->get_row(
+                $db->prepare(
+                    'SELECT * FROM ' . Sempa_Stocks_DB::escape_identifier($table) . ' WHERE ' . Sempa_Stocks_DB::escape_identifier($id_column) . ' = %d',
+                    (int) $db->insert_id
+                ),
+                ARRAY_A
+            );
+        }
+
+        if (!$category_row) {
+            $category_row = array_merge($data, [
+                $id_column ?: 'id' => (int) $db->insert_id,
+            ]);
+        }
+
         wp_send_json_success([
-            'category' => self::format_category([
-                'id' => (int) $db->insert_id,
-                'nom' => $name,
-                'couleur' => $color ?: '#f4a412',
-                'icone' => $icon,
-            ]),
+            'category' => self::format_category($category_row),
         ]);
     }
 
@@ -416,25 +746,55 @@ final class Sempa_Stocks_App
         }
 
         $db = Sempa_Stocks_DB::instance();
-        $inserted = $db->insert(Sempa_Stocks_DB::table('fournisseurs_sempa'), [
+        $table = Sempa_Stocks_DB::table('fournisseurs_sempa');
+        $name_column = Sempa_Stocks_DB::resolve_column('fournisseurs_sempa', 'nom', false);
+
+        if ($name_column === null) {
+            wp_send_json_error(['message' => __('La colonne "nom" est introuvable dans la table des fournisseurs.', 'sempa')], 500);
+        }
+
+        $data = Sempa_Stocks_DB::prepare_columns('fournisseurs_sempa', [
             'nom' => $name,
             'contact' => $contact,
             'telephone' => $telephone,
             'email' => $email,
         ]);
 
+        if (!isset($data[$name_column])) {
+            $data[$name_column] = $name;
+        }
+
+        if (empty($data)) {
+            wp_send_json_error(['message' => __('Impossible de déterminer les colonnes de la table des fournisseurs.', 'sempa')], 500);
+        }
+
+        $inserted = $db->insert($table, $data);
+
         if ($inserted === false) {
             wp_send_json_error(['message' => $db->last_error ?: __('Impossible d\'ajouter le fournisseur.', 'sempa')], 500);
         }
 
+        $id_column = Sempa_Stocks_DB::resolve_column('fournisseurs_sempa', 'id', false);
+        $supplier_row = null;
+
+        if ($id_column) {
+            $supplier_row = $db->get_row(
+                $db->prepare(
+                    'SELECT * FROM ' . Sempa_Stocks_DB::escape_identifier($table) . ' WHERE ' . Sempa_Stocks_DB::escape_identifier($id_column) . ' = %d',
+                    (int) $db->insert_id
+                ),
+                ARRAY_A
+            );
+        }
+
+        if (!$supplier_row) {
+            $supplier_row = array_merge($data, [
+                $id_column ?: 'id' => (int) $db->insert_id,
+            ]);
+        }
+
         wp_send_json_success([
-            'supplier' => self::format_supplier([
-                'id' => (int) $db->insert_id,
-                'nom' => $name,
-                'contact' => $contact,
-                'telephone' => $telephone,
-                'email' => $email,
-            ]),
+            'supplier' => self::format_supplier($supplier_row),
         ]);
     }
 
@@ -454,12 +814,51 @@ final class Sempa_Stocks_App
         }
 
         $user = wp_get_current_user();
+
+        $role_whitelist = apply_filters('sempa_stock_allowed_roles', [
+            'gestionnaire_de_stock',
+            'administrator',
+            'editor',
+        ]);
+
+        if (!is_array($role_whitelist)) {
+            $role_whitelist = array_filter([$role_whitelist]);
+        }
+
+        if ($role_whitelist) {
+            $user_roles = array_map('strtolower', (array) $user->roles);
+            $role_whitelist = array_map('strtolower', $role_whitelist);
+
+            if (array_intersect($role_whitelist, $user_roles)) {
+                return true;
+            }
+        }
+
+        $capabilities = apply_filters('sempa_stock_allowed_capabilities', [
+            'manage_options',
+        ]);
+
+        if (!is_array($capabilities)) {
+            $capabilities = array_filter([$capabilities]);
+        }
+
+        foreach ($capabilities as $capability) {
+            if ($capability && user_can($user, $capability)) {
+                return true;
+            }
+        }
+
         $allowed = apply_filters('sempa_stock_allowed_emails', [
             'victorfaucher@sempa.fr',
             'jean-baptiste@sempa.fr',
         ]);
 
+        if (!is_array($allowed)) {
+            $allowed = array_filter([$allowed]);
+        }
+
         $allowed = array_map('strtolower', $allowed);
+
         return in_array(strtolower($user->user_email), $allowed, true);
     }
 
@@ -476,6 +875,15 @@ final class Sempa_Stocks_App
 
         $decoded = json_decode($body, true);
         return is_array($decoded) ? $decoded : [];
+    }
+
+    private static function is_duplicate_error_message($message)
+    {
+        if (!is_string($message) || $message === '') {
+            return false;
+        }
+
+        return stripos($message, 'duplicate entry') !== false;
     }
 
     private static function sanitize_decimal($value)
@@ -562,11 +970,64 @@ final class Sempa_Stocks_App
         }
 
         $table = Sempa_Stocks_DB::table('stocks_sempa');
-        $column = $db->get_var($db->prepare('SHOW COLUMNS FROM ' . $table . ' LIKE %s', 'condition_materiel'));
+        $existing_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'condition_materiel', false);
 
-        if (!$column) {
-            $db->query('ALTER TABLE ' . $table . " ADD COLUMN condition_materiel VARCHAR(20) NOT NULL DEFAULT 'neuf'");
+        if ($existing_column) {
+            return;
         }
+
+        $column = $db->get_var(
+            $db->prepare(
+                'SHOW COLUMNS FROM ' . Sempa_Stocks_DB::escape_identifier($table) . ' LIKE %s',
+                'condition_materiel'
+            )
+        );
+
+        if ($column) {
+            return;
+        }
+
+        $db->query('ALTER TABLE ' . Sempa_Stocks_DB::escape_identifier($table) . " ADD COLUMN `condition_materiel` VARCHAR(20) NOT NULL DEFAULT 'neuf'");
+    }
+
+    private static function generate_slug_from_name(string $name)
+    {
+        $slug = sanitize_title($name);
+        if ($slug !== '') {
+            return $slug;
+        }
+
+        $normalized = strtolower(preg_replace('/[^a-z0-9]+/', '-', self::strip_accents($name)));
+        $normalized = trim($normalized, '-');
+
+        return $normalized !== '' ? $normalized : 'categorie';
+    }
+
+    private static function ensure_unique_slug($db, string $table, string $column, string $slug)
+    {
+        if (!($db instanceof \wpdb)) {
+            return $slug !== '' ? $slug : 'categorie';
+        }
+
+        $clean_slug = $slug !== '' ? $slug : 'categorie';
+        $base_slug = $clean_slug;
+        $suffix = 2;
+
+        do {
+            $exists = (int) $db->get_var(
+                $db->prepare(
+                    'SELECT COUNT(1) FROM ' . Sempa_Stocks_DB::escape_identifier($table) . ' WHERE ' . Sempa_Stocks_DB::escape_identifier($column) . ' = %s',
+                    $clean_slug
+                )
+            );
+
+            if ($exists === 0) {
+                return $clean_slug;
+            }
+
+            $clean_slug = $base_slug . '-' . $suffix;
+            $suffix++;
+        } while (true);
     }
 
     private static function strip_accents(string $value)
@@ -587,71 +1048,91 @@ final class Sempa_Stocks_App
         }
 
         return [
-            'id' => (int) ($product['id'] ?? 0),
-            'reference' => $product['reference'] ?? '',
-            'designation' => $product['designation'] ?? '',
-            'categorie' => $product['categorie'] ?? '',
-            'fournisseur' => $product['fournisseur'] ?? '',
-            'prix_achat' => (float) ($product['prix_achat'] ?? 0),
-            'prix_vente' => (float) ($product['prix_vente'] ?? 0),
-            'stock_actuel' => (int) ($product['stock_actuel'] ?? 0),
-            'stock_minimum' => (int) ($product['stock_minimum'] ?? 0),
-            'emplacement' => $product['emplacement'] ?? '',
-            'date_entree' => $product['date_entree'] ?? '',
-            'date_modification' => $product['date_modification'] ?? '',
-            'notes' => $product['notes'] ?? '',
-            'document_pdf' => $product['document_pdf'] ?? '',
-            'ajoute_par' => $product['ajoute_par'] ?? '',
-            'condition_materiel' => $product['condition_materiel'] ?? '',
+            'id' => (int) Sempa_Stocks_DB::value($product, 'stocks_sempa', 'id', $product['id'] ?? 0),
+            'reference' => (string) Sempa_Stocks_DB::value($product, 'stocks_sempa', 'reference', $product['reference'] ?? ''),
+            'designation' => (string) Sempa_Stocks_DB::value($product, 'stocks_sempa', 'designation', $product['designation'] ?? ''),
+            'categorie' => (string) Sempa_Stocks_DB::value($product, 'stocks_sempa', 'categorie', $product['categorie'] ?? ''),
+            'fournisseur' => (string) Sempa_Stocks_DB::value($product, 'stocks_sempa', 'fournisseur', $product['fournisseur'] ?? ''),
+            'prix_achat' => (float) Sempa_Stocks_DB::value($product, 'stocks_sempa', 'prix_achat', $product['prix_achat'] ?? 0),
+            'prix_vente' => (float) Sempa_Stocks_DB::value($product, 'stocks_sempa', 'prix_vente', $product['prix_vente'] ?? 0),
+            'stock_actuel' => (int) Sempa_Stocks_DB::value($product, 'stocks_sempa', 'stock_actuel', $product['stock_actuel'] ?? 0),
+            'stock_minimum' => (int) Sempa_Stocks_DB::value($product, 'stocks_sempa', 'stock_minimum', $product['stock_minimum'] ?? 0),
+            'emplacement' => (string) Sempa_Stocks_DB::value($product, 'stocks_sempa', 'emplacement', $product['emplacement'] ?? ''),
+            'date_entree' => (string) Sempa_Stocks_DB::value($product, 'stocks_sempa', 'date_entree', $product['date_entree'] ?? ''),
+            'date_modification' => (string) Sempa_Stocks_DB::value($product, 'stocks_sempa', 'date_modification', $product['date_modification'] ?? ''),
+            'notes' => (string) Sempa_Stocks_DB::value($product, 'stocks_sempa', 'notes', $product['notes'] ?? ''),
+            'document_pdf' => (string) Sempa_Stocks_DB::value($product, 'stocks_sempa', 'document_pdf', $product['document_pdf'] ?? ''),
+            'ajoute_par' => (string) Sempa_Stocks_DB::value($product, 'stocks_sempa', 'ajoute_par', $product['ajoute_par'] ?? ''),
+            'condition_materiel' => (string) Sempa_Stocks_DB::value($product, 'stocks_sempa', 'condition_materiel', $product['condition_materiel'] ?? ''),
         ];
     }
 
     private static function format_alert(array $alert)
     {
         return [
-            'id' => (int) ($alert['id'] ?? 0),
-            'reference' => $alert['reference'] ?? '',
-            'designation' => $alert['designation'] ?? '',
-            'stock_actuel' => (int) ($alert['stock_actuel'] ?? 0),
-            'stock_minimum' => (int) ($alert['stock_minimum'] ?? 0),
+            'id' => (int) Sempa_Stocks_DB::value($alert, 'stocks_sempa', 'id', $alert['id'] ?? 0),
+            'reference' => (string) Sempa_Stocks_DB::value($alert, 'stocks_sempa', 'reference', $alert['reference'] ?? ''),
+            'designation' => (string) Sempa_Stocks_DB::value($alert, 'stocks_sempa', 'designation', $alert['designation'] ?? ''),
+            'stock_actuel' => (int) Sempa_Stocks_DB::value($alert, 'stocks_sempa', 'stock_actuel', $alert['stock_actuel'] ?? 0),
+            'stock_minimum' => (int) Sempa_Stocks_DB::value($alert, 'stocks_sempa', 'stock_minimum', $alert['stock_minimum'] ?? 0),
         ];
     }
 
     private static function format_movement(array $movement)
     {
+        $ancien_stock = Sempa_Stocks_DB::value($movement, 'mouvements_stocks_sempa', 'ancien_stock', $movement['ancien_stock'] ?? null);
+        $nouveau_stock = Sempa_Stocks_DB::value($movement, 'mouvements_stocks_sempa', 'nouveau_stock', $movement['nouveau_stock'] ?? null);
+
         return [
-            'id' => (int) ($movement['id'] ?? 0),
-            'produit_id' => (int) ($movement['produit_id'] ?? 0),
-            'type_mouvement' => $movement['type_mouvement'] ?? '',
-            'quantite' => (int) ($movement['quantite'] ?? 0),
-            'ancien_stock' => isset($movement['ancien_stock']) ? (int) $movement['ancien_stock'] : null,
-            'nouveau_stock' => isset($movement['nouveau_stock']) ? (int) $movement['nouveau_stock'] : null,
-            'motif' => $movement['motif'] ?? '',
-            'utilisateur' => $movement['utilisateur'] ?? '',
-            'date_mouvement' => $movement['date_mouvement'] ?? '',
-            'reference' => $movement['reference'] ?? '',
-            'designation' => $movement['designation'] ?? '',
+            'id' => (int) Sempa_Stocks_DB::value($movement, 'mouvements_stocks_sempa', 'id', $movement['id'] ?? 0),
+            'produit_id' => (int) Sempa_Stocks_DB::value($movement, 'mouvements_stocks_sempa', 'produit_id', $movement['produit_id'] ?? 0),
+            'type_mouvement' => (string) Sempa_Stocks_DB::value($movement, 'mouvements_stocks_sempa', 'type_mouvement', $movement['type_mouvement'] ?? ''),
+            'quantite' => (int) Sempa_Stocks_DB::value($movement, 'mouvements_stocks_sempa', 'quantite', $movement['quantite'] ?? 0),
+            'ancien_stock' => $ancien_stock !== null ? (int) $ancien_stock : null,
+            'nouveau_stock' => $nouveau_stock !== null ? (int) $nouveau_stock : null,
+            'motif' => (string) Sempa_Stocks_DB::value($movement, 'mouvements_stocks_sempa', 'motif', $movement['motif'] ?? ''),
+            'utilisateur' => (string) Sempa_Stocks_DB::value($movement, 'mouvements_stocks_sempa', 'utilisateur', $movement['utilisateur'] ?? ''),
+            'date_mouvement' => (string) Sempa_Stocks_DB::value($movement, 'mouvements_stocks_sempa', 'date_mouvement', $movement['date_mouvement'] ?? ''),
+            'reference' => (string) Sempa_Stocks_DB::value($movement, 'stocks_sempa', 'reference', $movement['reference'] ?? ''),
+            'designation' => (string) Sempa_Stocks_DB::value($movement, 'stocks_sempa', 'designation', $movement['designation'] ?? ''),
         ];
     }
 
     private static function format_category(array $category)
     {
+        $id = Sempa_Stocks_DB::value($category, 'categories_stocks', 'id', $category['id'] ?? 0);
+        $name = Sempa_Stocks_DB::value($category, 'categories_stocks', 'nom', '');
+        $slug = Sempa_Stocks_DB::value($category, 'categories_stocks', 'slug', $category['slug'] ?? '');
+        $color = Sempa_Stocks_DB::value($category, 'categories_stocks', 'couleur', $category['couleur'] ?? '#f4a412');
+        $icon = Sempa_Stocks_DB::value($category, 'categories_stocks', 'icone', $category['icone'] ?? '');
+
+        if (!is_string($color) || $color === '') {
+            $color = '#f4a412';
+        }
+
         return [
-            'id' => (int) ($category['id'] ?? 0),
-            'nom' => $category['nom'] ?? '',
-            'couleur' => $category['couleur'] ?? '#f4a412',
-            'icone' => $category['icone'] ?? '',
+            'id' => (int) $id,
+            'nom' => is_string($name) ? $name : '',
+            'slug' => is_string($slug) ? $slug : '',
+            'couleur' => $color,
+            'icone' => is_string($icon) ? $icon : '',
         ];
     }
 
     private static function format_supplier(array $supplier)
     {
+        $id = Sempa_Stocks_DB::value($supplier, 'fournisseurs_sempa', 'id', $supplier['id'] ?? 0);
+        $name = Sempa_Stocks_DB::value($supplier, 'fournisseurs_sempa', 'nom', '');
+        $contact = Sempa_Stocks_DB::value($supplier, 'fournisseurs_sempa', 'contact', '');
+        $telephone = Sempa_Stocks_DB::value($supplier, 'fournisseurs_sempa', 'telephone', '');
+        $email = Sempa_Stocks_DB::value($supplier, 'fournisseurs_sempa', 'email', '');
+
         return [
-            'id' => (int) ($supplier['id'] ?? 0),
-            'nom' => $supplier['nom'] ?? '',
-            'contact' => $supplier['contact'] ?? '',
-            'telephone' => $supplier['telephone'] ?? '',
-            'email' => $supplier['email'] ?? '',
+            'id' => (int) $id,
+            'nom' => is_string($name) ? $name : '',
+            'contact' => is_string($contact) ? $contact : '',
+            'telephone' => is_string($telephone) ? $telephone : '',
+            'email' => is_string($email) ? $email : '',
         ];
     }
 
