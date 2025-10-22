@@ -9,21 +9,6 @@
         products: [],
         movements: [],
         categories: [],
-        suppliers: [],
-        filters: {
-            search: '',
-            category: '',
-            supplier: '',
-            status: '',
-            condition: 'all',
-        },
-        pagination: {
-            page: 1,
-            perPage: 25,
-            total: 0,
-            totalPages: 1,
-        },
-        isLoadingProducts: false,
     };
 
     const selectors = {
@@ -47,22 +32,8 @@
     const searchInput = document.querySelector('#stocks-search');
     const productMeta = document.querySelector('#stocks-product-meta');
     const filterCategory = document.querySelector('#stocks-filter-category');
-    const filterSupplier = document.querySelector('#stocks-filter-supplier');
     const filterStatus = document.querySelector('#stocks-filter-status');
     const clearFiltersButton = document.querySelector('#stocks-clear-filters');
-    const conditionButtons = document.querySelectorAll('[data-condition-view]');
-    const paginationWrapper = document.querySelector('#stocks-products-pagination');
-    const paginationPrev = paginationWrapper?.querySelector('[data-pagination="prev"]');
-    const paginationNext = paginationWrapper?.querySelector('[data-pagination="next"]');
-    const paginationSummary = paginationWrapper?.querySelector('[data-pagination="summary"]');
-    const paginationPage = paginationWrapper?.querySelector('[data-pagination="page"]');
-    const paginationPages = paginationWrapper?.querySelector('[data-pagination="pages"]');
-
-    const PRODUCTS_PER_PAGE = 25;
-    const productOptions = new Map();
-    let movementOptionsLoaded = false;
-    let productOptionsRequest = null;
-    let searchTimeout = null;
 
     const exports = document.querySelectorAll('[data-trigger="export"], #stocks-export');
     exports.forEach((element) => {
@@ -135,8 +106,6 @@
             event.preventDefault();
             if (action === 'add-category') {
                 createCategory();
-            } else if (action === 'add-supplier') {
-                createSupplier();
             }
         });
     }
@@ -176,10 +145,6 @@
         updateProductFilters({ category: filterCategory.value || '' });
     });
 
-    filterSupplier?.addEventListener('change', () => {
-        updateProductFilters({ supplier: filterSupplier.value || '' });
-    });
-
     filterStatus?.addEventListener('change', () => {
         updateProductFilters({ status: filterStatus.value || '' });
     });
@@ -190,9 +155,6 @@
         }
         if (filterCategory) {
             filterCategory.value = '';
-        }
-        if (filterSupplier) {
-            filterSupplier.value = '';
         }
         if (filterStatus) {
             filterStatus.value = '';
@@ -209,30 +171,6 @@
         loadProducts().catch(showError);
     });
 
-    if (conditionButtons.length) {
-        conditionButtons.forEach((button) => {
-            button.addEventListener('click', () => {
-                const view = button.dataset.conditionView || 'all';
-                if (view === state.filters.condition) {
-                    return;
-                }
-                setConditionView(view);
-            });
-        });
-    }
-
-    paginationPrev?.addEventListener('click', () => {
-        if (state.pagination.page > 1) {
-            loadProducts({ page: state.pagination.page - 1 }).catch(showError);
-        }
-    });
-
-    paginationNext?.addEventListener('click', () => {
-        if (state.pagination.page < state.pagination.totalPages) {
-            loadProducts({ page: state.pagination.page + 1 }).catch(showError);
-        }
-    });
-
     function loadAll() {
         const dashboardPromise = request('sempa_stocks_dashboard');
         const productsPromise = loadProducts({ page: 1 });
@@ -244,13 +182,17 @@
                 if (dashboardData?.success) {
                     renderDashboard(dashboardData.data);
                 }
+                if (productData?.success) {
+                    state.products = productData.data.products || [];
+                    renderProducts();
+                    updateMovementSelect();
+                }
                 if (movementData?.success) {
                     state.movements = movementData.data.movements || [];
                     renderMovements();
                 }
                 if (referenceData?.success) {
                     state.categories = referenceData.data.categories || [];
-                    state.suppliers = referenceData.data.suppliers || [];
                     populateSelects();
                 }
 
@@ -485,19 +427,88 @@ final class Sempa_Stock_Routes
         renderPagination(true);
     }
 
-    function renderProducts() {
-        if (!productTable) {
-            return;
-        }
+        const searchValue = (typeof search === 'string' && search.length >= 0 ? search : '') || (searchInput?.value || '');
+        const query = searchValue.trim().toLowerCase();
+        const categoryFilter = filterCategory?.value?.toLowerCase() || '';
+        const statusFilter = filterStatus?.value || '';
+
+        const rows = state.products
+            .filter((product) => {
+                if (!query) {
+                    return true;
+                }
+                return (
+                    (product.reference || '').toLowerCase().includes(query) ||
+                    (product.designation || '').toLowerCase().includes(query)
+                );
+            })
+            .filter((product) => {
+                const productCategory = (product.categorie || '').toLowerCase();
+                const status = stockStatus(product.stock_actuel, product.stock_minimum);
+
+                if (categoryFilter && productCategory !== categoryFilter) {
+                    return false;
+                }
+                if (statusFilter && status !== statusFilter) {
+                    return false;
+                }
+
+                return true;
+            })
+            .map((product) => {
+                const documentUrl = product.document_pdf
+                    ? (product.document_pdf.startsWith('http')
+                        ? product.document_pdf
+                        : SempaStocksData.uploadsUrl + product.document_pdf.replace(/^uploads-stocks\//, ''))
+                    : '';
+                const stockActual = Number(product.stock_actuel ?? 0);
+                const stockMinimum = Number(product.stock_minimum ?? 0);
+                const status = stockStatus(stockActual, stockMinimum);
+                const value = formatCurrency((Number(product.prix_achat) || 0) * stockActual);
+                const meta = product.categorie ? product.categorie : '';
+                const tr = document.createElement('tr');
+                tr.dataset.id = product.id;
+                tr.dataset.status = status;
+                tr.innerHTML = `
+                    <td>
+                        <div class="product-cell">
+                            <span class="product-cell__name">${escapeHtml(product.designation)}</span>
+                            <span class="product-cell__meta">${escapeHtml(meta || '—')}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="product-ref">
+                            <span class="product-ref__code">${escapeHtml(product.reference)}</span>
+                            ${documentUrl ? `<a class="product-ref__doc" href="${escapeAttribute(documentUrl)}" target="_blank" rel="noopener">PDF</a>` : ''}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="stock-level">
+                            <span class="stock-level__value">${stockActual}</span>
+                            <span class="stock-level__hint">${escapeHtml(`Min ${stockMinimum}`)}</span>
+                            <span class="stock-level__value-secondary">${escapeHtml(value)}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="status-badge status-badge--${statusClassName(status)}">${escapeHtml(statusLabel(status))}</span>
+                    </td>
+                    <td class="actions">
+                        <details class="actions-menu">
+                            <summary class="actions-trigger" aria-label="${escapeAttribute(SempaStocksData?.strings?.productActions || 'Actions produit')}"><span aria-hidden="true">⋮</span></summary>
+                            <div class="actions-menu__content">
+                                <button type="button" data-action="edit">${escapeHtml('Modifier')}</button>
+                                <button type="button" data-action="delete">${escapeHtml('Supprimer')}</button>
+                            </div>
+                        </details>
+                    </td>`;
+                return tr;
+            });
 
         productTable.innerHTML = '';
 
         if (!state.products.length) {
             const row = document.createElement('tr');
-            const message = state.isLoadingProducts
-                ? (SempaStocksData?.strings?.loadingProducts || 'Chargement des produits…')
-                : (SempaStocksData?.strings?.noProducts || 'Aucun produit trouvé');
-            row.innerHTML = `<td colspan="6" class="empty">${escapeHtml(message)}</td>`;
+            row.innerHTML = `<td colspan="5" class="empty">${escapeHtml(SempaStocksData?.strings?.noProducts || 'Aucun produit trouvé')}</td>`;
             productTable.appendChild(row);
             renderPagination();
             return;
@@ -577,39 +588,20 @@ final class Sempa_Stock_Routes
             paginationNext.disabled = page >= totalPages;
         }
 
-        if (paginationSummary) {
-            if (total === 0) {
-                paginationSummary.textContent = SempaStocksData?.strings?.noProducts || 'Aucun produit trouvé';
-            } else {
-                const start = (page - 1) * perPage + 1;
-                const end = Math.min(total, start + state.products.length - 1);
-                paginationSummary.textContent = `${start} – ${end} / ${total}`;
-            }
-        }
-
-        if (paginationPage) {
-            paginationPage.textContent = String(page);
-        }
-
-        if (paginationPages) {
-            paginationPages.textContent = String(totalPages);
-        }
-    }
-
-    function updateProductFilters(patch = {}) {
-        state.filters = { ...state.filters, ...patch };
-        state.pagination.page = 1;
-        loadProducts({ page: 1 }).catch(showError);
-    }
-
-    function setConditionView(view, { fetch = true } = {}) {
-        const normalized = ['neuf', 'reconditionne'].includes(view) ? view : 'all';
-        state.filters.condition = normalized;
-        conditionButtons.forEach((button) => {
-            const buttonView = button.dataset.conditionView || 'all';
-            const isActive = buttonView === normalized;
-            button.classList.toggle('is-active', isActive);
-            button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+        state.movements.forEach((movement) => {
+            const tr = document.createElement('tr');
+            const tone = movementTone(movement.type_mouvement);
+            const label = labelMovement(movement.type_mouvement);
+            const quantity = movement.quantite ?? 0;
+            tr.dataset.type = tone;
+            tr.innerHTML = `
+                <td>${escapeHtml(formatDate(movement.date_mouvement))}</td>
+                <td>${escapeHtml(movement.reference)} – ${escapeHtml(movement.designation)}</td>
+                <td><span class="movement-chip movement-chip--${tone}">${escapeHtml(label)}</span></td>
+                <td><span class="movement-qty">${escapeHtml(String(quantity))}</span></td>
+                <td>${movement.ancien_stock ?? 0} ➜ ${movement.nouveau_stock ?? 0}</td>
+                <td>${escapeHtml(movement.motif || '')}</td>`;
+            movementTable.appendChild(tr);
         });
         if (fetch) {
             state.pagination.page = 1;
@@ -617,25 +609,9 @@ final class Sempa_Stock_Routes
         }
     }
 
-    function loadProducts(options = {}) {
-        const requestedPage = options.page != null ? Number(options.page) : state.pagination.page;
-        const requestedPerPage = options.perPage != null ? Number(options.perPage) : state.pagination.perPage;
-        const page = Number.isFinite(requestedPage) && requestedPage > 0 ? Math.floor(requestedPage) : 1;
-        const perPage = Number.isFinite(requestedPerPage) && requestedPerPage > 0 ? Math.floor(requestedPerPage) : PRODUCTS_PER_PAGE;
-
-        const filters = { ...state.filters };
-        const payload = {
-            page,
-            per_page: perPage,
-            search: filters.search,
-            category: filters.category,
-            supplier: filters.supplier,
-            status: filters.status,
-        };
-
-        if (filters.condition && filters.condition !== 'all') {
-            payload.condition = filters.condition;
-        }
+    function populateSelects() {
+        const categorySelect = document.querySelector('#stocks-category-select');
+        const movementSelect = document.querySelector('#movement-product');
 
         setProductsLoading(true);
 
@@ -701,74 +677,6 @@ final class Sempa_Stock_Routes
             return productOptionsRequest;
         }
 
-        productOptionsRequest = fetchAllProductOptions(1)
-            .then(() => {
-                movementOptionsLoaded = true;
-            })
-            .finally(() => {
-                productOptionsRequest = null;
-            });
-
-        return productOptionsRequest;
-    }
-
-    function fetchAllProductOptions(page = 1) {
-        const perPage = 200;
-        return request('sempa_stocks_products', {
-            page,
-            per_page: perPage,
-            context: 'options',
-        }).then((response) => {
-            if (!response?.success) {
-                throw new Error(response?.data?.message || SempaStocksData.strings.unknownError);
-            }
-
-            const products = Array.isArray(response.data?.products) ? response.data.products : [];
-            addProductOptions(products.map(normalizeProduct));
-
-            const pagination = response.data?.pagination || {};
-            const currentPage = Number(pagination.page) || page;
-            const totalPages = Number(pagination.total_pages) || 1;
-
-            if (currentPage < totalPages && currentPage < 25) {
-                return fetchAllProductOptions(currentPage + 1);
-            }
-
-            updateMovementSelect();
-
-            return response;
-        });
-    }
-
-        if (!empty($wpdb->last_error)) {
-            return new WP_Error('db_error', $wpdb->last_error, ['status' => 500]);
-        }
-
-        $was_kit = isset($previous['is_kit']) ? (int) $previous['is_kit'] : 0;
-        if ($product_data['is_kit']) {
-            if (!$was_kit) {
-                $history[] = __('Le produit est désormais géré comme un kit.', 'sempa');
-            }
-
-            $existing = $wpdb->get_results($wpdb->prepare("SELECT component_id, quantity FROM {$wpdb->prefix}kit_components WHERE kit_id = %d", $id), ARRAY_A);
-            $map = [];
-            foreach ($existing as $row) {
-                $map[(int) $row['component_id']] = (int) $row['quantity'];
-            }
-
-            $wpdb->delete($wpdb->prefix . 'kit_components', ['kit_id' => $id]);
-
-            $components = [];
-            if (!empty($data['components']) && is_array($data['components'])) {
-                foreach ($data['components'] as $component) {
-                    $component_id = isset($component['id']) ? (int) $component['id'] : 0;
-                    $component_qty = isset($component['quantity']) ? (int) $component['quantity'] : 0;
-                    if ($component_id && $component_qty) {
-                        $components[$component_id] = $component_qty;
-                    }
-                }
-            }
-
         if (filterCategory) {
             const currentFilter = state.filters.category || '';
             filterCategory.innerHTML = '';
@@ -786,36 +694,8 @@ final class Sempa_Stock_Routes
                 filterCategory.value = currentFilter;
             }
 
-        if (filterSupplier) {
-            const currentFilter = state.filters.supplier || '';
-            filterSupplier.innerHTML = '';
-            const placeholder = document.createElement('option');
-            placeholder.value = '';
-            placeholder.textContent = (SempaStocksData?.strings?.allSuppliers) || 'Tous les fournisseurs';
-            filterSupplier.appendChild(placeholder);
-            state.suppliers.forEach((supplier) => {
-                const option = document.createElement('option');
-                option.value = supplier.nom || '';
-                option.textContent = supplier.nom;
-                filterSupplier.appendChild(option);
-            });
-            if (currentFilter) {
-                filterSupplier.value = currentFilter;
-            }
-        } else {
-            if ($was_kit) {
-                $history[] = __('Ce produit n\'est plus géré comme un kit.', 'sempa');
-            }
-            $wpdb->delete($wpdb->prefix . 'kit_components', ['kit_id' => $id]);
-        }
-
-        if (!empty($history)) {
-            $wpdb->insert($wpdb->prefix . 'product_history', [
-                'product_id' => $id,
-                'user_name' => $current_user->display_name,
-                'action' => implode("\n", $history),
-                'timestamp' => current_time('mysql'),
-            ]);
+        if (movementSelect) {
+            updateMovementSelect();
         }
 
         if (!empty($wpdb->last_error)) {
@@ -836,19 +716,32 @@ final class Sempa_Stock_Routes
         $product = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}products WHERE id = %d", $id), ARRAY_A);
         $product = self::hydrate_components($product, $wpdb);
 
-        return rest_ensure_response(Sempa_Utils::normalize_product($product));
+    function openProductForm(product = null) {
+        productForm?.reset();
+        if (!productForm) {
+            return;
+        }
+        if (product) {
+            productForm.querySelector('[name="id"]').value = product.id || '';
+            productForm.querySelector('[name="reference"]').value = product.reference || '';
+            productForm.querySelector('[name="designation"]').value = product.designation || '';
+            productForm.querySelector('[name="categorie"]').value = product.categorie || '';
+            productForm.querySelector('[name="prix_achat"]').value = product.prix_achat || '';
+            productForm.querySelector('[name="prix_vente"]').value = product.prix_vente || '';
+            productForm.querySelector('[name="stock_actuel"]').value = product.stock_actuel || 0;
+            productForm.querySelector('[name="stock_minimum"]').value = product.stock_minimum || 0;
+            productForm.querySelector('[name="notes"]').value = product.notes || '';
+            renderMeta(product);
+        } else if (productMeta) {
+            productMeta.innerHTML = '';
+        }
+        showPanel(productPanel);
     }
 
-    public static function upload_photo(WP_REST_Request $request)
-    {
-        global $wpdb;
-
-        $id = (int) $request->get_param('id');
-        $files = $request->get_file_params();
-        $file = $files['file'] ?? null;
-
-        if ($id <= 0 || empty($file)) {
-            return new WP_Error('bad_request', __('Fichier ou ID de produit manquant.', 'sempa'), ['status' => 400]);
+    function resetProductForm() {
+        if (productForm) {
+            productForm.reset();
+            productForm.querySelector('[name="id"]').value = '';
         }
 
         $attachment_id = media_handle_sideload($file, 0, sprintf(__('Photo du produit %d', 'sempa'), $id));
@@ -860,8 +753,15 @@ final class Sempa_Stock_Routes
         request('sempa_stocks_save_product', formData)
             .then((response) => {
                 if (response?.success && response.data?.product) {
-                    const product = normalizeProduct(response.data.product);
-                    addProductOptions([product]);
+                    const product = response.data.product;
+                    const index = state.products.findIndex((item) => item.id === product.id);
+                    if (index >= 0) {
+                        state.products[index] = product;
+                    } else {
+                        state.products.push(product);
+                    }
+                    renderProducts(searchInput?.value || '');
+                    updateMovementSelect();
                     hidePanel(productPanel);
                     resetProductForm();
                     state.pagination.page = 1;
@@ -891,91 +791,23 @@ final class Sempa_Stock_Routes
     {
         global $wpdb;
 
-        $id = (int) $request->get_param('id');
-        $history = $wpdb->get_results($wpdb->prepare("SELECT * FROM {$wpdb->prefix}product_history WHERE product_id = %d ORDER BY timestamp DESC", $id), ARRAY_A);
-
-        return rest_ensure_response($history);
+    function renderMeta(product) {
+        if (!productMeta) {
+            return;
+        }
+        const documentUrl = product.document_pdf
+            ? (product.document_pdf.startsWith('http')
+                ? product.document_pdf
+                : SempaStocksData.uploadsUrl + product.document_pdf.replace(/^uploads-stocks\//, ''))
+            : '';
+        productMeta.innerHTML = `
+            <ul>
+                <li><strong>${escapeHtml('Créé par')} :</strong> ${escapeHtml(product.ajoute_par || '—')}</li>
+                <li><strong>${escapeHtml('Entrée')} :</strong> ${product.date_entree || '—'}</li>
+                <li><strong>${escapeHtml('Modifié')} :</strong> ${product.date_modification || '—'}</li>
+                ${documentUrl ? `<li><a href="${escapeAttribute(documentUrl)}" target="_blank" rel="noopener">${escapeHtml('Voir le document')}</a></li>` : ''}
+            </ul>`;
     }
-
-    public static function delete_product(WP_REST_Request $request)
-    {
-        global $wpdb;
-
-        $id = (int) $request->get_param('id');
-        if ($id <= 0) {
-            return new WP_Error('bad_request', __('Identifiant manquant.', 'sempa'), ['status' => 400]);
-        }
-
-        $product = $wpdb->get_row($wpdb->prepare("SELECT name FROM {$wpdb->prefix}products WHERE id = %d", $id));
-        if (!$product) {
-            return new WP_Error('not_found', __('Produit introuvable.', 'sempa'), ['status' => 404]);
-        }
-
-        $current_user = wp_get_current_user();
-        $wpdb->insert($wpdb->prefix . 'product_history', [
-            'product_id' => $id,
-            'user_name' => $current_user->display_name,
-            'action' => sprintf(__('Produit "%s" supprimé.', 'sempa'), $product->name),
-            'timestamp' => current_time('mysql'),
-        ]);
-
-        $wpdb->delete($wpdb->prefix . 'kit_components', ['kit_id' => $id]);
-        $wpdb->delete($wpdb->prefix . 'products', ['id' => $id]);
-
-        if (!empty($wpdb->last_error)) {
-            return new WP_Error('db_error', $wpdb->last_error, ['status' => 500]);
-        }
-
-        return rest_ensure_response(['status' => 'success']);
-    }
-
-    public static function get_movements(): WP_REST_Response
-    {
-        global $wpdb;
-
-        $movements = $wpdb->get_results("SELECT * FROM {$wpdb->prefix}movements ORDER BY date DESC LIMIT 300", ARRAY_A);
-
-        return rest_ensure_response([
-            'movements' => $movements,
-        ]);
-    }
-
-    public static function create_movement(WP_REST_Request $request)
-    {
-        global $wpdb;
-
-        $data = $request->get_json_params();
-
-        $product_id = isset($data['productId']) ? (int) $data['productId'] : 0;
-        $type = isset($data['type']) ? sanitize_key($data['type']) : '';
-        $quantity = isset($data['quantity']) ? (int) $data['quantity'] : 0;
-        $reason = isset($data['reason']) ? sanitize_text_field($data['reason']) : '';
-        $product_name = isset($data['productName']) ? sanitize_text_field($data['productName']) : '';
-
-        if ($product_id <= 0) {
-            return new WP_Error('bad_request', __('Produit introuvable.', 'sempa'), ['status' => 400]);
-        }
-
-        if (!in_array($type, ['in', 'out', 'adjust'], true)) {
-            return new WP_Error('bad_request', __('Type de mouvement invalide.', 'sempa'), ['status' => 400]);
-        }
-
-        if ($type === 'adjust') {
-            if ($quantity < 0) {
-                return new WP_Error('bad_request', __('La quantité doit être positive pour un ajustement.', 'sempa'), ['status' => 400]);
-            }
-        } elseif ($quantity <= 0) {
-            return new WP_Error('bad_request', __('La quantité doit être supérieure à zéro.', 'sempa'), ['status' => 400]);
-        }
-
-        $product = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$wpdb->prefix}products WHERE id = %d", $product_id), ARRAY_A);
-        if (!$product) {
-            return new WP_Error('not_found', __('Produit introuvable.', 'sempa'), ['status' => 404]);
-        }
-
-        $current_stock = (int) $product['stock'];
-        $new_stock = $current_stock;
-        $component_logs = [];
 
     function createCategory() {
         const name = window.prompt('Nom de la nouvelle catégorie ?');
@@ -1002,42 +834,11 @@ final class Sempa_Stock_Routes
             .catch(showError);
     }
 
-    function createSupplier() {
-        const name = window.prompt('Nom du fournisseur ?');
-        if (!name) {
-            return;
-        }
-        const contact = window.prompt('Nom du contact (optionnel)') || '';
-        const phone = window.prompt('Téléphone (optionnel)') || '';
-        const email = window.prompt('Email (optionnel)') || '';
-        const data = new FormData();
-        data.append('nom', name.trim());
-        data.append('contact', contact.trim());
-        data.append('telephone', phone.trim());
-        data.append('email', email.trim());
-        request('sempa_stocks_save_supplier', data)
-            .then((response) => {
-                if (response?.success && response.data?.supplier) {
-                    state.suppliers.push(response.data.supplier);
-                    populateSelects();
-                    const select = document.querySelector('#stocks-supplier-select');
-                    if (select) {
-                        select.value = response.data.supplier.nom;
-                    }
-                } else {
-                    throw new Error(response?.data?.message || SempaStocksData.strings.unknownError);
-                }
-            }
-
-            foreach ($components as $component) {
-                $required = (int) $component['quantity'] * $quantity;
-                $wpdb->query($wpdb->prepare(
-                    "UPDATE {$wpdb->prefix}products SET stock = GREATEST(stock - %d, 0) WHERE id = %d",
-                    $required,
-                    (int) $component['component_id']
-                ));
-                $component_logs[] = sprintf('%s (-%d)', $component['name'], $required);
-            }
+    function stockStatus(current, minimum) {
+        const stock = Number(current ?? 0);
+        const min = Number(minimum ?? 0);
+        if (stock <= 0) {
+            return 'critical';
         }
 
         $wpdb->update($wpdb->prefix . 'products', [

@@ -74,6 +74,7 @@ $nonce = class_exists('Sempa_Stocks_App') ? Sempa_Stocks_App::nonce() : wp_creat
                     <div class="stockpilot-header__tools">
                         <label for="stocks-search" class="screen-reader-text"><?php esc_html_e('Rechercher un produit', 'sempa'); ?></label>
                         <div class="header-search">
+                            <span aria-hidden="true" class="header-search__icon"></span>
                             <input type="search" id="stocks-search" aria-label="<?php esc_attr_e('Rechercher un produit par référence ou désignation', 'sempa'); ?>" placeholder="<?php esc_attr_e('Rechercher un produit…', 'sempa'); ?>" />
                         </div>
                         <div class="stockpilot-header__actions">
@@ -151,7 +152,7 @@ $nonce = class_exists('Sempa_Stocks_App') ? Sempa_Stocks_App::nonce() : wp_creat
                             <div>
                                 <p class="section-eyebrow"><?php esc_html_e('Catalogue', 'sempa'); ?></p>
                                 <h2 id="stocks-products-title"><?php esc_html_e('Produits', 'sempa'); ?></h2>
-                                <p class="section-subtitle"><?php esc_html_e('Gérez vos références, fournisseurs et niveaux de stock.', 'sempa'); ?></p>
+                                <p class="section-subtitle"><?php esc_html_e('Gérez vos références et niveaux de stock.', 'sempa'); ?></p>
                             </div>
                             <div class="section-actions">
                                 <button type="button" class="button button--primary" id="stocks-open-product-form"><?php esc_html_e('Ajouter un produit', 'sempa'); ?></button>
@@ -161,10 +162,6 @@ $nonce = class_exists('Sempa_Stocks_App') ? Sempa_Stocks_App::nonce() : wp_creat
                             <div class="toolbar-field">
                                 <label for="stocks-filter-category"><?php esc_html_e('Catégorie', 'sempa'); ?></label>
                                 <select id="stocks-filter-category"></select>
-                            </div>
-                            <div class="toolbar-field">
-                                <label for="stocks-filter-supplier"><?php esc_html_e('Fournisseur', 'sempa'); ?></label>
-                                <select id="stocks-filter-supplier"></select>
                             </div>
                             <div class="toolbar-field">
                                 <label for="stocks-filter-status"><?php esc_html_e('Statut', 'sempa'); ?></label>
@@ -178,11 +175,6 @@ $nonce = class_exists('Sempa_Stocks_App') ? Sempa_Stocks_App::nonce() : wp_creat
                             <div class="toolbar-actions">
                                 <button type="button" class="button button--ghost" id="stocks-clear-filters"><?php esc_html_e('Réinitialiser', 'sempa'); ?></button>
                             </div>
-                            <div class="toolbar-segment" role="group" aria-label="<?php esc_attr_e('Type de matériel', 'sempa'); ?>">
-                                <button type="button" class="segment-button is-active" data-condition-view="all" aria-pressed="true"><?php esc_html_e('Tout', 'sempa'); ?></button>
-                                <button type="button" class="segment-button" data-condition-view="neuf" aria-pressed="false"><?php esc_html_e('Matériel neuf', 'sempa'); ?></button>
-                                <button type="button" class="segment-button" data-condition-view="reconditionne" aria-pressed="false"><?php esc_html_e('Reconditionné', 'sempa'); ?></button>
-                            </div>
                         </div>
                         <div class="table-wrapper table-wrapper--elevated">
                             <table class="stocks-table stocks-table--products" id="stocks-products-table">
@@ -192,13 +184,12 @@ $nonce = class_exists('Sempa_Stocks_App') ? Sempa_Stocks_App::nonce() : wp_creat
                                         <th scope="col"><?php esc_html_e('Référence', 'sempa'); ?></th>
                                         <th scope="col"><?php esc_html_e('Stock', 'sempa'); ?></th>
                                         <th scope="col"><?php esc_html_e('Statut', 'sempa'); ?></th>
-                                        <th scope="col"><?php esc_html_e('Condition', 'sempa'); ?></th>
                                         <th scope="col" class="actions">&nbsp;</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td colspan="6" class="empty"><?php esc_html_e('Chargement des produits…', 'sempa'); ?></td>
+                                        <td colspan="5" class="empty"><?php esc_html_e('Chargement des produits…', 'sempa'); ?></td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -277,12 +268,27 @@ $nonce = class_exists('Sempa_Stocks_App') ? Sempa_Stocks_App::nonce() : wp_creat
                             <select name="categorie" id="stocks-category-select"></select>
                             <button type="button" class="link-button" data-action="add-category"><?php esc_html_e('Ajouter', 'sempa'); ?></button>
                         </div>
-                    </label>
-                    <label>
-                        <span><?php esc_html_e('Fournisseur', 'sempa'); ?></span>
-                        <div class="field-with-action">
-                            <select name="fournisseur" id="stocks-supplier-select"></select>
-                            <button type="button" class="link-button" data-action="add-supplier"><?php esc_html_e('Ajouter', 'sempa'); ?></button>
+                        <div class="automation-grid">
+                            <article class="automation-card">
+                                <h3><?php esc_html_e('Recherche produits', 'sempa'); ?></h3>
+                                <p><?php esc_html_e('Filtrage instantané par référence ou catégorie.', 'sempa'); ?></p>
+                                <span class="automation-status automation-status--active"><?php esc_html_e('Actif', 'sempa'); ?></span>
+                            </article>
+                            <article class="automation-card">
+                                <h3><?php esc_html_e('Filtres avancés', 'sempa'); ?></h3>
+                                <p><?php esc_html_e('Combinez plusieurs critères pour isoler vos segments critiques.', 'sempa'); ?></p>
+                                <span class="automation-status automation-status--active"><?php esc_html_e('Actif', 'sempa'); ?></span>
+                            </article>
+                            <article class="automation-card">
+                                <h3><?php esc_html_e('Export CSV', 'sempa'); ?></h3>
+                                <p><?php esc_html_e('Synchronisez vos données avec vos outils BI en un clic.', 'sempa'); ?></p>
+                                <span class="automation-status automation-status--active"><?php esc_html_e('Actif', 'sempa'); ?></span>
+                            </article>
+                            <article class="automation-card">
+                                <h3><?php esc_html_e('Alertes automatiques', 'sempa'); ?></h3>
+                                <p><?php esc_html_e('Restez informé dès qu\'un stock passe sous le seuil minimum.', 'sempa'); ?></p>
+                                <span class="automation-status automation-status--planned"><?php esc_html_e('Bientôt', 'sempa'); ?></span>
+                            </article>
                         </div>
                     </label>
                     <label>
@@ -330,34 +336,64 @@ $nonce = class_exists('Sempa_Stocks_App') ? Sempa_Stocks_App::nonce() : wp_creat
             <aside class="meta" id="stocks-product-meta"></aside>
         </section>
 
-        <section class="stocks-movements" aria-labelledby="stocks-movements-title">
-            <div class="section-head">
-                <div>
-                    <h2 id="stocks-movements-title"><?php esc_html_e('Mouvements de stock', 'sempa'); ?></h2>
-                    <p><?php esc_html_e('Enregistrez les entrées, sorties et ajustements pour un suivi précis.', 'sempa'); ?></p>
-                </div>
-                <button type="button" class="button secondary" id="stocks-open-movement-form"><?php esc_html_e('Nouveau mouvement', 'sempa'); ?></button>
-            </div>
-            <div class="table-wrapper">
-                <table class="stocks-table" id="stocks-movements-table">
-                    <thead>
-                        <tr>
-                            <th><?php esc_html_e('Date', 'sempa'); ?></th>
-                            <th><?php esc_html_e('Produit', 'sempa'); ?></th>
-                            <th><?php esc_html_e('Type', 'sempa'); ?></th>
-                            <th><?php esc_html_e('Quantité', 'sempa'); ?></th>
-                            <th><?php esc_html_e('Ancien/Nouveau', 'sempa'); ?></th>
-                            <th><?php esc_html_e('Motif', 'sempa'); ?></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td colspan="6" class="empty"><?php esc_html_e('Chargement de l\'historique…', 'sempa'); ?></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
+                <aside class="stockpilot-drawers">
+                    <section class="stocks-form" id="stocks-product-panel" hidden>
+                        <div class="stocks-form__header">
+                            <h2><?php esc_html_e('Fiche produit', 'sempa'); ?></h2>
+                            <button type="button" class="stocks-form__close" id="stocks-cancel-product" aria-label="<?php esc_attr_e('Fermer la fiche produit', 'sempa'); ?>"></button>
+                        </div>
+                        <form id="stock-product-form" enctype="multipart/form-data">
+                            <input type="hidden" name="action" value="sempa_stocks_save_product" />
+                            <input type="hidden" name="nonce" value="<?php echo esc_attr($nonce); ?>" />
+                            <input type="hidden" name="id" value="" />
+                            <div class="form-grid">
+                                <label>
+                                    <span><?php esc_html_e('Référence', 'sempa'); ?> *</span>
+                                    <input type="text" name="reference" required />
+                                </label>
+                                <label>
+                                    <span><?php esc_html_e('Désignation', 'sempa'); ?> *</span>
+                                    <input type="text" name="designation" required />
+                                </label>
+                                <label>
+                                    <span><?php esc_html_e('Catégorie', 'sempa'); ?></span>
+                                    <div class="field-with-action">
+                                        <select name="categorie" id="stocks-category-select"></select>
+                                        <button type="button" class="link-button" data-action="add-category"><?php esc_html_e('Ajouter', 'sempa'); ?></button>
+                                    </div>
+                                </label>
+                                <label>
+                                    <span><?php esc_html_e('Prix d\'achat (€)', 'sempa'); ?></span>
+                                    <input type="number" name="prix_achat" step="0.01" min="0" />
+                                </label>
+                                <label>
+                                    <span><?php esc_html_e('Prix de vente (€)', 'sempa'); ?></span>
+                                    <input type="number" name="prix_vente" step="0.01" min="0" />
+                                </label>
+                                <label>
+                                    <span><?php esc_html_e('Stock actuel', 'sempa'); ?></span>
+                                    <input type="number" name="stock_actuel" min="0" />
+                                </label>
+                                <label>
+                                    <span><?php esc_html_e('Stock minimum', 'sempa'); ?></span>
+                                    <input type="number" name="stock_minimum" min="0" />
+                                </label>
+                                <label class="file">
+                                    <span><?php esc_html_e('Document (PDF ou image)', 'sempa'); ?></span>
+                                    <input type="file" name="document" accept=".pdf,image/*" />
+                                </label>
+                                <label class="notes">
+                                    <span><?php esc_html_e('Notes internes', 'sempa'); ?></span>
+                                    <textarea name="notes" rows="4"></textarea>
+                                </label>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="button button--primary"><?php esc_html_e('Enregistrer', 'sempa'); ?></button>
+                                <button type="button" class="button button--ghost" data-dismiss="product"><?php esc_html_e('Annuler', 'sempa'); ?></button>
+                            </div>
+                        </form>
+                        <aside class="meta" id="stocks-product-meta"></aside>
+                    </section>
 
         <section class="stocks-form" id="stocks-movement-panel" hidden>
             <h2><?php esc_html_e('Ajouter un mouvement', 'sempa'); ?></h2>

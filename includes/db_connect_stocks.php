@@ -171,36 +171,14 @@ if (!class_exists('Sempa_Stocks_DB')) {
 
         public static function table(string $name)
         {
-            $canonical = strtolower($name);
+            $map = [
+                'stocks_sempa' => 'products',
+                'mouvements_stocks_sempa' => 'movements',
+                'categories_stocks_sempa' => 'product_categories',
+                'fournisseurs_stocks_sempa' => 'fournisseurs',
+            ];
 
-            if (isset(self::$table_cache[$canonical])) {
-                return self::$table_cache[$canonical];
-            }
-
-            $db = self::instance();
-            if (!($db instanceof \wpdb)) {
-                return $name;
-            }
-
-            self::prime_available_tables($db);
-
-            $variants = self::candidate_variants($canonical);
-            foreach ($variants as $variant) {
-                $resolved = self::resolve_table_name($variant);
-                if ($resolved !== null) {
-                    self::$table_cache[$canonical] = $resolved;
-
-                    return $resolved;
-                }
-            }
-
-            if (function_exists('error_log')) {
-                error_log('[Sempa] Unable to resolve stock table name for "' . $name . '". Falling back to provided name.');
-            }
-
-            self::$available_tables = null;
-
-            return $name;
+            return $map[$name] ?? $name;
         }
 
         public static function resolve_column(string $table, string $column, bool $fallback_to_input = true)
