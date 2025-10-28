@@ -728,6 +728,7 @@ final class Sempa_Stock_Routes
             productForm.querySelector('[name="categorie"]').value = product.categorie || '';
             productForm.querySelector('[name="prix_achat"]').value = product.prix_achat || '';
             productForm.querySelector('[name="prix_vente"]').value = product.prix_vente || '';
+            productForm.querySelector('[name="condition_materiel"]').value = product.condition_materiel || '';
             productForm.querySelector('[name="stock_actuel"]').value = product.stock_actuel || 0;
             productForm.querySelector('[name="stock_minimum"]').value = product.stock_minimum || 0;
             productForm.querySelector('[name="notes"]').value = product.notes || '';
@@ -840,6 +841,60 @@ final class Sempa_Stock_Routes
         if (stock <= 0) {
             return 'critical';
         }
+        if (min > 0 && stock <= min) {
+            return 'warning';
+        }
+        return 'normal';
+    }
+
+    function statusLabel(status) {
+        switch (status) {
+            case 'critical':
+                return 'Rupture';
+            case 'warning':
+                return 'Stock faible';
+            case 'normal':
+                return 'En stock';
+            default:
+                return '—';
+        }
+    }
+
+    function statusClassName(status) {
+        switch (status) {
+            case 'critical':
+                return 'critical';
+            case 'warning':
+                return 'warning';
+            case 'normal':
+                return 'success';
+            default:
+                return 'default';
+        }
+    }
+
+    function getProductCondition(product) {
+        const condition = product?.condition_materiel || '';
+        if (condition === 'neuf') {
+            return 'neuf';
+        }
+        if (condition === 'reconditionne') {
+            return 'reconditionne';
+        }
+        return 'non_specifie';
+    }
+
+    function conditionLabel(condition) {
+        switch (condition) {
+            case 'neuf':
+                return 'Neuf';
+            case 'reconditionne':
+                return 'Reconditionné';
+            case 'non_specifie':
+            default:
+                return 'Non spécifié';
+        }
+    }
 
         $wpdb->update($wpdb->prefix . 'products', [
             'stock' => $new_stock,
