@@ -3,6 +3,9 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+// Charger les variables d'environnement depuis le fichier .env
+require_once __DIR__ . '/env-loader.php';
+
 if (defined('ABSPATH') && !class_exists('wpdb')) {
     require_once ABSPATH . 'wp-includes/wp-db.php';
 }
@@ -25,11 +28,8 @@ if (!class_exists('Sempa_Stocks_DB')) {
 
     final class Sempa_Stocks_DB
     {
-        private const DB_HOST = 'db5001643902.hosting-data.io';
-        private const DB_NAME = 'dbs1363734';
-        private const DB_USER = 'dbu1662343';
-        private const DB_PASSWORD = '14Juillet@';
-        private const DB_PORT = 3306;
+        // ⚠️ IMPORTANT: Les identifiants sont maintenant chargés depuis le fichier .env
+        // Voir .env.example pour la configuration
 
         private static $instance = null;
         private static $table_cache = [];
@@ -144,15 +144,24 @@ if (!class_exists('Sempa_Stocks_DB')) {
                 return self::$instance;
             }
 
-            $host = self::DB_HOST;
-            if (self::DB_PORT) {
-                $host .= ':' . self::DB_PORT;
+            // Charger les identifiants depuis les variables d'environnement
+            $db_host = sempa_env('SEMPA_DB_HOST', 'db5001643902.hosting-data.io');
+            $db_name = sempa_env('SEMPA_DB_NAME', 'dbs1363734');
+            $db_user = sempa_env('SEMPA_DB_USER', 'dbu1662343');
+            $db_password = sempa_env('SEMPA_DB_PASSWORD', '');
+            $db_port = (int) sempa_env('SEMPA_DB_PORT', 3306);
+
+            // Construire le host avec le port si nécessaire
+            $host = $db_host;
+            if ($db_port && $db_port !== 3306) {
+                $host .= ':' . $db_port;
             }
 
+            // Créer la connexion DB
             if (class_exists('Sempa_Stocks_wpdb')) {
-                $wpdb = new Sempa_Stocks_wpdb(self::DB_USER, self::DB_PASSWORD, self::DB_NAME, $host);
+                $wpdb = new Sempa_Stocks_wpdb($db_user, $db_password, $db_name, $host);
             } else {
-                $wpdb = new \wpdb(self::DB_USER, self::DB_PASSWORD, self::DB_NAME, $host);
+                $wpdb = new \wpdb($db_user, $db_password, $db_name, $host);
             }
             $wpdb->show_errors(false);
             $wpdb->suppress_errors(true);
@@ -160,8 +169,9 @@ if (!class_exists('Sempa_Stocks_DB')) {
                 $wpdb->set_charset($wpdb->dbh, 'utf8mb4');
             }
 
+            // Logger l'erreur de connexion si nécessaire
             if (empty($wpdb->dbh) && function_exists('error_log')) {
-                error_log('[Sempa] Unable to connect to the stock database.');
+                error_log('[Sempa Stocks] Unable to connect to the stock database. Check .env configuration.');
             }
 
             self::$instance = $wpdb;
