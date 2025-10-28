@@ -1,0 +1,34 @@
+{
+    "name": "sempa/gestion-stocks",
+    "description": "Application de gestion de stocks pour SEMPA",
+    "type": "wordpress-theme",
+    "license": "proprietary",
+    "require": {
+        "php": ">=7.4"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.5",
+        "mockery/mockery": "^1.5",
+        "brain/monkey": "^2.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "Sempa\\": "includes/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Sempa\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit",
+        "test:coverage": "phpunit --coverage-html coverage",
+        "test:unit": "phpunit --testsuite unit",
+        "test:integration": "phpunit --testsuite integration"
+    },
+    "config": {
+        "sort-packages": true,
+        "optimize-autoloader": true
+    }
+}
