@@ -170,7 +170,8 @@ final class Sempa_Stocks_App
             'stock AS stock_actuel, minStock AS stock_minimum, ' .
             '0 AS stock_maximum, "" AS emplacement, ' .
             'DATE(lastUpdated) AS date_entree, lastUpdated AS date_modification, ' .
-            'description AS notes, imageUrl AS document_pdf, "" AS ajoute_par ' .
+            'description AS notes, imageUrl AS document_pdf, "" AS ajoute_par, ' .
+            'condition AS condition_materiel ' .
             'FROM ' . $products_table . ' ORDER BY designation ASC',
             ARRAY_A
         );
@@ -204,6 +205,7 @@ final class Sempa_Stocks_App
             'stock_actuel' => isset($data['stock_actuel']) ? (int) $data['stock_actuel'] : 0,
             'stock_minimum' => isset($data['stock_minimum']) ? (int) $data['stock_minimum'] : 0,
             'notes' => sanitize_textarea_field($data['notes'] ?? ''),
+            'condition_materiel' => sanitize_text_field($data['condition_materiel'] ?? ''),
         ];
 
         $condition_column = Sempa_Stocks_DB::resolve_column('stocks_sempa', 'condition_materiel', false);
@@ -232,6 +234,10 @@ final class Sempa_Stocks_App
             'minStock' => $payload['stock_minimum'],
             'description' => $payload['notes'],
         ];
+
+        if (isset($payload['condition_materiel']) && $condition_column !== null) {
+            $record['condition'] = $payload['condition_materiel'];
+        }
 
         if (isset($payload['document_pdf'])) {
             $record['imageUrl'] = $payload['document_pdf'];
@@ -270,7 +276,8 @@ final class Sempa_Stocks_App
                 'stock AS stock_actuel, minStock AS stock_minimum, ' .
                 '0 AS stock_maximum, "" AS emplacement, ' .
                 'DATE(lastUpdated) AS date_entree, lastUpdated AS date_modification, ' .
-                'description AS notes, imageUrl AS document_pdf, "" AS ajoute_par ' .
+                'description AS notes, imageUrl AS document_pdf, "" AS ajoute_par, ' .
+                'condition AS condition_materiel ' .
                 'FROM ' . self::table('stocks_sempa') . ' WHERE id = %d',
                 $id
             ),
@@ -639,6 +646,7 @@ final class Sempa_Stocks_App
             'notes' => $product['notes'] ?? '',
             'document_pdf' => $product['document_pdf'] ?? '',
             'ajoute_par' => $product['ajoute_par'] ?? '',
+            'condition_materiel' => $product['condition_materiel'] ?? '',
         ];
     }
 

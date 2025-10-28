@@ -184,12 +184,13 @@ $nonce = class_exists('Sempa_Stocks_App') ? Sempa_Stocks_App::nonce() : wp_creat
                                         <th scope="col"><?php esc_html_e('Référence', 'sempa'); ?></th>
                                         <th scope="col"><?php esc_html_e('Stock', 'sempa'); ?></th>
                                         <th scope="col"><?php esc_html_e('Statut', 'sempa'); ?></th>
+                                        <th scope="col"><?php esc_html_e('Condition', 'sempa'); ?></th>
                                         <th scope="col" class="actions">&nbsp;</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td colspan="5" class="empty"><?php esc_html_e('Chargement des produits…', 'sempa'); ?></td>
+                                        <td colspan="6" class="empty"><?php esc_html_e('Chargement des produits…', 'sempa'); ?></td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -300,6 +301,14 @@ $nonce = class_exists('Sempa_Stocks_App') ? Sempa_Stocks_App::nonce() : wp_creat
                         <input type="number" name="prix_vente" step="0.01" min="0" />
                     </label>
                     <label>
+                        <span><?php esc_html_e('Condition du matériel', 'sempa'); ?></span>
+                        <select name="condition_materiel">
+                            <option value=""><?php esc_html_e('Non spécifié', 'sempa'); ?></option>
+                            <option value="neuf"><?php esc_html_e('Neuf', 'sempa'); ?></option>
+                            <option value="reconditionne"><?php esc_html_e('Reconditionné', 'sempa'); ?></option>
+                        </select>
+                    </label>
+                    <label>
                         <span><?php esc_html_e('Stock actuel', 'sempa'); ?></span>
                         <input type="number" name="stock_actuel" min="0" />
                     </label>
@@ -369,6 +378,14 @@ $nonce = class_exists('Sempa_Stocks_App') ? Sempa_Stocks_App::nonce() : wp_creat
                                 <label>
                                     <span><?php esc_html_e('Prix de vente (€)', 'sempa'); ?></span>
                                     <input type="number" name="prix_vente" step="0.01" min="0" />
+                                </label>
+                                <label>
+                                    <span><?php esc_html_e('Condition du matériel', 'sempa'); ?></span>
+                                    <select name="condition_materiel">
+                                        <option value=""><?php esc_html_e('Non spécifié', 'sempa'); ?></option>
+                                        <option value="neuf"><?php esc_html_e('Neuf', 'sempa'); ?></option>
+                                        <option value="reconditionne"><?php esc_html_e('Reconditionné', 'sempa'); ?></option>
+                                    </select>
                                 </label>
                                 <label>
                                     <span><?php esc_html_e('Stock actuel', 'sempa'); ?></span>
