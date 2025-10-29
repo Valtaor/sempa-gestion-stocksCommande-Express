@@ -113,6 +113,15 @@ final class Sempa_Stocks_App
         self::ensure_secure_request();
 
         $db = Sempa_Stocks_DB::instance();
+
+        // Vérifier que la connexion DB fonctionne
+        if (empty($db->dbh)) {
+            wp_send_json_error([
+                'message' => 'Impossible de se connecter à la base de données des stocks.'
+            ], 500);
+            return;
+        }
+
         $products_table = self::table('stocks_sempa');
         $movements_table = self::table('mouvements_stocks_sempa');
 
@@ -162,6 +171,15 @@ final class Sempa_Stocks_App
         self::ensure_secure_request();
 
         $db = Sempa_Stocks_DB::instance();
+
+        // Vérifier que la connexion DB fonctionne
+        if (empty($db->dbh)) {
+            wp_send_json_error([
+                'message' => 'Impossible de se connecter à la base de données des stocks.'
+            ], 500);
+            return;
+        }
+
         $products_table = self::table('stocks_sempa');
 
         $products = $db->get_results(
