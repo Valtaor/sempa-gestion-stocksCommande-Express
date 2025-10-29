@@ -10,6 +10,11 @@ if (!defined('ABSPATH')) {
 
 get_header();
 
+// Forcer le chargement des assets (CSS + JS)
+if (class_exists('Sempa_Stocks_App')) {
+    Sempa_Stocks_App::ensure_assets_for_template();
+}
+
 $allowed = class_exists('Sempa_Stocks_App') ? Sempa_Stocks_App::user_is_allowed() : false;
 $nonce = class_exists('Sempa_Stocks_App') ? Sempa_Stocks_App::nonce() : wp_create_nonce('sempa_stocks_nonce');
 ?>
