@@ -38,13 +38,13 @@ if (!class_exists('Sempa_Stocks_DB')) {
 
         private const TABLE_ALIASES = [
             'categories_stocks' => [
+                'product_categories',  // ← NOM RÉEL TROUVÉ
+                'categories',
                 'categories_stock',
                 'categorie_stocks',
                 'categorie_stock',
                 'stock_categories',
                 'stocks_categories',
-                'categories',
-                'product_categories',
                 'product_category',
             ],
             'fournisseurs_sempa' => [
@@ -54,7 +54,7 @@ if (!class_exists('Sempa_Stocks_DB')) {
                 'suppliers',
             ],
             'stocks_sempa' => [
-                'products',
+                'products',  // ← NOM RÉEL TROUVÉ (16 lignes)
                 'product',
                 'stocks',
                 'stock',
@@ -62,6 +62,7 @@ if (!class_exists('Sempa_Stocks_DB')) {
                 'stockpilot_stocks',
             ],
             'mouvements_stocks_sempa' => [
+                'movements',  // ← NOM RÉEL TROUVÉ (4 lignes)
                 'mouvements_stocks',
                 'mouvement_stocks',
                 'mouvements_stock',
@@ -74,7 +75,7 @@ if (!class_exists('Sempa_Stocks_DB')) {
         private const COLUMN_ALIASES = [
             'categories_stocks' => [
                 'id' => ['id', 'id_categorie', 'categorie_id', 'category_id'],
-                'nom' => ['nom', 'name', 'libelle', 'libellé', 'titre', 'label'],
+                'nom' => ['name', 'nom', 'libelle', 'libellé', 'titre', 'label'],  // ← name en premier
                 'slug' => ['slug'],
                 'couleur' => ['couleur', 'color', 'colour', 'couleur_hex', 'color_hex', 'hex_color'],
                 'icone' => ['icone', 'icon', 'icone_svg', 'pictogramme', 'logo', 'icône'],
@@ -89,18 +90,18 @@ if (!class_exists('Sempa_Stocks_DB')) {
             'stocks_sempa' => [
                 'id' => ['id', 'produit_id', 'product_id'],
                 'reference' => ['reference', 'ref', 'code', 'sku'],
-                'designation' => ['designation', 'nom', 'name', 'libelle', 'description'],
-                'stock_actuel' => ['stock_actuel', 'stock', 'quantite', 'quantité', 'quantity', 'qte'],
-                'categorie' => ['categorie', 'catégorie', 'category', 'category_id', 'categorie_id'],
-                'fournisseur' => ['fournisseur', 'supplier', 'fournisseur_id', 'supplier_id', 'fournisseur_nom'],
-                'prix_achat' => ['prix_achat', 'price_buy', 'purchase_price', 'purchaseprice', 'prix_achat_ht', 'cout', 'cost'],
-                'prix_vente' => ['prix_vente', 'sale_price', 'selling_price', 'price_sell', 'saleprice', 'prix_vente_ht'],
-                'stock_minimum' => ['stock_minimum', 'stock_min', 'minimum_stock', 'stock_securite', 'stock_securité', 'minstock'],
+                'designation' => ['name', 'designation', 'nom', 'libelle', 'description'],  // ← name en premier
+                'stock_actuel' => ['stock', 'stock_actuel', 'quantite', 'quantité', 'quantity', 'qte'],  // ← stock en premier
+                'categorie' => ['category', 'categorie', 'catégorie', 'category_id', 'categorie_id'],  // ← category en premier
+                'fournisseur' => ['supplier', 'fournisseur', 'fournisseur_id', 'supplier_id', 'fournisseur_nom'],  // ← supplier en premier
+                'prix_achat' => ['purchasePrice', 'prix_achat', 'price_buy', 'purchase_price', 'purchaseprice', 'prix_achat_ht', 'cout', 'cost'],  // ← purchasePrice en premier
+                'prix_vente' => ['salePrice', 'prix_vente', 'sale_price', 'selling_price', 'price_sell', 'saleprice', 'prix_vente_ht'],  // ← salePrice en premier
+                'stock_minimum' => ['minStock', 'stock_minimum', 'stock_min', 'minimum_stock', 'stock_securite', 'stock_securité', 'minstock'],  // ← minStock en premier
                 'emplacement' => ['emplacement', 'location', 'emplacement_stock', 'position'],
                 'date_entree' => ['date_entree', 'date_entrée', 'entry_date', 'date_ajout', 'created_at'],
-                'date_modification' => ['date_modification', 'updated_at', 'date_update', 'modified_at', 'lastupdated'],
-                'notes' => ['notes', 'commentaires', 'comments', 'description_detaillee', 'description'],
-                'document_pdf' => ['document_pdf', 'document', 'fichier', 'file', 'piece_jointe', 'imageurl'],
+                'date_modification' => ['lastUpdated', 'date_modification', 'updated_at', 'date_update', 'modified_at', 'lastupdated'],  // ← lastUpdated en premier
+                'notes' => ['description', 'notes', 'commentaires', 'comments', 'description_detaillee'],  // ← description en premier
+                'document_pdf' => ['imageUrl', 'document_pdf', 'document', 'fichier', 'file', 'piece_jointe', 'imageurl'],  // ← imageUrl en premier
                 'ajoute_par' => ['ajoute_par', 'ajout_par', 'cree_par', 'created_by', 'utilisateur', 'user'],
                 'condition_materiel' => ['condition_materiel', 'condition', 'etat', 'state'],
             ],
