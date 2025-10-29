@@ -13,14 +13,6 @@ require_once ABSPATH . 'wp-admin/includes/file.php';
 require_once ABSPATH . 'wp-admin/includes/media.php';
 require_once __DIR__ . '/includes/functions_stocks.php';
 
-// Charger les classes de sécurité de manière sécurisée (après functions_stocks.php)
-if (file_exists(__DIR__ . '/includes/logger.php')) {
-    require_once __DIR__ . '/includes/logger.php';
-}
-if (file_exists(__DIR__ . '/includes/stock-validator.php')) {
-    require_once __DIR__ . '/includes/stock-validator.php';
-}
-
 $commandes_file = __DIR__ . '/functions_commandes.php';
 if (file_exists($commandes_file)) {
     require_once $commandes_file;
@@ -155,28 +147,6 @@ final class Sempa_Order_Route
             $status = 'en_attente';
         }
 
-        // VALIDATION: Vérifier le stock disponible et la cohérence des montants
-        if (class_exists('Sempa_Stock_Validator')) {
-            $validation_result = Sempa_Stock_Validator::validate_complete_order([
-                'products' => $products,
-                'totals' => $totals,
-            ]);
-
-            if (!$validation_result['valid']) {
-                $error_message = 'Validation de la commande échouée : ' . implode(', ', $validation_result['errors']);
-
-                // Logger la validation échouée
-                Sempa_Logger::log_validation_failed($validation_result['errors'], $products);
-
-                return new WP_REST_Response([
-                    'success' => false,
-                    'message' => $error_message,
-                    'validation_errors' => $validation_result['errors'],
-                    'stock_details' => $validation_result['stock_validation']['details'] ?? [],
-                ], 400);
-            }
-        }
-
         $data = [
             'nom_societe' => sanitize_text_field($client['name'] ?? ''),
             'email' => sanitize_email($client['email'] ?? ''),
@@ -205,9 +175,6 @@ final class Sempa_Order_Route
 
         $order_id = (int) $wpdb->insert_id;
 
-        // Logger la création de commande
-        Sempa_Logger::log_order_created($order_id, $data);
-
         if (class_exists('Sempa_Order_Stock_Sync')) {
             $sync_result = Sempa_Order_Stock_Sync::sync($products, [
                 'order_id' => $order_id,
@@ -218,8 +185,9 @@ final class Sempa_Order_Route
             ]);
 
             if (is_wp_error($sync_result)) {
-                // Logger l'échec de synchronisation
-                Sempa_Logger::log_stock_sync($order_id, $products, false);
+                if (function_exists('error_log')) {
+                    error_log('[Sempa] Stock sync failed for order #' . $order_id . ': ' . $sync_result->get_error_message());
+                }
 
                 return new WP_REST_Response([
                     'success' => false,
@@ -227,9 +195,6 @@ final class Sempa_Order_Route
                     'order_id' => $order_id,
                 ], 500);
             }
-
-            // Logger le succès de synchronisation
-            Sempa_Logger::log_stock_sync($order_id, $products, true);
         }
 
         return new WP_REST_Response([
