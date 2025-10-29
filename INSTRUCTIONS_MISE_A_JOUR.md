@@ -26,8 +26,13 @@ wp-content/themes/uncode-child/includes/db_connect_stocks.php
 
 ### 📄 Fichier 2 : stocks.php
 
-**Problème résolu :** Structure HTML cassée (balise `</aside>` incorrecte)
-**Correction :** Ferme correctement avec `</div></section>`
+**Problèmes résolus :**
+1. Structure HTML cassée (balise `</aside>` incorrecte)
+2. ⚠️ **CSS et JS ne se chargeaient PAS** (aucun style)
+
+**Corrections :**
+1. Ferme correctement avec `</div></section>`
+2. Ajoute `Sempa_Stocks_App::ensure_assets_for_template()` pour forcer le chargement des assets
 
 **📥 LIEN GITHUB (version corrigée) :**
 ```
@@ -64,10 +69,12 @@ Pour chaque lien ci-dessus :
 
 1. Allez sur votre page `/stocks`
 2. Vérifiez que :
-   - ✅ Les produits s'affichent (16 produits)
-   - ✅ Le menu de gauche est visible
-   - ✅ Les statistiques du dashboard s'affichent
-   - ✅ Plus d'erreur JSON
+   - ✅ **Le CSS se charge** (page stylée avec couleurs, mise en page)
+   - ✅ **Le JavaScript fonctionne** (tableaux interactifs, boutons)
+   - ✅ **Les 16 produits s'affichent**
+   - ✅ **Le menu de gauche est visible et stylé**
+   - ✅ **Les statistiques du dashboard s'affichent**
+   - ✅ **Plus d'erreur JSON**
 
 ---
 
@@ -103,6 +110,20 @@ AVANT : </aside>
 APRÈS : </div></section>
 ```
 
+### Commit 3 : `87d8d7a` - Chargement CSS/JS ⚠️ CRITIQUE
+**Fichier :** `stocks.php`
+
+**Changement :**
+```
+Ajout après get_header() (lignes 13-16) :
+// Forcer le chargement des assets (CSS + JS)
+if (class_exists('Sempa_Stocks_App')) {
+    Sempa_Stocks_App::ensure_assets_for_template();
+}
+```
+
+**Sans cette ligne, AUCUN style ne s'affiche !**
+
 ---
 
 ## 📞 SI ÇA NE FONCTIONNE TOUJOURS PAS
@@ -133,5 +154,6 @@ https://github.com/Valtaor/sempa-gestion-stocksCommande-Express/blob/claude/sess
 
 ---
 
-**Version : 2.0**
-**Dernière mise à jour : 29 octobre 2025 - 14h30**
+**Version : 2.1**
+**Dernière mise à jour : 29 octobre 2025 - 15h00**
+**Commits inclus : b861de7, 9cbc867, 87d8d7a**
