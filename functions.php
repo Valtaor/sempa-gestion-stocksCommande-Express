@@ -11,9 +11,15 @@ if (!defined('ABSPATH')) {
 require_once ABSPATH . 'wp-admin/includes/image.php';
 require_once ABSPATH . 'wp-admin/includes/file.php';
 require_once ABSPATH . 'wp-admin/includes/media.php';
-require_once __DIR__ . '/includes/logger.php';
 require_once __DIR__ . '/includes/functions_stocks.php';
-require_once __DIR__ . '/includes/stock-validator.php';
+
+// Charger les classes de sécurité de manière sécurisée (après functions_stocks.php)
+if (file_exists(__DIR__ . '/includes/logger.php')) {
+    require_once __DIR__ . '/includes/logger.php';
+}
+if (file_exists(__DIR__ . '/includes/stock-validator.php')) {
+    require_once __DIR__ . '/includes/stock-validator.php';
+}
 
 $commandes_file = __DIR__ . '/functions_commandes.php';
 if (file_exists($commandes_file)) {
