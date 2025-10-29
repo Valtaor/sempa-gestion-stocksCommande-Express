@@ -62,9 +62,10 @@ $nonce = class_exists('Sempa_Stocks_App') ? Sempa_Stocks_App::nonce() : wp_creat
                     <h3><?php esc_html_e('Derniers mouvements', 'sempa'); ?></h3>
                     <ul id="stocks-recent" class="list"></ul>
                 </div>
-            </aside>
+            </div>
+        </section>
 
-            <div class="stockpilot-main">
+        <div class="stockpilot-main">
                 <header class="stockpilot-header">
                     <div class="stockpilot-header__titles">
                         <p class="stockpilot-header__eyebrow"><?php esc_html_e('SEMPA Stocks', 'sempa'); ?></p>
