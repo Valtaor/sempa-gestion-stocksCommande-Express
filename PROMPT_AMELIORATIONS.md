@@ -22,13 +22,14 @@ Avant de commencer, **lis attentivement** ces documents dans l'ordre :
 1. **README.md** - Comprendre l'architecture et les fonctionnalités
 2. **PRECONISATIONS.md** - Liste complète des améliorations recommandées
 3. **ROADMAP.md** - Vision long terme du projet
-4. **functions.php** - Point d'entrée principal (852 lignes)
-5. **includes/functions_stocks.php** - Logique métier stocks (826 lignes)
-6. **includes/db_connect_stocks.php** - Connexion DB (495 lignes)
+4. **functions.php** - Point d'entrée principal (93 lignes)
+5. **includes/functions_stocks.php** - Logique métier stocks (970 lignes)
+6. **includes/db_connect_stocks.php** - Connexion DB (373 lignes)
 
 ---
 
-## 🚀 Plan d'Action Prioritaire
+## 🚀 Plan d'Action Prioritaire : Quand les ayants droits cherchent à se connecter à l’url « https://sempa.fr/stock-pilot » : la redirection n’est plus correct, ils sont redirigés vers une ancienne url qui ne trouve pas la page : « https://sempa.fr/stocks »il faut corriger. 
+Dans la fiche produit « ajouter un produit » il faut insérer l’état du matériel soit neuf soit reconditionné
 
 ### Phase 1 : Fondations Solides (Semaine 1-2)
 
