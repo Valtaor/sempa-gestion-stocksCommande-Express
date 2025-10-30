@@ -10,11 +10,6 @@ if (!defined('ABSPATH')) {
 
 get_header();
 
-// Forcer le chargement des assets (CSS + JS)
-if (class_exists('Sempa_Stocks_App')) {
-    Sempa_Stocks_App::ensure_assets_for_template();
-}
-
 $allowed = class_exists('Sempa_Stocks_App') ? Sempa_Stocks_App::user_is_allowed() : false;
 $nonce = class_exists('Sempa_Stocks_App') ? Sempa_Stocks_App::nonce() : wp_create_nonce('sempa_stocks_nonce');
 ?>
@@ -67,10 +62,9 @@ $nonce = class_exists('Sempa_Stocks_App') ? Sempa_Stocks_App::nonce() : wp_creat
                     <h3><?php esc_html_e('Derniers mouvements', 'sempa'); ?></h3>
                     <ul id="stocks-recent" class="list"></ul>
                 </div>
-            </div>
-        </section>
+            </aside>
 
-        <div class="stockpilot-main">
+            <div class="stockpilot-main">
                 <header class="stockpilot-header">
                     <div class="stockpilot-header__titles">
                         <p class="stockpilot-header__eyebrow"><?php esc_html_e('SEMPA Stocks', 'sempa'); ?></p>
